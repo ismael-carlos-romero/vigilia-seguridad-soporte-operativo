@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vigilia Seguridad Soporte Operativo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div><p class="eyebrow">Central de Monitoreo</p><h1>Vigilia Seguridad Soporte Operativo</h1></div>
+  <nav class="tabs"><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+</header>
+<main>
+<section id="call" class="view">
+  <section class="search-band">
+    <div class="search-copy"><p class="eyebrow">Objetivo Fijo (911)</p><h2>Buscar la consulta del cliente</h2><p>Escribí como habla el cliente: teclado hace ruido, falla 2, batería, no puedo activar, DMSS no conecta.</p></div>
+    <div class="search-box"><input id="searchInput" type="search" placeholder="Buscar síntoma, modelo, tecla, LED o app" autocomplete="off"><select id="systemFilter"></select></div>
+    <div class="quick-row" id="quickSearches"></div>
+  </section>
+  <section class="operator-flow">
+    <aside class="flow-panel">
+      <p class="eyebrow">Antes de diagnosticar</p><h2>Chequeo Bykom</h2>
+      <label class="checkline"><input type="checkbox" id="bycomChecked"> Abonado consultado en Bykom</label>
+      <label class="field-label" for="panelStatus">Estado del panel en Bykom</label>
+      <select id="panelStatus"><option>Panel confirmado en Bykom</option><option>Panel no cargado</option><option>Panel dudoso o mal cargado</option><option>Cliente no sabe el modelo</option></select>
+      <label class="field-label" for="keyboardModel">Modelo de teclado</label>
+      <select id="keyboardModel"><option>No identificado</option><option>Alonso KPD-800</option><option>Alonso KPD-860 / KPD-860RF</option><option>Teclado LED clásico</option><option>Teclado LCD</option><option>Paradox K636 / K32</option><option>DSC LED / LCD</option><option>NetworX LED</option><option>Otro / confirmar foto</option></select>
+      <div class="failure-guide">
+        <p class="eyebrow">Lectura de falla</p>
+        <h3>Identificar antes de operar</h3>
+        <label class="field-label" for="alarmPanel">Marca o panel</label>
+        <select id="alarmPanel"><option>No identificado</option><option>A2k4-A2k8 / Alonso</option><option>Garnet</option><option>DSC</option><option>Paradox</option><option>NetworX</option><option>Otro / validar con Bykom</option></select>
+        <label class="field-label" for="failureCode">Número, LED o zona que marca</label>
+        <input id="failureCode" placeholder="Ej: 4, Z4, LED 5, trouble 4">
+        <div id="failureGuideResult" class="guide-result">Primero confirmar panel en Bykom o preguntar marca/modelo al cliente.</div>
+        <button id="useFailureGuide" type="button">Buscar esta falla</button>
+      </div>
+      <div class="identifier"><h3>Si no sabe el modelo</h3><ul><li>Primero mirar Bykom: panel y teclado cargados.</li><li>Preguntar si el teclado tiene tecla FALLO, TBL, STAY, AWAY, BYP/EXC o una casita.</li><li>En Alonso: KPD-800 usa combinaciones como *1 o *8; KPD-860/KPD-860RF usa tecla de menú/casita.</li><li>Si hay duda, pedir foto del teclado por WhatsApp y registrar “Otro / confirmar foto”.</li></ul></div>
+      <div class="pending-box"><p class="eyebrow">Mejora continua</p><h3>¿No aparece la consulta?</h3><p>Registrala como pendiente para validarla con manual y cargarla después.</p><button id="pendingButton" class="primary" type="button">Registrar pendiente</button></div>
+    </aside>
+    <section class="results-panel"><div class="panel-head"><div><p class="eyebrow">Paso 2</p><h2>Resultados sugeridos</h2></div><span id="resultCount" class="pill">0 casos</span></div><div id="results" class="results"></div></section>
+    <section class="detail-panel" id="detailPanel"><div class="empty-state"><h2>Seleccioná una consulta</h2><p>La resolución aparecerá acá con pregunta filtro, acción remota, video y decisión operativa.</p></div></section>
+  </section>
+</section>
+<section id="intake" class="view active">
+  <section class="intake-layout">
+    <aside class="intake-card">
+      <p class="eyebrow">Guion de apertura</p>
+      <h2>Llamada entrante</h2>
+      <div class="script-box">
+        <p>Buenas, Vigilia Seguridad, Central de Monitoreo. Mi nombre es <b id="scriptOperatorName">operador</b>. ¿Con quién tengo el gusto de hablar?</p>
+        <p>¿Me indicás número de abonado, domicilio o nombre del titular del servicio?</p>
+        <p>Para validar la cuenta, ¿me pasás la palabra clave o un dato adicional autorizado?</p>
+      </div>
+      <label class="field-label" for="intakeOperator">Operador</label>
+      <input id="intakeOperator" placeholder="Ej: Ismael">
+      <label class="field-label" for="intakeCaller">Cliente / interlocutor</label>
+      <input id="intakeCaller" placeholder="Ej: Ismael Romero">
+      <label class="field-label" for="intakeAccount">Abonado, domicilio o titular</label>
+      <input id="intakeAccount" placeholder="Ej: Carlos Eberth 11001">
+      <label class="checkline"><input type="checkbox" id="intakeValidated"> Cuenta validada con palabra clave o dato adicional</label>
+    </aside>
+    <section class="intake-main">
+      <section class="search-band intake-band">
+        <div class="search-copy"><p class="eyebrow">Clasificación</p><h2>Consulta que ingresa</h2><p>Escribí lo que dice el cliente. El sistema sugiere sector, prioridad, preguntas y acción inicial.</p></div>
+        <div class="intake-search-wrap"><input id="intakeQuery" type="search" placeholder="Ej: el teclado hace ruido, no llegó factura, camión no reporta" autocomplete="off" aria-autocomplete="list" aria-controls="intakeAutocomplete"><div id="intakeAutocomplete" class="autocomplete-list intake-autocomplete" role="listbox"></div></div>
+        <div class="quick-row" id="intakeQuick"></div>
+      </section>
+      <section id="intakeResult" class="intake-result">
+        <div class="empty-state"><h2>Ingresá una consulta</h2><p>La recomendación de atención y derivación aparecerá acá.</p></div>
+      </section>
+    </section>
+  </section>
+</section>
+<section id="safe" class="view">
+  <section class="search-band procedure-band">
+    <div class="search-copy"><p class="eyebrow">Objetivos Móviles</p><h2>SAFE / Monitoreo vehicular</h2><p>Buscá la novedad del móvil o unidad. La guía separa si se resuelve desde monitoreo, si se agenda seguimiento o si se deriva.</p></div>
+    <div class="search-box"><input id="safeSearch" type="search" placeholder="Buscar camión no reporta, pánico, desvío, parada, GPS" autocomplete="off"><select id="safeCategory"><option>Todos los eventos SAFE</option><option>Comunicación</option><option>Emergencia</option><option>Ruta</option><option>Soporte</option></select></div>
+    <div class="quick-row" id="safeQuick"></div>
+  </section>
+  <section class="procedure-flow">
+    <aside class="procedure-sidebar">
+      <div class="panel-head"><div><p class="eyebrow">Base SAFE</p><h2>Eventos móviles</h2></div><span id="safeCount" class="pill">0</span></div>
+      <div id="safeList" class="procedure-list"></div>
+    </aside>
+    <section id="safeDetail" class="procedure-detail">
+      <div class="empty-state"><h2>Seleccioná un evento SAFE</h2><p>La guía mostrará preguntas, acción inicial y registro sugerido.</p></div>
+    </section>
+  </section>
+</section>
+<section id="procedures" class="view">
+  <section class="search-band procedure-band">
+    <div class="search-copy"><p class="eyebrow">Operatividad</p><h2>Procedimientos para eventos</h2><p>Buscá el evento que ingresa en Bykom y seguí una guía ordenada de verificación, acción y registro.</p></div>
+    <div class="search-box procedure-search-box"><input id="procedureSearch" type="search" placeholder="Buscar robo, pánico, corte 220, GPRS, apertura, video" autocomplete="off" aria-autocomplete="list" aria-controls="procedureAutocomplete"><select id="procedureCategory"></select><div id="procedureAutocomplete" class="autocomplete-list" role="listbox"></div></div>
+    <div class="quick-row" id="procedureQuick"></div>
+  </section>
+  <section class="procedure-flow">
+    <aside class="procedure-sidebar">
+      <div class="panel-head"><div><p class="eyebrow">Base operativa</p><h2>Eventos documentados</h2></div><span id="procedureCount" class="pill">0</span></div>
+      <div id="procedureList" class="procedure-list"></div>
+    </aside>
+    <section id="procedureDetail" class="procedure-detail">
+      <div class="empty-state"><h2>Seleccioná un procedimiento</h2><p>La guía mostrará chequeos, decisión operativa, acción recomendada y nota lista para Bykom.</p></div>
+    </section>
+  </section>
+</section>
+<section id="supervision" class="view">
+  <section class="knowledge-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Directivas internas</p><h2>Supervisión</h2>
+      <p class="helper-copy">Cargá reglas, órdenes o instrucciones que hoy llegan por WhatsApp, mail o verbalmente, para que queden disponibles y trazables.</p>
+      <label class="field-label" for="directiveTitle">Título de la directiva</label>
+      <input id="directiveTitle" placeholder="Ej: Corte de luz masivo, no llamar si ya tiene SMS">
+      <label class="field-label" for="directiveSource">Origen / responsable</label>
+      <input id="directiveSource" placeholder="Ej: Quique, Mariano, Supervisión">
+      <label class="field-label" for="directiveSector">Sector afectado</label>
+      <select id="directiveSector"><option>Monitoreo 911</option><option>SAFE / Vehicular</option><option>Administración</option><option>Técnica</option><option>Ventas</option><option>Todos los sectores</option></select>
+      <label class="field-label" for="directiveText">Instrucción</label>
+      <textarea id="directiveText" placeholder="Qué debe hacer el operador, cuándo aplica, excepciones y cómo registrar."></textarea>
+      <button id="saveDirective" class="primary" type="button">Guardar directiva</button>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Base de supervisión</p><h2>Reglas cargadas</h2></div><span id="directiveCount" class="pill">0</span></div>
+      <div id="directiveList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="learning" class="view">
+  <section class="knowledge-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Retroalimentación</p><h2>Dudas de operadores</h2>
+      <p class="helper-copy">Cada duda que aparece en turno se carga una vez, se valida y luego se transforma en solución o procedimiento para todos.</p>
+      <label class="field-label" for="learningOperator">Operador</label>
+      <input id="learningOperator" placeholder="Ej: Ismael">
+      <label class="field-label" for="learningQuestion">Duda o consulta</label>
+      <input id="learningQuestion" placeholder="Ej: Cliente dice falla 4 y tiene casita">
+      <label class="field-label" for="learningContext">Contexto</label>
+      <textarea id="learningContext" placeholder="Qué pasó, qué se intentó, qué falta validar, capturas o datos útiles."></textarea>
+      <label class="field-label" for="learningStatus">Estado</label>
+      <select id="learningStatus"><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
+      <button id="saveLearning" class="primary" type="button">Guardar aprendizaje</button>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Mejora continua</p><h2>Dudas registradas</h2></div><span id="learningCount" class="pill">0</span></div>
+      <div id="learningList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="metrics" class="view">
+  <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto de causas</h2><button id="exportCsv">Exportar CSV</button></div><div id="paretoChart" class="bars"></div></div><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div></section>
+</section>
+<section id="cases" class="view"><section class="chart-panel"><div class="panel-head"><h2>Historial local</h2><button id="clearCases" class="ghost">Limpiar historial</button></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Abonado</th><th>Sistema</th><th>Consulta</th><th>Resultado</th><th>Satisfacción</th></tr></thead><tbody id="caseRows"></tbody></table></div></section></section>
+</main>
+<dialog id="savedDialog"><p>Caso guardado. La nota quedó lista para pegar en Bykom.</p><button id="closeDialog">Aceptar</button></dialog>
+<script src="data.js"></script><script src="app.js"></script>
+</body>
+</html>
