@@ -7,8 +7,23 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<section id="loginOverlay" class="login-overlay">
+  <form id="loginForm" class="login-card">
+    <p class="eyebrow">Inicio de turno</p>
+    <h2>Identificar operador</h2>
+    <p class="helper-copy">La sesión permite medir eventos, dudas y resoluciones por operador y turno.</p>
+    <label class="field-label" for="loginOperator">Operador</label>
+    <input id="loginOperator" placeholder="Ej: Ismael Romero" required>
+    <label class="field-label" for="loginShift">Turno</label>
+    <select id="loginShift"><option>Noche</option><option>Mañana</option><option>Tarde</option><option>Franco / apoyo</option></select>
+    <label class="field-label" for="loginSector">Sector</label>
+    <select id="loginSector"><option>Monitoreo 911</option><option>SAFE</option><option>Supervisión</option><option>Administración</option></select>
+    <button class="primary" type="submit">Ingresar</button>
+  </form>
+</section>
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Vigilia Seguridad Soporte Operativo</h1></div>
+  <div id="sessionBadge" class="session-badge">Sin sesión</div>
   <nav class="tabs"><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
@@ -129,31 +144,55 @@
 <section id="learning" class="view">
   <section class="knowledge-layout">
     <aside class="knowledge-form">
-      <p class="eyebrow">Retroalimentación</p><h2>Dudas de operadores</h2>
-      <p class="helper-copy">Cada duda que aparece en turno se carga una vez, se valida y luego se transforma en solución o procedimiento para todos.</p>
+      <p class="eyebrow">Retroalimentación</p><h2>Eventos en espera / revisar</h2>
+      <p class="helper-copy">Cargá cada evento irregular que no puedas cedular rápido. Queda guardado para consultar con supervisión y convertir la respuesta en procedimiento.</p>
       <label class="field-label" for="learningOperator">Operador</label>
       <input id="learningOperator" placeholder="Ej: Ismael">
-      <label class="field-label" for="learningQuestion">Duda o consulta</label>
-      <input id="learningQuestion" placeholder="Ej: Cliente dice falla 4 y tiene casita">
+      <label class="field-label" for="learningSubscriber">Abonado / objetivo</label>
+      <input id="learningSubscriber" placeholder="Ej: SZ-4578 - Iguatemi">
+      <label class="field-label" for="learningFailure">Falla / evento</label>
+      <input id="learningFailure" placeholder="Ej: falla comunicación, teclado marca 4">
+      <label class="field-label" for="learningQuestion">Duda concreta</label>
+      <input id="learningQuestion" placeholder="Ej: cómo cedular si service cerró orden y sigue la falla">
       <label class="field-label" for="learningContext">Contexto</label>
       <textarea id="learningContext" placeholder="Qué pasó, qué se intentó, qué falta validar, capturas o datos útiles."></textarea>
       <label class="field-label" for="learningStatus">Estado</label>
-      <select id="learningStatus"><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
-      <button id="saveLearning" class="primary" type="button">Guardar aprendizaje</button>
+      <select id="learningStatus"><option>En espera</option><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
+      <div id="learningSuggestion" class="suggestion-box">Ingresá abonado, falla y contexto para recibir sugerencias.</div>
+      <button id="saveLearning" class="primary" type="button">Guardar evento en espera</button>
+      <div class="backup-actions">
+        <button id="exportLearning" type="button">Exportar respaldo</button>
+        <label class="import-label">Importar respaldo<input id="importLearning" type="file" accept="application/json,.json"></label>
+      </div>
+      <p id="learningSavedState" class="save-state">Los eventos se guardan en este navegador. Exportá respaldo al finalizar el turno.</p>
     </aside>
     <section class="knowledge-list-panel">
-      <div class="panel-head"><div><p class="eyebrow">Mejora continua</p><h2>Dudas registradas</h2></div><span id="learningCount" class="pill">0</span></div>
+      <div class="panel-head"><div><p class="eyebrow">Mejora continua</p><h2>Eventos guardados</h2></div><span id="learningCount" class="pill">0</span></div>
       <div id="learningList" class="knowledge-list"></div>
     </section>
   </section>
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto de causas</h2><button id="exportCsv">Exportar CSV</button></div><div id="paretoChart" class="bars"></div></div><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto de causas</h2><button id="exportCsv">Exportar CSV</button></div><div id="paretoChart" class="bars"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>
 <section id="cases" class="view"><section class="chart-panel"><div class="panel-head"><h2>Historial local</h2><button id="clearCases" class="ghost">Limpiar historial</button></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Abonado</th><th>Sistema</th><th>Consulta</th><th>Resultado</th><th>Satisfacción</th></tr></thead><tbody id="caseRows"></tbody></table></div></section></section>
 </main>
 <dialog id="savedDialog"><p>Caso guardado. La nota quedó lista para pegar en Bykom.</p><button id="closeDialog">Aceptar</button></dialog>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script>
+  window.VIGILIA_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyAetdYkNCTa1gESRjzfIGLsVej958plhc0",
+    authDomain: "vigilia-soporte-operativo.firebaseapp.com",
+    projectId: "vigilia-soporte-operativo",
+    storageBucket: "vigilia-soporte-operativo.firebasestorage.app",
+    messagingSenderId: "599270503946",
+    appId: "1:599270503946:web:ea6ef86946fe0286bb91f3"
+  };
+</script>
 <script src="data.js"></script><script src="app.js"></script>
 </body>
 </html>

@@ -1,8 +1,29 @@
 const data = window.VIGILIA_DATA;
-const state = { selected: null, results: [], selectedSafe: null, safeResults: [], selectedProcedure: null, procedureResults: [], procedureSuggestIndex: 0, intakeSuggestIndex: 0 };
+const state = {
+  selected: null,
+  results: [],
+  selectedSafe: null,
+  safeResults: [],
+  selectedProcedure: null,
+  procedureResults: [],
+  procedureSuggestIndex: 0,
+  intakeSuggestIndex: 0,
+  firebase: {
+    enabled: false,
+    loaded: false,
+    db: null,
+    learning: [],
+    unsubscribeLearning: null,
+    migratedLocal: false,
+    lastCloudSave: null,
+    status: 'Base central no conectada'
+  }
+};
 const STORAGE_KEY = 'vigiliaCasesV2';
 const DIRECTIVES_KEY = 'vigiliaDirectivesV1';
 const LEARNING_KEY = 'vigiliaLearningV1';
+const SESSION_KEY = 'vigiliaSessionV1';
+const MEDIA_KEY = 'vigiliaMediaV1';
 const quickTerms = ['teclado hace ruido', 'falla bateria', 'falla 220', 'perdida de hora', 'cambiar usuario', 'borrar clave', 'zona abierta', 'DMSS no conecta'];
 const intakeQuickTerms = ['teclado hace ruido', 'no llegó factura', 'quiero dar la baja', 'camión no reporta', 'no puedo ver cámaras', 'alarma se disparó', 'cambiar clave'];
 const intakeStopWords = new Set(['que','con','para','por','una','uno','unos','unas','del','los','las','eso','esta','este','esto','tengo','tiene','hace','cada','me','mi','el','la','de','se','en','y','o','no']);
@@ -115,7 +136,8 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningQuestion','learningContext','learningStatus','saveLearning','learningCount','learningList','mTotal','mRemote','mRisk','mAvoided','mPending','paretoChart','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginOperator','loginShift','loginSector','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','mTotal','mRemote','mRisk','mAvoided','mPending','paretoChart','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  setupSession();
   setupTabs();
   setupFilters();
   renderQuickTerms();
@@ -123,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSafe();
   setupProcedures();
   bindEvents();
+  setupFirebase();
   search();
   searchSafe();
   searchProcedures();
@@ -130,6 +153,41 @@ document.addEventListener('DOMContentLoaded', () => {
   renderLearning();
   renderMetrics();
 });
+
+function setupSession() {
+  const session = getSession();
+  if (session.operator) applySession(session);
+  els.loginForm.addEventListener('submit', event => {
+    event.preventDefault();
+    const next = {
+      operator: els.loginOperator.value.trim(),
+      shift: els.loginShift.value,
+      sector: els.loginSector.value,
+      startedAt: new Date().toISOString()
+    };
+    if (!next.operator) return;
+    localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    applySession(next);
+    renderMetrics();
+  });
+}
+
+function getSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function applySession(session) {
+  els.loginOverlay.classList.add('hidden');
+  els.sessionBadge.innerHTML = `<b>${escapeHtml(session.operator)}</b><span>${escapeHtml(session.shift)} · ${escapeHtml(session.sector)}</span><button id="logoutSession" type="button">Cambiar</button>`;
+  document.getElementById('logoutSession').addEventListener('click', () => {
+    localStorage.removeItem(SESSION_KEY);
+    els.loginOverlay.classList.remove('hidden');
+  });
+  if (els.intakeOperator && !els.intakeOperator.value) els.intakeOperator.value = session.operator;
+  if (els.learningOperator && !els.learningOperator.value) els.learningOperator.value = session.operator;
+  updateIntakeScript();
+}
 
 function setupTabs() {
   document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
@@ -197,7 +255,7 @@ function bindEvents() {
     renderIntakeAutocomplete();
   });
   els.intakeQuery.addEventListener('focus', renderIntakeAutocomplete);
-  els.intakeQuery.addEventListener('keydown', handleIntakeAutocompleteKeys);
+  els.intakeQuery.addEventListener('keydown', handleIntakeKeys);
   els.safeSearch.addEventListener('input', searchSafe);
   els.safeCategory.addEventListener('change', searchSafe);
   els.procedureSearch.addEventListener('input', () => {
@@ -215,7 +273,10 @@ function bindEvents() {
     if (!event.target.closest('.intake-search-wrap')) hideIntakeAutocomplete();
   });
   els.saveDirective.addEventListener('click', saveDirective);
+  ['learningSubscriber','learningFailure','learningQuestion','learningContext'].forEach(id => els[id].addEventListener('input', renderLearningSuggestion));
   els.saveLearning.addEventListener('click', saveLearning);
+  els.exportLearning.addEventListener('click', exportLearningBackup);
+  els.importLearning.addEventListener('change', importLearningBackup);
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -225,6 +286,100 @@ function bindEvents() {
     }
   });
   els.closeDialog.addEventListener('click', () => els.savedDialog.close());
+}
+
+function setupFirebase() {
+  const config = window.VIGILIA_FIREBASE_CONFIG;
+  if (!config || !window.firebase || !window.firebase.firestore) {
+    state.firebase.status = 'Modo local: la base central no esta disponible en este navegador.';
+    renderLearningSavedState();
+    return;
+  }
+  try {
+    const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
+    state.firebase.db = app.firestore();
+    state.firebase.enabled = true;
+    state.firebase.status = 'Conectando con base central...';
+    subscribeLearningCloud();
+  } catch (error) {
+    console.error('Firebase no pudo iniciar', error);
+    state.firebase.status = 'Modo local: no se pudo conectar con Firebase.';
+    renderLearningSavedState();
+  }
+}
+
+function subscribeLearningCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
+  state.firebase.unsubscribeLearning = state.firebase.db
+    .collection('eventos_en_espera')
+    .orderBy('date', 'desc')
+    .onSnapshot(snapshot => {
+      state.firebase.learning = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      state.firebase.loaded = true;
+      state.firebase.status = 'Base central conectada';
+      migrateLocalLearningToCloud();
+      renderLearning();
+      renderMetrics();
+      renderLearningSavedState();
+    }, error => {
+      console.error('No se pudieron leer eventos en Firestore', error);
+      state.firebase.loaded = false;
+      state.firebase.status = 'Modo local: Firestore no permitio leer datos.';
+      renderLearning();
+      renderMetrics();
+      renderLearningSavedState();
+    });
+}
+
+function learningCollection() {
+  return state.firebase.db?.collection('eventos_en_espera');
+}
+
+function getLearningRows() {
+  return state.firebase.loaded ? state.firebase.learning : getStoredRows(LEARNING_KEY);
+}
+
+function getLearningDocId(row) {
+  const base = [row.date, row.subscriber, row.failure, row.context].join('|');
+  return `evt_${hashString(base)}`;
+}
+
+function hashString(value) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+async function saveLearningToCloud(row) {
+  const collection = learningCollection();
+  if (!collection) return false;
+  const payload = {
+    ...row,
+    updatedAt: new Date().toISOString()
+  };
+  if (window.firebase?.firestore?.FieldValue) payload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+  await collection.doc(getLearningDocId(row)).set(payload, { merge: true });
+  state.firebase.lastCloudSave = new Date().toISOString();
+  state.firebase.status = 'Base central conectada';
+  return true;
+}
+
+async function syncLearningRowsToCloud(rows) {
+  if (!state.firebase.enabled || !learningCollection()) return;
+  await Promise.all(rows.map(row => saveLearningToCloud(row).catch(error => {
+    console.error('No se pudo sincronizar evento local', error);
+  })));
+}
+
+function migrateLocalLearningToCloud() {
+  const localRows = getStoredRows(LEARNING_KEY);
+  if (!localRows.length || !state.firebase.enabled || state.firebase.migratedLocal) return;
+  state.firebase.migratedLocal = true;
+  syncLearningRowsToCloud(localRows);
 }
 
 function updateIntakeScript() {
@@ -285,6 +440,7 @@ function renderIntakeResult() {
     <div class="step"><b>Acción inicial</b><div class="procedure-copy">${escapeHtml(primary.action)}</div></div>
     ${renderIntakeAlternatives(matches.slice(1, 4))}
     <div class="close-box intake-close"><p class="eyebrow">Registro sugerido</p><h2>Resumen para derivar o cargar caso</h2><textarea id="intakeNote">${escapeHtml(makeIntakeNote(primary))}</textarea><div class="actions">${intakeActionButtons(primary)}</div></div>`;
+  document.getElementById('intakeOpenSolution').addEventListener('click', () => applyIntakePrimary(primary));
   document.getElementById('copyIntakeNote').addEventListener('click', copyIntakeNote);
   document.getElementById('intakePending').addEventListener('click', applyIntakeToPending);
   const manualBtn = document.getElementById('intakeManual');
@@ -302,7 +458,7 @@ function renderIntakeAlternatives(alternatives) {
 }
 
 function intakeActionButtons(rule) {
-  const buttons = ['<button class="primary" id="copyIntakeNote" type="button">Copiar resumen</button>'];
+  const buttons = ['<button class="primary" id="intakeOpenSolution" type="button">Abrir solución sugerida</button>', '<button id="copyIntakeNote" type="button">Copiar resumen</button>'];
   if (rule.id === 'manual-tecnico' || rule.id === 'camaras-app') buttons.push('<button id="intakeManual" type="button">Ir a Objetivo Fijo</button>');
   if (rule.id === 'safe') buttons.push('<button id="intakeSafe" type="button">Ir a SAFE</button>');
   if (rule.id === 'evento-911') buttons.push('<button id="intakeProcedures" type="button">Ir a Procedimientos</button>');
@@ -361,6 +517,21 @@ function handleIntakeAutocompleteKeys(event) {
   if (event.key === 'Escape') hideIntakeAutocomplete();
 }
 
+function handleIntakeKeys(event) {
+  const options = [...els.intakeAutocomplete.querySelectorAll('button')];
+  if (options.length) {
+    handleIntakeAutocompleteKeys(event);
+    return;
+  }
+  if (event.key === 'Enter') {
+    const primary = analyzeIntake()[0];
+    if (primary) {
+      event.preventDefault();
+      applyIntakePrimary(primary);
+    }
+  }
+}
+
 async function copyIntakeNote() {
   const text = document.getElementById('intakeNote').value;
   try { await navigator.clipboard.writeText(text); }
@@ -371,6 +542,14 @@ function applyIntakeToManual(rule) {
   document.querySelector('[data-tab="call"]').click();
   els.searchInput.value = els.intakeQuery.value || rule.title;
   search();
+}
+
+function applyIntakePrimary(rule) {
+  if (rule.id === 'safe') return applyIntakeToSafe(rule);
+  if (rule.id === 'evento-911') return applyIntakeToProcedures(rule);
+  if (rule.id === 'manual-tecnico' || rule.id === 'camaras-app') return applyIntakeToManual(rule);
+  if (rule.id === 'baja-reclamo') return document.querySelector('[data-tab="supervision"]').click();
+  applyIntakeToPending();
 }
 
 function applyIntakeToSafe(rule) {
@@ -424,34 +603,181 @@ function renderDirectives() {
   els.directiveList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.title)}</h3><p>${escapeHtml(row.text)}</p></div><span>${escapeHtml(row.source)}</span></article>`).join('');
 }
 
-function saveLearning() {
+async function saveLearning() {
   const question = els.learningQuestion.value.trim();
-  if (!question) {
-    alert('Cargá la duda o consulta para guardarla.');
+  const failure = els.learningFailure.value.trim();
+  const subscriber = els.learningSubscriber.value.trim();
+  const context = els.learningContext.value.trim();
+  if (!subscriber || !failure || !context) {
+    alert('Cargá abonado/objetivo, falla y contexto para guardar el evento.');
     return;
   }
+  const suggestion = getLearningSuggestions()[0];
+  const session = getSession();
   const rows = getStoredRows(LEARNING_KEY);
-  rows.push({
+  const record = {
     date: new Date().toISOString(),
-    operator: els.learningOperator.value.trim() || 'Sin operador cargado',
-    question,
-    context: els.learningContext.value.trim() || 'Sin contexto cargado',
-    status: els.learningStatus.value
-  });
+    operator: els.learningOperator.value.trim() || session.operator || 'Sin operador cargado',
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    subscriber,
+    failure,
+    question: question || failure,
+    context,
+    status: els.learningStatus.value,
+    suggestion: suggestion ? `${suggestion.source}: ${suggestion.title}` : 'Sin solución cargada',
+    supervisorSummary: makeSupervisorSummary()
+  };
+  rows.push(record);
   localStorage.setItem(LEARNING_KEY, JSON.stringify(rows));
+  localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
+  if (state.firebase.enabled) {
+    try {
+      await saveLearningToCloud(record);
+    } catch (error) {
+      console.error('No se pudo guardar en base central', error);
+      state.firebase.status = 'Modo local: no se pudo guardar en la base central. Quedo respaldo en este navegador.';
+    }
+  }
+  els.learningSubscriber.value = '';
+  els.learningFailure.value = '';
   els.learningQuestion.value = '';
   els.learningContext.value = '';
+  renderLearningSuggestion();
   renderLearning();
+  renderMetrics();
+  renderLearningSavedState();
 }
 
 function renderLearning() {
-  const rows = getStoredRows(LEARNING_KEY).slice().reverse();
-  els.learningCount.textContent = `${rows.length} dudas`;
+  const rows = getLearningRows().slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  els.learningCount.textContent = `${rows.length} eventos`;
   if (!rows.length) {
-    els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin dudas registradas</h2><p>La próxima consulta sin resolver puede convertirse en una solución permanente para todos.</p></div>';
+    els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin eventos en espera</h2><p>La próxima consulta sin resolver puede convertirse en una solución permanente para todos.</p></div>';
+    renderLearningSavedState();
     return;
   }
-  els.learningList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.status)} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.question)}</h3><p>${escapeHtml(row.context)}</p></div><span>${escapeHtml(row.operator)}</span></article>`).join('');
+  els.learningList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.failure || row.question)}</h3><p>${escapeHtml(row.question)}</p><p>${escapeHtml(row.context)}</p><p><b>Sugerencia:</b> ${escapeHtml(row.suggestion || 'Sin solución cargada')}</p><p><b>Resumen supervisor:</b> ${escapeHtml(row.supervisorSummary || '')}</p></div><span>${escapeHtml(row.operator)} · ${escapeHtml(row.shift || 'Sin turno')}</span></article>`).join('');
+  renderLearningSavedState();
+}
+
+function renderLearningSavedState() {
+  if (!els.learningSavedState) return;
+  const rows = getLearningRows();
+  const localRows = getStoredRows(LEARNING_KEY);
+  const last = state.firebase.lastCloudSave || localStorage.getItem(`${LEARNING_KEY}:lastSave`);
+  const suffix = last ? ` Ultimo guardado: ${new Date(last).toLocaleString()}.` : '';
+  const scope = state.firebase.loaded
+    ? `${rows.length} eventos en base central y ${localRows.length} respaldos locales.`
+    : `${rows.length} eventos guardados en este navegador.`;
+  els.learningSavedState.textContent = `${state.firebase.status}. ${scope}${suffix} Exporta respaldo al finalizar el turno.`;
+}
+
+function exportLearningBackup() {
+  const rows = getLearningRows();
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    app: 'Vigilia Seguridad Soporte Operativo',
+    type: 'eventos-en-espera',
+    count: rows.length,
+    rows
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type:'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+  a.href = url;
+  a.download = `vigilia-eventos-en-espera-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importLearningBackup(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const payload = JSON.parse(reader.result);
+      const incoming = Array.isArray(payload) ? payload : payload.rows;
+      if (!Array.isArray(incoming)) throw new Error('Formato invalido');
+      const current = getStoredRows(LEARNING_KEY);
+      const merged = [...current, ...incoming].filter((row, index, all) => {
+        const key = `${row.date}|${row.subscriber}|${row.failure}|${row.context}`;
+        return all.findIndex(other => `${other.date}|${other.subscriber}|${other.failure}|${other.context}` === key) === index;
+      });
+      localStorage.setItem(LEARNING_KEY, JSON.stringify(merged));
+      localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
+      syncLearningRowsToCloud(incoming);
+      renderLearning();
+      renderMetrics();
+      renderLearningSavedState();
+    } catch {
+      alert('No pude importar ese respaldo. Verifica que sea un JSON exportado desde este sistema.');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function renderLearningSuggestion() {
+  const suggestions = getLearningSuggestions();
+  if (!els.learningSuggestion) return;
+  if (!els.learningFailure.value.trim() && !els.learningQuestion.value.trim() && !els.learningContext.value.trim()) {
+    els.learningSuggestion.innerHTML = 'Ingresá abonado, falla y contexto para recibir sugerencias.';
+    return;
+  }
+  if (!suggestions.length) {
+    els.learningSuggestion.innerHTML = `<b>Sin solución cargada.</b><p>${escapeHtml(makeSupervisorSummary())}</p>`;
+    return;
+  }
+  els.learningSuggestion.innerHTML = `<b>Sugerencias del sistema</b>${suggestions.slice(0, 4).map(item => `<button type="button" data-source="${item.source}" data-id="${item.id}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.source)} · ${escapeHtml(item.action)}</span></button>`).join('')}`;
+  els.learningSuggestion.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => applyLearningSuggestion(btn.dataset.source, btn.dataset.id)));
+}
+
+function getLearningSuggestions() {
+  const query = normalize([els.learningSubscriber?.value, els.learningFailure?.value, els.learningQuestion?.value, els.learningContext?.value].join(' ')).trim();
+  const terms = query.split(/\s+/).filter(term => term.length > 2 && !intakeStopWords.has(term));
+  if (!terms.length) return [];
+  const pools = [
+    ...data.cases.map(item => ({ id:item.id, source:'Objetivo Fijo 911', title:item.issue, action:item.action, text:[item.system,item.issue,item.code,item.question,item.causes,item.action,item.searchText].join(' ') })),
+    ...procedureData.map(item => ({ id:item.id, source:'Procedimientos 911', title:item.event, action:item.action, text:[item.category,item.event,item.trigger,item.action,item.note,item.automation,...item.checks].join(' ') })),
+    ...safeData.map(item => ({ id:item.id, source:'SAFE', title:item.event, action:item.action, text:[item.category,item.event,item.trigger,item.action,item.note,...item.questions].join(' ') }))
+  ];
+  return pools.map(item => {
+    const haystack = normalize(item.text);
+    let score = 0;
+    terms.forEach(term => { if (haystack.includes(term)) score += 3; });
+    if (normalize(item.title).includes(query)) score += 8;
+    return { ...item, score };
+  }).filter(item => item.score > 0).sort((a, b) => b.score - a.score);
+}
+
+function applyLearningSuggestion(source, id) {
+  if (source === 'SAFE') {
+    document.querySelector('[data-tab="safe"]').click();
+    els.safeSearch.value = safeData.find(item => item.id === id)?.event || els.learningFailure.value;
+    searchSafe();
+    return;
+  }
+  if (source === 'Procedimientos 911') {
+    document.querySelector('[data-tab="procedures"]').click();
+    els.procedureSearch.value = procedureData.find(item => item.id === id)?.event || els.learningFailure.value;
+    searchProcedures();
+    return;
+  }
+  document.querySelector('[data-tab="call"]').click();
+  const item = data.cases.find(record => record.id === id);
+  els.searchInput.value = item?.issue || els.learningFailure.value;
+  search();
+}
+
+function makeSupervisorSummary() {
+  const subscriber = els.learningSubscriber?.value.trim() || 'sin abonado';
+  const failure = els.learningFailure?.value.trim() || 'sin falla especificada';
+  const question = els.learningQuestion?.value.trim() || failure;
+  const context = els.learningContext?.value.trim() || 'sin contexto adicional';
+  return `Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
 }
 
 function getStoredRows(key) {
@@ -531,7 +857,8 @@ function renderSafeDetail() {
   const item = state.selectedSafe;
   if (!item) return;
   const priorityClass = item.priority === 'Alta' ? 'warning' : '';
-  els.safeDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">SAFE · ${escapeHtml(item.category)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Preguntas guía', procedureChecks(item.questions))}${procedureBlock('Acción inicial', escapeHtml(item.action))}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota SAFE sugerida</h2><textarea id="safeNote">${escapeHtml(item.note)}</textarea><div class="actions"><button class="primary" id="copySafeNote" type="button">Copiar nota</button><button id="safeLearning" type="button">Registrar duda SAFE</button></div></div>`;
+  els.safeDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">SAFE · ${escapeHtml(item.category)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Preguntas guía', procedureChecks(item.questions))}${procedureBlock('Acción inicial', escapeHtml(item.action))}${mediaPanel('safe', item.id)}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota SAFE sugerida</h2><textarea id="safeNote">${escapeHtml(item.note)}</textarea><div class="actions"><button class="primary" id="copySafeNote" type="button">Copiar nota</button><button id="safeLearning" type="button">Registrar duda SAFE</button></div></div>`;
+  wireMediaPanel('safe', item.id);
   document.getElementById('copySafeNote').addEventListener('click', copySafeNote);
   document.getElementById('safeLearning').addEventListener('click', () => {
     document.querySelector('[data-tab="learning"]').click();
@@ -545,6 +872,33 @@ async function copySafeNote() {
   const text = document.getElementById('safeNote').value;
   try { await navigator.clipboard.writeText(text); }
   catch { document.getElementById('safeNote').select(); document.execCommand('copy'); }
+}
+
+function mediaPanel(scope, id) {
+  const key = `${scope}:${id}`;
+  const media = getMedia()[key] || {};
+  const image = media.image || '';
+  const video = media.video || '';
+  return `<div class="media-panel step"><b>Imagen y video de respaldo</b><div class="media-grid"><div>${image ? `<img class="media-preview" src="${escapeHtml(image)}" alt="Imagen de respaldo">` : '<div class="media-placeholder">Sin imagen cargada</div>'}</div><div class="media-fields"><label class="field-label">URL de imagen<input id="mediaImage" value="${escapeHtml(image)}" placeholder="Pegar link de imagen o ruta pública"></label><label class="field-label">Link de video explicativo<input id="mediaVideo" value="${escapeHtml(video)}" placeholder="Pegar link de YouTube, Drive, etc."></label>${video ? `<a class="video-link" href="${escapeHtml(video)}" target="_blank" rel="noopener">Abrir video explicativo</a>` : ''}<button id="saveMedia" type="button">Guardar respaldo</button></div></div></div>`;
+}
+
+function wireMediaPanel(scope, id) {
+  const button = document.getElementById('saveMedia');
+  if (!button) return;
+  button.addEventListener('click', () => {
+    const rows = getMedia();
+    rows[`${scope}:${id}`] = {
+      image: document.getElementById('mediaImage').value.trim(),
+      video: document.getElementById('mediaVideo').value.trim()
+    };
+    localStorage.setItem(MEDIA_KEY, JSON.stringify(rows));
+    if (scope === 'safe') renderSafeDetail(); else renderDetail();
+  });
+}
+
+function getMedia() {
+  try { return JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}'); }
+  catch { return {}; }
 }
 
 function renderFailureGuide() {
@@ -779,7 +1133,8 @@ function renderDetail() {
   const item = state.selected;
   if (!item) return;
   const decisionClass = item.decision.includes('prioritario') || item.decision.includes('Validar') ? 'danger' : item.decision.includes('Técnico') || item.decision.includes('Esperar') ? 'warning' : '';
-  els.detailPanel.innerHTML = `<div class="detail-title"><div><p class="eyebrow">Paso 3</p><h2>${escapeHtml(item.system)}</h2><p>${escapeHtml(item.issue)}</p></div><span class="decision ${decisionClass}">${escapeHtml(item.decision)}</span></div>${step('Comando o guía inicial', item.commandHint)}${step('Indicador / código', item.code || 'Sin código cargado')}${step('Pregunta filtro para el cliente', item.question)}${step('Causa probable', item.causes || 'Sin causa cargada')}${step('Acción remota sugerida', item.action)}${step('Video / WhatsApp', item.video || 'Pendiente de cargar link o guion de video corto.')}${step('Respaldo', [item.manualPage && `Manual: ${item.manualPage}`, item.confidence && `Confianza: ${item.confidence}`, item.backup].filter(Boolean).join('\n'))}${closeBoxHtml(makeNote(item), false)}`;
+  els.detailPanel.innerHTML = `<div class="detail-title"><div><p class="eyebrow">Paso 3</p><h2>${escapeHtml(item.system)}</h2><p>${escapeHtml(item.issue)}</p></div><span class="decision ${decisionClass}">${escapeHtml(item.decision)}</span></div>${step('Comando o guía inicial', item.commandHint)}${step('Indicador / código', item.code || 'Sin código cargado')}${step('Pregunta filtro para el cliente', item.question)}${step('Causa probable', item.causes || 'Sin causa cargada')}${step('Acción remota sugerida', item.action)}${step('Video / WhatsApp', item.video || 'Pendiente de cargar link o guion de video corto.')}${step('Respaldo', [item.manualPage && `Manual: ${item.manualPage}`, item.confidence && `Confianza: ${item.confidence}`, item.backup].filter(Boolean).join('\n'))}${mediaPanel('fixed', item.id)}${closeBoxHtml(makeNote(item), false)}`;
+  wireMediaPanel('fixed', item.id);
   wireCloseBox(() => saveCurrentCase(item));
 }
 
@@ -846,6 +1201,8 @@ function updatePendingNote() {
 }
 
 function wireCloseBox(saveHandler) {
+  const session = getSession();
+  if (session.operator && !document.getElementById('caseOperator').value) document.getElementById('caseOperator').value = session.operator;
   document.getElementById('saveCase').addEventListener('click', saveHandler);
   document.getElementById('copyNote').addEventListener('click', copyNote);
   ['caseSubscriber','caseOperator','caseOutcome','caseMood','caseExtra'].forEach(id => document.getElementById(id).addEventListener('input', () => {
@@ -872,7 +1229,8 @@ function savePendingCase() {
 
 function baseRecord(system, issue, decision, pending) {
   const failureGuide = getFailureGuide();
-  return { date: new Date().toISOString(), subscriber: document.getElementById('caseSubscriber').value.trim(), operator: document.getElementById('caseOperator').value.trim(), system, issue, decision, outcome: document.getElementById('caseOutcome').value, mood: document.getElementById('caseMood').value, note: document.getElementById('bycomNote').value, bycomChecked: els.bycomChecked.checked, panelStatus: els.panelStatus.value, keyboardModel: els.keyboardModel?.value || 'No identificado', alarmPanel: failureGuide.panel, failureCode: failureGuide.rawCode, failureMeaning: failureGuide.meaning, pending };
+  const session = getSession();
+  return { date: new Date().toISOString(), subscriber: document.getElementById('caseSubscriber').value.trim(), operator: document.getElementById('caseOperator').value.trim() || session.operator || 'Sin operador', shift: session.shift || 'Sin turno', sector: session.sector || 'Sin sector', system, issue, decision, outcome: document.getElementById('caseOutcome').value, mood: document.getElementById('caseMood').value, note: document.getElementById('bycomNote').value, bycomChecked: els.bycomChecked.checked, panelStatus: els.panelStatus.value, keyboardModel: els.keyboardModel?.value || 'No identificado', alarmPanel: failureGuide.panel, failureCode: failureGuide.rawCode, failureMeaning: failureGuide.meaning, pending };
 }
 
 function saveRecord(record) {
@@ -897,25 +1255,49 @@ function getCases() {
 
 function renderMetrics() {
   const rows = getCases();
+  const learning = getLearningRows();
+  const session = getSession();
   const total = rows.length;
   const remote = rows.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
   const risk = rows.filter(r => r.mood === 'Riesgo de baja').length;
   const avoided = rows.filter(r => r.outcome === 'Servicio técnico evitado').length;
-  const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length;
+  const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length + learning.filter(r => r.status !== 'Resuelto y cargado').length;
   els.mTotal.textContent = total;
   els.mRemote.textContent = total ? `${Math.round(remote * 100 / total)}%` : '0%';
   els.mRisk.textContent = risk;
   els.mAvoided.textContent = avoided;
   els.mPending.textContent = pending;
-  renderBars(els.paretoChart, countBy(rows, 'issue'), true);
+  renderBars(els.paretoChart, countEntries([...rows.map(r => r.issue), ...learning.map(r => r.failure || r.question)]), true);
+  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator)]), false);
+  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift)]), false);
+  renderBars(els.learningChart, countEntries(learning.map(r => r.failure || r.question)), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
+  renderOperatorSummary(rows, learning, session);
   renderCaseRows(rows);
+}
+
+function countEntries(values) {
+  const map = new Map();
+  values.filter(Boolean).forEach(value => map.set(value || 'Sin dato', (map.get(value || 'Sin dato') || 0) + 1));
+  return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
 }
 
 function countBy(rows, key) {
   const map = new Map();
   rows.forEach(r => map.set(r[key] || 'Sin dato', (map.get(r[key] || 'Sin dato') || 0) + 1));
   return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
+}
+
+function renderOperatorSummary(rows, learning, session) {
+  if (!els.operatorSummary) return;
+  if (!session.operator) {
+    els.operatorSummary.innerHTML = '<p class="empty-state compact-empty">Iniciá sesión para ver tus métricas.</p>';
+    return;
+  }
+  const mine = rows.filter(r => r.operator === session.operator);
+  const myLearning = learning.filter(r => r.operator === session.operator);
+  const resolved = mine.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
+  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${session.shift || 'Sin turno'}</b><span>turno actual</span></div></div>`;
 }
 
 function renderBars(el, entries, pareto) {
