@@ -12,6 +12,9 @@ const state = {
     enabled: false,
     loaded: false,
     db: null,
+    auth: null,
+    currentUser: null,
+    userProfile: null,
     learning: [],
     unsubscribeLearning: null,
     migratedLocal: false,
@@ -136,7 +139,8 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginOperator','loginShift','loginSector','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','mTotal','mRemote','mRisk','mAvoided','mPending','paretoChart','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','mTotal','mRemote','mRisk','mAvoided','mPending','paretoChart','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  setupFirebase();
   setupSession();
   setupTabs();
   setupFilters();
@@ -145,7 +149,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSafe();
   setupProcedures();
   bindEvents();
-  setupFirebase();
   search();
   searchSafe();
   searchProcedures();
@@ -155,14 +158,57 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupSession() {
-  const session = getSession();
-  if (session.operator) applySession(session);
+  if (state.firebase.auth) {
+    els.loginStatus.textContent = 'Conectando con autenticacion...';
+    state.firebase.auth.onAuthStateChanged(async user => {
+      state.firebase.currentUser = user || null;
+      if (!user) {
+        localStorage.removeItem(SESSION_KEY);
+        if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
+        state.firebase.learning = [];
+        state.firebase.loaded = false;
+        els.loginOverlay.classList.remove('hidden');
+        els.sessionBadge.textContent = 'Sin sesion';
+        els.loginStatus.textContent = 'Ingresá con usuario y contraseña.';
+        applyPrivilegeVisibility();
+        return;
+      }
+      const profile = await loadUserProfile(user);
+      state.firebase.userProfile = profile;
+      const session = {
+        uid: user.uid,
+        email: user.email || '',
+        operator: profile.name || user.displayName || user.email || 'Operador',
+        shift: profile.shift || els.loginShift.value || 'Sin turno',
+        sector: profile.sector || els.loginSector.value || 'Sin sector',
+        role: profile.role || 'operador',
+        level: Number(profile.level || 1),
+        active: profile.active !== false,
+        startedAt: new Date().toISOString()
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      applySession(session);
+      if (session.active === false) return;
+      subscribeLearningCloud();
+      renderMetrics();
+    });
+  } else {
+    const session = getSession();
+    if (session.operator) applySession(session);
+  }
   els.loginForm.addEventListener('submit', event => {
     event.preventDefault();
+    if (state.firebase.auth) {
+      signInWithFirebase();
+      return;
+    }
     const next = {
       operator: els.loginOperator.value.trim(),
       shift: els.loginShift.value,
       sector: els.loginSector.value,
+      role: 'operador local',
+      level: 1,
+      active: true,
       startedAt: new Date().toISOString()
     };
     if (!next.operator) return;
@@ -172,6 +218,63 @@ function setupSession() {
   });
 }
 
+async function signInWithFirebase() {
+  const email = els.loginEmail.value.trim();
+  const password = els.loginPassword.value;
+  if (!email || !password) {
+    els.loginStatus.textContent = 'Cargá usuario/email y contraseña.';
+    return;
+  }
+  els.loginStatus.textContent = 'Validando usuario...';
+  try {
+    await state.firebase.auth.signInWithEmailAndPassword(email, password);
+    els.loginPassword.value = '';
+  } catch (error) {
+    console.error('No se pudo iniciar sesion', error);
+    els.loginStatus.textContent = 'No se pudo ingresar. Verificá usuario, contraseña o que el usuario esté habilitado.';
+  }
+}
+
+async function loadUserProfile(user) {
+  const fallback = {
+    name: user.displayName || user.email || 'Operador',
+    email: user.email || '',
+    role: 'sin perfil',
+    level: 0,
+    sector: els.loginSector?.value || 'Monitoreo 911',
+    active: false,
+    missingProfile: true
+  };
+  if (!state.firebase.db) return fallback;
+  try {
+    const snap = await state.firebase.db.collection('usuarios').doc(user.uid).get();
+    if (!snap.exists) return fallback;
+    return normalizeUserProfile({ ...fallback, ...snap.data(), uid: user.uid, missingProfile: false });
+  } catch (error) {
+    console.error('No se pudo leer perfil de usuario', error);
+    return fallback;
+  }
+}
+
+function normalizeUserProfile(profile) {
+  const normalized = { ...profile };
+  const pairs = [
+    ['Name', 'name'],
+    ['Email', 'email'],
+    ['Role', 'role'],
+    ['Level', 'level'],
+    ['Sector', 'sector'],
+    ['Shift', 'shift'],
+    ['Active', 'active']
+  ];
+  pairs.forEach(([from, to]) => {
+    if (normalized[to] === undefined && normalized[from] !== undefined) {
+      normalized[to] = normalized[from];
+    }
+  });
+  return normalized;
+}
+
 function getSession() {
   try { return JSON.parse(localStorage.getItem(SESSION_KEY) || '{}'); }
   catch { return {}; }
@@ -179,18 +282,48 @@ function getSession() {
 
 function applySession(session) {
   els.loginOverlay.classList.add('hidden');
-  els.sessionBadge.innerHTML = `<b>${escapeHtml(session.operator)}</b><span>${escapeHtml(session.shift)} · ${escapeHtml(session.sector)}</span><button id="logoutSession" type="button">Cambiar</button>`;
-  document.getElementById('logoutSession').addEventListener('click', () => {
+  els.sessionBadge.innerHTML = `<b>${escapeHtml(session.operator)}</b><span>Nivel ${escapeHtml(String(session.level || 1))} · ${escapeHtml(session.role || 'operador')} · ${escapeHtml(session.shift)} · ${escapeHtml(session.sector)}</span><button id="logoutSession" type="button">Salir</button>`;
+  document.getElementById('logoutSession').addEventListener('click', async () => {
     localStorage.removeItem(SESSION_KEY);
+    if (state.firebase.auth) await state.firebase.auth.signOut();
     els.loginOverlay.classList.remove('hidden');
   });
   if (els.intakeOperator && !els.intakeOperator.value) els.intakeOperator.value = session.operator;
   if (els.learningOperator && !els.learningOperator.value) els.learningOperator.value = session.operator;
   updateIntakeScript();
+  applyPrivilegeVisibility();
+  if (session.active === false) {
+    els.loginOverlay.classList.remove('hidden');
+    els.loginStatus.textContent = 'Usuario inactivo. Pedile a un administrador que habilite el perfil.';
+  }
+}
+
+function currentLevel() {
+  return Number(getSession().level || 0);
+}
+
+function canAccess(minLevel) {
+  return currentLevel() >= minLevel;
+}
+
+function applyPrivilegeVisibility() {
+  const rules = {
+    supervision: 8,
+    metrics: 8,
+    cases: 8
+  };
+  document.querySelectorAll('.tab').forEach(tab => {
+    const min = rules[tab.dataset.tab] || 1;
+    tab.disabled = !canAccess(min);
+    tab.title = tab.disabled ? `Requiere nivel ${min} o superior` : '';
+  });
+  const activeTab = document.querySelector('.tab.active');
+  if (activeTab?.disabled) document.querySelector('[data-tab="intake"]').click();
 }
 
 function setupTabs() {
   document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
+    if (btn.disabled) return;
     document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     btn.classList.add('active');
@@ -298,9 +431,10 @@ function setupFirebase() {
   try {
     const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
     state.firebase.db = app.firestore();
+    if (window.firebase.auth) state.firebase.auth = app.auth();
     state.firebase.enabled = true;
     state.firebase.status = 'Conectando con base central...';
-    subscribeLearningCloud();
+    if (!state.firebase.auth) subscribeLearningCloud();
   } catch (error) {
     console.error('Firebase no pudo iniciar', error);
     state.firebase.status = 'Modo local: no se pudo conectar con Firebase.';
@@ -311,9 +445,11 @@ function setupFirebase() {
 function subscribeLearningCloud() {
   if (!state.firebase.db) return;
   if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
-  state.firebase.unsubscribeLearning = state.firebase.db
-    .collection('eventos_en_espera')
-    .orderBy('date', 'desc')
+  const collection = state.firebase.db.collection('eventos_en_espera');
+  const query = currentLevel() >= 8 || !state.firebase.currentUser
+    ? collection.orderBy('date', 'desc')
+    : collection.where('operatorUid', '==', state.firebase.currentUser.uid).orderBy('date', 'desc');
+  state.firebase.unsubscribeLearning = query
     .onSnapshot(snapshot => {
       state.firebase.learning = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       state.firebase.loaded = true;
@@ -357,12 +493,21 @@ function hashString(value) {
 async function saveLearningToCloud(row) {
   const collection = learningCollection();
   if (!collection) return false;
-  const payload = {
+  const session = getSession();
+  const enriched = {
     ...row,
+    operatorUid: row.operatorUid || session.uid || state.firebase.currentUser?.uid || '',
+    operatorEmail: row.operatorEmail || session.email || state.firebase.currentUser?.email || '',
+    role: row.role || session.role || 'operador',
+    level: Number(row.level || session.level || 1),
+    operator: row.operator || session.operator || 'Sin operador'
+  };
+  const payload = {
+    ...enriched,
     updatedAt: new Date().toISOString()
   };
   if (window.firebase?.firestore?.FieldValue) payload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
-  await collection.doc(getLearningDocId(row)).set(payload, { merge: true });
+  await collection.doc(getLearningDocId(enriched)).set(payload, { merge: true });
   state.firebase.lastCloudSave = new Date().toISOString();
   state.firebase.status = 'Base central conectada';
   return true;
@@ -618,6 +763,10 @@ async function saveLearning() {
   const record = {
     date: new Date().toISOString(),
     operator: els.learningOperator.value.trim() || session.operator || 'Sin operador cargado',
+    operatorUid: session.uid || state.firebase.currentUser?.uid || '',
+    operatorEmail: session.email || state.firebase.currentUser?.email || '',
+    role: session.role || 'operador',
+    level: Number(session.level || 1),
     shift: session.shift || 'Sin turno',
     sector: session.sector || 'Sin sector',
     subscriber,
