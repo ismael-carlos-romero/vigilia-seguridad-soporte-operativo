@@ -249,30 +249,11 @@ async function loadUserProfile(user) {
   try {
     const snap = await state.firebase.db.collection('usuarios').doc(user.uid).get();
     if (!snap.exists) return fallback;
-    return normalizeUserProfile({ ...fallback, ...snap.data(), uid: user.uid, missingProfile: false });
+    return { ...fallback, ...snap.data(), uid: user.uid, missingProfile: false };
   } catch (error) {
     console.error('No se pudo leer perfil de usuario', error);
     return fallback;
   }
-}
-
-function normalizeUserProfile(profile) {
-  const normalized = { ...profile };
-  const pairs = [
-    ['Name', 'name'],
-    ['Email', 'email'],
-    ['Role', 'role'],
-    ['Level', 'level'],
-    ['Sector', 'sector'],
-    ['Shift', 'shift'],
-    ['Active', 'active']
-  ];
-  pairs.forEach(([from, to]) => {
-    if (normalized[to] === undefined && normalized[from] !== undefined) {
-      normalized[to] = normalized[from];
-    }
-  });
-  return normalized;
 }
 
 function getSession() {

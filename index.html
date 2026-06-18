@@ -10,15 +10,20 @@
 <section id="loginOverlay" class="login-overlay">
   <form id="loginForm" class="login-card">
     <p class="eyebrow">Inicio de turno</p>
-    <h2>Identificar operador</h2>
-    <p class="helper-copy">La sesión permite medir eventos, dudas y resoluciones por operador y turno.</p>
+    <h2>Ingreso con permisos</h2>
+    <p class="helper-copy">Cada operador ingresa con usuario y contraseña para guardar métricas, dudas y acciones con trazabilidad.</p>
+    <label class="field-label" for="loginEmail">Usuario / email</label>
+    <input id="loginEmail" type="email" placeholder="Ej: ismael@vigilia.com" autocomplete="username">
+    <label class="field-label" for="loginPassword">Contraseña</label>
+    <input id="loginPassword" type="password" placeholder="Contraseña" autocomplete="current-password">
     <label class="field-label" for="loginOperator">Operador</label>
-    <input id="loginOperator" placeholder="Ej: Ismael Romero" required>
+    <input id="loginOperator" placeholder="Ej: Ismael Romero">
     <label class="field-label" for="loginShift">Turno</label>
     <select id="loginShift"><option>Noche</option><option>Mañana</option><option>Tarde</option><option>Franco / apoyo</option></select>
     <label class="field-label" for="loginSector">Sector</label>
     <select id="loginSector"><option>Monitoreo 911</option><option>SAFE</option><option>Supervisión</option><option>Administración</option></select>
     <button class="primary" type="submit">Ingresar</button>
+    <p id="loginStatus" class="save-state">Ingresá con un usuario habilitado por administración.</p>
   </form>
 </section>
 <header class="topbar">
@@ -183,6 +188,7 @@
 <dialog id="savedDialog"><p>Caso guardado. La nota quedó lista para pegar en Bykom.</p><button id="closeDialog">Aceptar</button></dialog>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
 <script>
   window.VIGILIA_FIREBASE_CONFIG = {
     apiKey: "AIzaSyAetdYkNCTa1gESRjzfIGLsVej958plhc0",
