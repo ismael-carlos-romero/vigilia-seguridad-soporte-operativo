@@ -260,6 +260,43 @@
   </section>
 </section>
 <section id="supervision" class="view">
+  <section class="supervision-dashboard">
+    <section class="chart-panel supervision-overview">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Bandeja de supervisión</p>
+          <h2>Eventos para validar y convertir en criterio</h2>
+        </div>
+        <div class="supervision-toolbar">
+          <select id="supervisionOperatorFilter" aria-label="Filtrar por operador"><option>Todos los operadores</option></select>
+          <select id="supervisionStatusFilter" aria-label="Filtrar por estado">
+            <option>Todos los estados</option>
+            <option>En espera</option>
+            <option>Pendiente de validar</option>
+            <option>Validado por supervisor</option>
+            <option>Convertir en procedimiento</option>
+            <option>Resuelto y cargado</option>
+          </select>
+        </div>
+      </div>
+      <div id="supervisionStats" class="supervision-stats"></div>
+      <div id="supervisionInsights" class="supervision-insights"></div>
+    </section>
+    <section class="supervision-columns">
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 1</p><h2>Pendiente</h2></div><span id="supervisionPendingCount" class="pill">0</span></div>
+        <div id="supervisionPendingList" class="supervision-list"></div>
+      </section>
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 2</p><h2>En resolución</h2></div><span id="supervisionReviewCount" class="pill">0</span></div>
+        <div id="supervisionReviewList" class="supervision-list"></div>
+      </section>
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 3</p><h2>Procedimiento creado</h2></div><span id="supervisionDoneCount" class="pill">0</span></div>
+        <div id="supervisionDoneList" class="supervision-list"></div>
+      </section>
+    </section>
+  </section>
   <section class="knowledge-layout">
     <aside class="knowledge-form">
       <p class="eyebrow">Directivas internas</p><h2>Supervisión</h2>

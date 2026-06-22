@@ -153,7 +153,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningType','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -167,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchSafe();
   searchProcedures();
   renderDirectives();
+  renderSupervision();
   renderResources();
   renderLearning();
   renderKanban();
@@ -359,6 +360,7 @@ function setupTabs() {
     document.getElementById(btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'kanban') renderKanban();
     if (btn.dataset.tab === 'resources') renderResources();
+    if (btn.dataset.tab === 'supervision') renderSupervision();
     renderMetrics();
   }));
 }
@@ -437,6 +439,8 @@ function bindEvents() {
     if (!event.target.closest('.intake-search-wrap')) hideIntakeAutocomplete();
   });
   els.saveDirective.addEventListener('click', saveDirective);
+  els.supervisionOperatorFilter?.addEventListener('change', renderSupervision);
+  els.supervisionStatusFilter?.addEventListener('change', renderSupervision);
   ['learningSubscriber','learningFailure','learningQuestion','learningContext'].forEach(id => els[id].addEventListener('input', renderLearningSuggestion));
   els.saveLearning.addEventListener('click', saveLearning);
   els.exportLearning.addEventListener('click', exportLearningBackup);
@@ -500,6 +504,7 @@ function subscribeLearningCloud() {
       state.firebase.status = 'Base central conectada';
       migrateLocalLearningToCloud();
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     }, error => {
@@ -507,6 +512,7 @@ function subscribeLearningCloud() {
       state.firebase.loaded = false;
       state.firebase.status = 'Modo local: Firestore no permitio leer datos.';
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     });
@@ -1175,6 +1181,128 @@ function renderDirectives() {
   els.directiveList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.title)}</h3><p>${escapeHtml(row.text)}</p></div><span>${escapeHtml(row.source)}</span></article>`).join('');
 }
 
+function renderSupervision() {
+  if (!els.supervisionStats) return;
+  const rows = getLearningRows().slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  fillSupervisionFilters(rows);
+  const filtered = getFilteredSupervisionRows(rows);
+  const lanes = { pending: [], review: [], done: [] };
+  filtered.forEach(row => lanes[getSupervisionLane(row)].push(row));
+  renderSupervisionStats(rows, filtered, lanes);
+  renderSupervisionInsights(filtered);
+  renderSupervisionLane(els.supervisionPendingList, els.supervisionPendingCount, lanes.pending, 'Sin eventos pendientes.');
+  renderSupervisionLane(els.supervisionReviewList, els.supervisionReviewCount, lanes.review, 'Sin eventos en resolucion.');
+  renderSupervisionLane(els.supervisionDoneList, els.supervisionDoneCount, lanes.done, 'Todavia no hay procedimientos creados.');
+}
+
+function fillSupervisionFilters(rows) {
+  if (!els.supervisionOperatorFilter) return;
+  const current = els.supervisionOperatorFilter.value || 'Todos los operadores';
+  const operators = ['Todos los operadores', ...new Set(rows.map(row => row.operator || 'Sin operador').filter(Boolean))].sort((a, b) => a === 'Todos los operadores' ? -1 : b === 'Todos los operadores' ? 1 : a.localeCompare(b));
+  els.supervisionOperatorFilter.innerHTML = operators.map(operator => `<option>${escapeHtml(operator)}</option>`).join('');
+  els.supervisionOperatorFilter.value = operators.includes(current) ? current : 'Todos los operadores';
+}
+
+function getFilteredSupervisionRows(rows) {
+  const operator = els.supervisionOperatorFilter?.value || 'Todos los operadores';
+  const status = els.supervisionStatusFilter?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const operatorMatch = operator === 'Todos los operadores' || (row.operator || 'Sin operador') === operator;
+    const statusMatch = status === 'Todos los estados' || (row.status || 'Sin estado') === status;
+    return operatorMatch && statusMatch;
+  });
+}
+
+function getSupervisionLane(row) {
+  const status = row.status || '';
+  const resolution = row.resolution || {};
+  if (status === 'Resuelto y cargado' || status === 'Convertir en procedimiento' || resolution.procedure) return 'done';
+  if (status === 'Validado por supervisor') return 'review';
+  return 'pending';
+}
+
+function renderSupervisionStats(allRows, filteredRows, lanes) {
+  const resolved = lanes.done.length;
+  const pending = lanes.pending.length;
+  const review = lanes.review.length;
+  const operators = new Set(filteredRows.map(row => row.operator || 'Sin operador'));
+  const resolutionRate = filteredRows.length ? Math.round((resolved / filteredRows.length) * 100) : 0;
+  els.supervisionStats.innerHTML = [
+    ['Eventos filtrados', filteredRows.length],
+    ['Pendientes', pending],
+    ['En resolucion', review],
+    ['Procedimientos creados', resolved],
+    ['Operadores', operators.size],
+    ['Avance', `${resolutionRate}%`]
+  ].map(([label, value]) => `<div><b>${escapeHtml(String(value))}</b><span>${escapeHtml(label)}</span></div>`).join('');
+  if (!allRows.length) {
+    els.supervisionStats.innerHTML = '<div><b>0</b><span>Eventos cargados</span></div><div><b>0%</b><span>Avance</span></div>';
+  }
+}
+
+function renderSupervisionInsights(rows) {
+  if (!rows.length) {
+    els.supervisionInsights.innerHTML = '<p>Cuando los operadores carguen eventos en espera, supervision va a ver patrones, operadores con dudas y temas que conviene convertir en procedimiento.</p>';
+    return;
+  }
+  const topFailures = countEntries(rows.map(row => row.failure || row.question || 'Sin falla'));
+  const topOperators = countEntries(rows.map(row => row.operator || 'Sin operador'));
+  const pendingRows = rows.filter(row => getSupervisionLane(row) !== 'done');
+  const topFailure = topFailures[0] || ['Sin dato', 0];
+  const topOperator = topOperators[0] || ['Sin dato', 0];
+  const resolvedCount = rows.length - pendingRows.length;
+  const tips = [
+    `Tema mas repetido: ${topFailure[0]} (${topFailure[1]} casos).`,
+    `Operador con mas cargas en el filtro: ${topOperator[0]} (${topOperator[1]} casos).`,
+    `Casos sin cierre supervisor: ${pendingRows.length}. Casos ya resueltos: ${resolvedCount}.`
+  ];
+  if (pendingRows.length >= 5) tips.push('Conviene separar 20 minutos de revision por turno para bajar la bandeja pendiente.');
+  if (topFailure[1] >= 3) tips.push('Ese tema ya merece un criterio estandar o una capacitacion corta.');
+  els.supervisionInsights.innerHTML = `<h3>Sugerencias inteligentes</h3>${tips.map(tip => `<p>${escapeHtml(tip)}</p>`).join('')}`;
+}
+
+function renderSupervisionLane(container, countEl, rows, emptyText) {
+  if (!container) return;
+  if (countEl) countEl.textContent = rows.length;
+  if (!rows.length) {
+    container.innerHTML = `<div class="empty-state compact-empty"><h2>${escapeHtml(emptyText)}</h2></div>`;
+    return;
+  }
+  container.innerHTML = rows.map(row => renderSupervisionCard(row)).join('');
+  container.querySelectorAll('[data-supervision-open]').forEach(btn => {
+    btn.addEventListener('click', () => openLearningResolution(btn.dataset.supervisionOpen));
+  });
+  container.querySelectorAll('[data-supervision-copy]').forEach(btn => {
+    btn.addEventListener('click', () => copyLearningSupervisorNote(btn.dataset.supervisionCopy, btn));
+  });
+  container.querySelectorAll('[data-supervision-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => addLearningToKanban(btn.dataset.supervisionKanban));
+  });
+}
+
+function renderSupervisionCard(row) {
+  const id = row.id || getLearningDocId(row);
+  const resolution = row.resolution || {};
+  const title = row.failure || row.question || 'Evento sin titulo';
+  const summary = row.context || row.question || 'Sin contexto cargado';
+  return `<article class="supervision-card">
+    <p class="eyebrow">${escapeHtml(row.status || 'Sin estado')} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
+    <h3>${escapeHtml(title)}</h3>
+    <p>${escapeHtml(summary.slice(0, 260))}${summary.length > 260 ? '...' : ''}</p>
+    <div class="supervision-meta">
+      <span>${escapeHtml(row.operator || 'Sin operador')}</span>
+      <span>${escapeHtml(row.shift || 'Sin turno')}</span>
+      <span>${escapeHtml(row.type || 'Evento en espera')}</span>
+    </div>
+    ${resolution.procedure ? `<p class="validated-procedure"><b>Criterio:</b> ${escapeHtml(resolution.procedure.slice(0, 180))}${resolution.procedure.length > 180 ? '...' : ''}</p>` : ''}
+    <div class="supervision-card-actions">
+      <button type="button" class="primary" data-supervision-open="${escapeHtml(id)}">${resolution.procedure ? 'Ajustar' : 'Resolver'}</button>
+      <button type="button" data-supervision-copy="${escapeHtml(id)}">Copiar nota</button>
+      <button type="button" data-supervision-kanban="${escapeHtml(id)}">Kanban</button>
+    </div>
+  </article>`;
+}
+
 async function saveLearning() {
   const question = els.learningQuestion.value.trim();
   const failure = els.learningFailure.value.trim();
@@ -1222,6 +1350,7 @@ async function saveLearning() {
   els.learningContext.value = '';
   renderLearningSuggestion();
   renderLearning();
+  renderSupervision();
   renderMetrics();
   renderLearningSavedState();
 }
@@ -1365,6 +1494,7 @@ async function saveLearningResolution() {
     await updateLearningRow(payload);
     els.learningResolveState.textContent = 'Resolución guardada. Este caso ya queda como referencia para futuras búsquedas.';
     renderLearning();
+    renderSupervision();
     renderMetrics();
   } catch (error) {
     console.error('No se pudo guardar resolución', error);
@@ -1535,6 +1665,7 @@ function importLearningBackup(event) {
       localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
       syncLearningRowsToCloud(incoming);
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     } catch {
