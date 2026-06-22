@@ -32,7 +32,7 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Vigilia Seguridad Soporte Operativo</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="manual">Manual</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="manual">Manual</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
 <section id="manual" class="view">
@@ -109,6 +109,20 @@
   </section>
 </section>
 <section id="call" class="view">
+  <section class="sector-menu" aria-label="Acciones rápidas Objetivo Fijo 911">
+    <div>
+      <p class="eyebrow">Menú 911</p>
+      <h2>Objetivo Fijo</h2>
+    </div>
+    <div class="sector-actions">
+      <button type="button" class="primary" data-sector-action="search" data-sector="911">Buscar consulta del cliente</button>
+      <button type="button" data-sector-action="doubt" data-sector="911">Dudas</button>
+      <button type="button" data-sector-action="suggestion" data-sector="911">Sugerencias</button>
+      <button type="button" data-sector-action="password" data-sector="911">Password</button>
+      <button type="button" data-sector-action="material" data-sector="911">Material de apoyo</button>
+      <button type="button" data-sector-action="kanban" data-sector="911">Seguimiento / Kanban</button>
+    </div>
+  </section>
   <section class="search-band">
     <div class="search-copy"><p class="eyebrow">Objetivo Fijo (911)</p><h2>Buscar la consulta del cliente</h2><p>Escribí como habla el cliente: teclado hace ruido, falla 2, batería, no puedo activar, DMSS no conecta.</p></div>
     <div class="search-box"><input id="searchInput" type="search" placeholder="Buscar síntoma, modelo, tecla, LED o app" autocomplete="off"><select id="systemFilter"></select></div>
@@ -170,6 +184,20 @@
   </section>
 </section>
 <section id="safe" class="view">
+  <section class="sector-menu" aria-label="Acciones rápidas SAFE">
+    <div>
+      <p class="eyebrow">Menú SAFE</p>
+      <h2>Objetivos Móviles</h2>
+    </div>
+    <div class="sector-actions">
+      <button type="button" class="primary" data-sector-action="search" data-sector="SAFE">Buscar consulta del cliente</button>
+      <button type="button" data-sector-action="doubt" data-sector="SAFE">Dudas</button>
+      <button type="button" data-sector-action="suggestion" data-sector="SAFE">Sugerencias</button>
+      <button type="button" data-sector-action="password" data-sector="SAFE">Password</button>
+      <button type="button" data-sector-action="material" data-sector="SAFE">Material de apoyo</button>
+      <button type="button" data-sector-action="kanban" data-sector="SAFE">Seguimiento / Kanban</button>
+    </div>
+  </section>
   <section class="search-band procedure-band">
     <div class="search-copy"><p class="eyebrow">Objetivos Móviles</p><h2>SAFE / Monitoreo vehicular</h2><p>Buscá la novedad del móvil o unidad. La guía separa si se resuelve desde monitoreo, si se agenda seguimiento o si se deriva.</p></div>
     <div class="search-box"><input id="safeSearch" type="search" placeholder="Buscar camión no reporta, pánico, desvío, parada, GPS" autocomplete="off"><select id="safeCategory"><option>Todos los eventos SAFE</option><option>Comunicación</option><option>Emergencia</option><option>Ruta</option><option>Soporte</option></select></div>
@@ -182,6 +210,36 @@
     </aside>
     <section id="safeDetail" class="procedure-detail">
       <div class="empty-state"><h2>Seleccioná un evento SAFE</h2><p>La guía mostrará preguntas, acción inicial y registro sugerido.</p></div>
+    </section>
+  </section>
+</section>
+<section id="resources" class="view">
+  <section class="knowledge-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Recursos internos</p><h2>Accesos y material de apoyo</h2>
+      <p class="helper-copy">Registrá referencias de apps, usuarios, passwords autorizados, manuales, PDFs, links de Drive o videos explicativos para que no queden perdidos en WhatsApp.</p>
+      <div class="security-note"><b>Importante:</b> no cargues claves reales sin autorización y reglas de permisos. Para operadores de nivel bajo, el dato sensible se muestra oculto.</div>
+      <label class="field-label" for="resourceType">Tipo</label>
+      <select id="resourceType"><option>Acceso / password</option><option>Manual PDF</option><option>Video explicativo</option><option>Link de apoyo</option><option>App / herramienta</option><option>Procedimiento adjunto</option></select>
+      <label class="field-label" for="resourceSector">Sector</label>
+      <select id="resourceSector"><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Todos los sectores</option><option>Supervisión</option><option>Técnica</option></select>
+      <label class="field-label" for="resourceTitle">Título</label>
+      <input id="resourceTitle" placeholder="Ej: Usuario DMSS, manual A2K4, video falla comunicación">
+      <label class="field-label" for="resourceSystem">App, sistema o referencia</label>
+      <input id="resourceSystem" placeholder="Ej: DMSS, Hik-Connect, Bykom, Drive, WhatsApp">
+      <label class="field-label" for="resourceUser">Usuario / cuenta / ubicación</label>
+      <input id="resourceUser" placeholder="Ej: usuario app, mail, carpeta Drive o responsable">
+      <label class="field-label" for="resourceSecret">Password / dato sensible</label>
+      <input id="resourceSecret" type="password" placeholder="Opcional. Cargar solo si está autorizado.">
+      <label class="field-label" for="resourceLink">Link de archivo, video o manual</label>
+      <input id="resourceLink" placeholder="https://...">
+      <label class="field-label" for="resourceNotes">Notas de uso</label>
+      <textarea id="resourceNotes" placeholder="Cuándo se usa, quién lo autorizó, vencimiento, advertencias o procedimiento relacionado."></textarea>
+      <button id="saveResource" class="primary" type="button">Guardar recurso</button>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Biblioteca operativa</p><h2>Recursos guardados</h2></div><div class="actions"><select id="resourceFilter"><option>Todos los recursos</option><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Acceso / password</option><option>Material de apoyo</option></select><span id="resourceCount" class="pill">0</span></div></div>
+      <div id="resourceList" class="knowledge-list"></div>
     </section>
   </section>
 </section>
@@ -227,6 +285,8 @@
     <aside class="knowledge-form">
       <p class="eyebrow">Retroalimentación</p><h2>Eventos en espera / revisar</h2>
       <p class="helper-copy">Cargá cada evento irregular que no puedas cedular rápido. Queda guardado para consultar con supervisión y convertir la respuesta en procedimiento.</p>
+      <label class="field-label" for="learningType">Tipo de carga</label>
+      <select id="learningType"><option>Evento en espera</option><option>Duda operativa</option><option>Sugerencia de mejora</option><option>Procedimiento faltante</option><option>Capacitación necesaria</option></select>
       <label class="field-label" for="learningOperator">Operador</label>
       <input id="learningOperator" placeholder="Ej: Ismael">
       <label class="field-label" for="learningSubscriber">Abonado / objetivo</label>
@@ -283,7 +343,7 @@
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="kanban">Kanban</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Tipos de aprendizaje</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="kanban">Kanban</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>

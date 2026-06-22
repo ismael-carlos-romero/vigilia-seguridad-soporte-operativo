@@ -33,6 +33,7 @@ const LEARNING_KEY = 'vigiliaLearningV1';
 const KANBAN_KEY = 'vigiliaKanbanV1';
 const SESSION_KEY = 'vigiliaSessionV1';
 const MEDIA_KEY = 'vigiliaMediaV1';
+const RESOURCES_KEY = 'vigiliaResourcesV1';
 const kanbanColumns = [
   { id: 'por-hacer', label: 'Por hacer', hint: 'Tareas o eventos recién cargados' },
   { id: 'en-espera', label: 'En espera', hint: 'Falta dato, llamado, respuesta o validación' },
@@ -152,7 +153,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningType','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -166,6 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
   searchSafe();
   searchProcedures();
   renderDirectives();
+  renderResources();
   renderLearning();
   renderKanban();
   renderMetrics();
@@ -356,6 +358,7 @@ function setupTabs() {
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'kanban') renderKanban();
+    if (btn.dataset.tab === 'resources') renderResources();
     renderMetrics();
   }));
 }
@@ -443,6 +446,11 @@ function bindEvents() {
   els.copyLearningResolution?.addEventListener('click', copyLearningResolution);
   els.saveKanbanTask?.addEventListener('click', saveKanbanTask);
   els.paretoMode?.addEventListener('change', renderMetrics);
+  document.querySelectorAll('[data-sector-action]').forEach(btn => {
+    btn.addEventListener('click', () => handleSectorAction(btn.dataset.sector, btn.dataset.sectorAction));
+  });
+  els.saveResource?.addEventListener('click', saveResource);
+  els.resourceFilter?.addEventListener('change', renderResources);
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -958,6 +966,183 @@ function applyIntakeToPending() {
   showPendingForm();
 }
 
+function goToTab(tabId) {
+  document.querySelector(`[data-tab="${tabId}"]`)?.click();
+}
+
+function getSectorContext(sector) {
+  if (sector === 'SAFE') {
+    const item = state.selectedSafe || state.safeResults[0];
+    return {
+      tab: 'safe',
+      sectorLabel: 'SAFE / Objetivos Móviles',
+      title: item?.event || els.safeSearch.value || 'Consulta SAFE sin clasificar',
+      query: els.safeSearch.value || item?.event || '',
+      context: item ? `Evento SAFE seleccionado: ${item.event}\nCategoría: ${item.category}\nDisparador: ${item.trigger}\nAcción sugerida: ${item.action}` : 'Consulta SAFE pendiente de clasificar.',
+      kanbanCategory: 'SAFE'
+    };
+  }
+  const item = state.selected || state.results[0];
+  return {
+    tab: 'call',
+    sectorLabel: 'Objetivo Fijo 911',
+    title: item?.issue || els.searchInput.value || 'Consulta 911 sin clasificar',
+    query: els.searchInput.value || item?.issue || '',
+    context: item ? `Consulta 911 seleccionada: ${item.issue}\nSistema: ${item.system}\nGuía inicial: ${item.command || item.action || 'Sin guía cargada'}` : 'Consulta 911 pendiente de clasificar.',
+    kanbanCategory: 'Evento 911'
+  };
+}
+
+function handleSectorAction(sector, action) {
+  const info = getSectorContext(sector);
+  if (action === 'search') {
+    goToTab(info.tab);
+    const target = sector === 'SAFE' ? els.safeSearch : els.searchInput;
+    target?.focus();
+    return;
+  }
+  if (action === 'kanban') {
+    prefillKanbanFromSector(info);
+    return;
+  }
+  if (action === 'password' || action === 'material') {
+    prefillResourceFromSector(info, action);
+    return;
+  }
+  prefillLearningFromSector(info, action);
+}
+
+function prefillLearningFromSector(info, action) {
+  const session = getSession();
+  goToTab('learning');
+  if (els.learningType) els.learningType.value = action === 'suggestion' ? 'Sugerencia de mejora' : 'Duda operativa';
+  els.learningOperator.value = session.operator || els.learningOperator.value || '';
+  els.learningSubscriber.value = els.learningSubscriber.value || 'Sin abonado cargado';
+  els.learningFailure.value = action === 'suggestion'
+    ? `Mejora sugerida - ${info.sectorLabel}`
+    : info.title;
+  els.learningQuestion.value = action === 'suggestion'
+    ? 'Qué mejora, procedimiento o dato debería agregarse al sistema'
+    : `Qué criterio falta validar sobre ${info.title}`;
+  els.learningContext.value = `Sector: ${info.sectorLabel}\nConsulta de base: ${info.query || 'Sin búsqueda cargada'}\n\n${info.context}\n\nDescargo del operador: `;
+  els.learningStatus.value = 'Pendiente de validar';
+  renderLearningSuggestion();
+  els.learningContext.focus();
+}
+
+function prefillKanbanFromSector(info) {
+  const session = getSession();
+  goToTab('kanban');
+  els.kanbanTitle.value = info.title;
+  els.kanbanSubscriber.value = els.kanbanSubscriber.value || 'Sin abonado cargado';
+  els.kanbanCategory.value = info.kanbanCategory;
+  els.kanbanPriority.value = info.sectorLabel.includes('SAFE') ? 'Media' : 'Alta';
+  els.kanbanDescription.value = `Sector: ${info.sectorLabel}\nOperador: ${session.operator || 'Sin operador'}\nTurno: ${session.shift || 'Sin turno'}\n\n${info.context}\n\nPróximo paso: `;
+  els.kanbanDescription.focus();
+}
+
+function prefillResourceFromSector(info, action) {
+  goToTab('resources');
+  els.resourceType.value = action === 'password' ? 'Acceso / password' : 'Manual PDF';
+  els.resourceSector.value = info.sectorLabel.includes('SAFE') ? 'SAFE / Objetivos Móviles' : 'Objetivo Fijo 911';
+  els.resourceTitle.value = action === 'password'
+    ? `Acceso pendiente - ${info.sectorLabel}`
+    : `Material de apoyo - ${info.sectorLabel}`;
+  els.resourceSystem.value = action === 'password' ? 'App / herramienta a identificar' : 'Manual, PDF, Drive o video';
+  els.resourceUser.value = '';
+  els.resourceSecret.value = '';
+  els.resourceLink.value = '';
+  els.resourceNotes.value = `Sector: ${info.sectorLabel}\nConsulta de base: ${info.query || 'Sin búsqueda cargada'}\n\n${info.context}\n\nDetalle a cargar: `;
+  els.resourceNotes.focus();
+}
+
+function saveResource() {
+  const title = els.resourceTitle.value.trim();
+  const type = els.resourceType.value;
+  const sector = els.resourceSector.value;
+  const notes = els.resourceNotes.value.trim();
+  if (!title || !notes) {
+    alert('Cargá título y notas de uso para guardar el recurso.');
+    return;
+  }
+  const session = getSession();
+  const rows = getStoredRows(RESOURCES_KEY);
+  rows.push({
+    date: new Date().toISOString(),
+    type,
+    sector,
+    title,
+    system: els.resourceSystem.value.trim(),
+    user: els.resourceUser.value.trim(),
+    secret: els.resourceSecret.value,
+    link: els.resourceLink.value.trim(),
+    notes,
+    operator: session.operator || 'Sin operador',
+    level: Number(session.level || 1)
+  });
+  localStorage.setItem(RESOURCES_KEY, JSON.stringify(rows));
+  els.resourceTitle.value = '';
+  els.resourceSystem.value = '';
+  els.resourceUser.value = '';
+  els.resourceSecret.value = '';
+  els.resourceLink.value = '';
+  els.resourceNotes.value = '';
+  renderResources();
+}
+
+function renderResources() {
+  if (!els.resourceList) return;
+  const filter = els.resourceFilter?.value || 'Todos los recursos';
+  const rows = getStoredRows(RESOURCES_KEY)
+    .slice()
+    .reverse()
+    .filter(row => {
+      if (filter === 'Todos los recursos') return true;
+      if (filter === 'Material de apoyo') return row.type !== 'Acceso / password';
+      return row.sector === filter || row.type === filter;
+    });
+  els.resourceCount.textContent = `${rows.length}`;
+  if (!rows.length) {
+    els.resourceList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin recursos guardados</h2><p>Usá Password o Material de apoyo desde 911/SAFE para cargar el primer recurso del sector.</p></div>';
+    return;
+  }
+  els.resourceList.innerHTML = rows.map(renderResourceItem).join('');
+  els.resourceList.querySelectorAll('[data-copy-secret]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = rows[Number(btn.dataset.copySecret)];
+      if (!row?.secret) return;
+      try {
+        await navigator.clipboard.writeText(row.secret);
+        btn.textContent = 'Copiado';
+      } catch {
+        alert('No se pudo copiar automáticamente. Revisá permisos del navegador.');
+      }
+    });
+  });
+}
+
+function renderResourceItem(row, index) {
+  const canSeeSecret = currentLevel() >= 8;
+  const secretBlock = row.secret
+    ? canSeeSecret
+      ? `<div class="resource-secret"><b>Password / dato sensible</b><code>${escapeHtml(row.secret)}</code><button type="button" data-copy-secret="${index}">Copiar</button></div>`
+      : '<div class="resource-secret locked"><b>Password / dato sensible</b><span>Oculto. Requiere nivel 8 o superior.</span></div>'
+    : '';
+  const link = row.link ? `<a class="video-link" href="${escapeHtml(row.link)}" target="_blank" rel="noopener">Abrir recurso</a>` : '';
+  return `<article class="knowledge-item resource-item">
+    <div>
+      <p class="eyebrow">${escapeHtml(row.type)} · ${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p>
+      <h3>${escapeHtml(row.title)}</h3>
+      <p><b>Sistema:</b> ${escapeHtml(row.system || 'Sin sistema cargado')}</p>
+      <p><b>Usuario / ubicación:</b> ${escapeHtml(row.user || 'Sin referencia cargada')}</p>
+      ${secretBlock}
+      ${link}
+      <p>${escapeHtml(row.notes)}</p>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sin operador')}</span>
+  </article>`;
+}
+
 function saveDirective() {
   const title = els.directiveTitle.value.trim();
   const text = els.directiveText.value.trim();
@@ -1004,6 +1189,7 @@ async function saveLearning() {
   const rows = getStoredRows(LEARNING_KEY);
   const record = {
     date: new Date().toISOString(),
+    type: els.learningType?.value || 'Evento en espera',
     operator: els.learningOperator.value.trim() || session.operator || 'Sin operador cargado',
     operatorUid: session.uid || state.firebase.currentUser?.uid || '',
     operatorEmail: session.email || state.firebase.currentUser?.email || '',
@@ -1067,7 +1253,7 @@ function renderLearningItem(row) {
   const resolved = ['Validado por supervisor', 'Convertir en procedimiento', 'Resuelto y cargado'].includes(row.status) || Boolean(resolution.procedure);
   return `<article class="knowledge-item learning-item ${resolved ? 'resolved' : ''}">
     <div class="knowledge-main">
-      <p class="eyebrow">${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
+      <p class="eyebrow">${escapeHtml(row.type || 'Evento en espera')} · ${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
       <h3>${escapeHtml(row.failure || row.question)}</h3>
       <p>${escapeHtml(row.question)}</p>
       <p>${escapeHtml(row.context)}</p>
@@ -1105,6 +1291,7 @@ function openLearningResolution(id) {
   state.selectedLearningId = id;
   els.learningDialogTitle.textContent = row.failure || row.question || 'Evento en espera';
   els.learningDialogContext.innerHTML = `<p><b>Abonado / objetivo:</b> ${escapeHtml(row.subscriber || 'Sin abonado')}</p>
+    <p><b>Tipo de carga:</b> ${escapeHtml(row.type || 'Evento en espera')}</p>
     <p><b>Duda:</b> ${escapeHtml(row.question || 'Sin duda cargada')}</p>
     <p><b>Contexto:</b> ${escapeHtml(row.context || 'Sin contexto cargado')}</p>
     <p><b>Sugerencia actual:</b> ${escapeHtml(row.suggestion || 'Sin sugerencia')}</p>
@@ -1243,6 +1430,7 @@ async function copyPlainText(text) {
 function makeSupervisorEmailNote(row) {
   const resolution = row.resolution || {};
   const subscriber = row.subscriber || 'Sin abonado/objetivo cargado';
+  const type = row.type || 'Evento en espera';
   const failure = row.failure || row.question || 'Evento sin titulo';
   const question = row.question || 'Sin duda concreta cargada';
   const context = row.context || 'Sin contexto cargado';
@@ -1265,6 +1453,7 @@ function makeSupervisorEmailNote(row) {
     'Solicito confirmacion para poder cedularlo correctamente en Bykom y, si corresponde, dejar el criterio como procedimiento reutilizable para los operadores.',
     '',
     `Abonado / objetivo: ${subscriber}`,
+    `Tipo de carga: ${type}`,
     `Falla / evento: ${failure}`,
     `Estado actual: ${status}`,
     `Operador: ${operator}`,
@@ -1288,6 +1477,7 @@ function makeSupervisorEmailNote(row) {
 
 function buildSupervisorSummaryFromRow(row) {
   const parts = [
+    `Tipo de carga: ${row.type || 'Evento en espera'}.`,
     `Abonado ${row.subscriber || 'sin abonado'}.`,
     `Falla/evento: ${row.failure || 'sin falla cargada'}.`,
     `Duda: ${row.question || 'sin duda concreta'}.`,
@@ -1409,10 +1599,11 @@ function applyLearningSuggestion(source, id) {
 
 function makeSupervisorSummary() {
   const subscriber = els.learningSubscriber?.value.trim() || 'sin abonado';
+  const type = els.learningType?.value || 'Evento en espera';
   const failure = els.learningFailure?.value.trim() || 'sin falla especificada';
   const question = els.learningQuestion?.value.trim() || failure;
   const context = els.learningContext?.value.trim() || 'sin contexto adicional';
-  return `Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
+  return `Tipo de carga: ${type}. Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
 }
 
 function getStoredRows(key) {
@@ -1497,9 +1688,12 @@ function renderSafeDetail() {
   document.getElementById('copySafeNote').addEventListener('click', copySafeNote);
   document.getElementById('safeLearning').addEventListener('click', () => {
     document.querySelector('[data-tab="learning"]').click();
+    if (els.learningType) els.learningType.value = 'Duda operativa';
+    els.learningFailure.value = item.event;
     els.learningQuestion.value = item.event;
     els.learningContext.value = `Duda o mejora sobre SAFE: ${item.trigger}`;
     els.learningStatus.value = 'Pendiente de validar';
+    renderLearningSuggestion();
   });
 }
 
@@ -1704,9 +1898,14 @@ function renderProcedureDetail() {
   els.procedureDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">${escapeHtml(item.category)} · ${escapeHtml(item.code)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Chequeos del operador', procedureChecks(item.checks))}${procedureBlock('Acción recomendada', escapeHtml(item.action))}${procedureBlock('Oportunidad de automatización', escapeHtml(item.automation))}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota operativa sugerida</h2><textarea id="procedureNote">${escapeHtml(makeProcedureNote(item))}</textarea><div class="actions"><button class="primary" id="copyProcedureNote">Copiar nota</button><button id="procedurePending">Registrar duda operativa</button></div></div>`;
   document.getElementById('copyProcedureNote').addEventListener('click', copyProcedureNote);
   document.getElementById('procedurePending').addEventListener('click', () => {
-    document.querySelector('[data-tab="call"]').click();
-    els.searchInput.value = item.event;
-    showPendingForm();
+    goToTab('learning');
+    if (els.learningType) els.learningType.value = 'Duda operativa';
+    els.learningFailure.value = item.event;
+    els.learningQuestion.value = `Qué criterio falta validar sobre ${item.event}`;
+    els.learningContext.value = `Procedimiento operativo: ${item.event}\nCódigo: ${item.code}\nDisparador: ${item.trigger}\nAcción cargada: ${item.action}\n\nDuda del operador: `;
+    els.learningStatus.value = 'Pendiente de validar';
+    renderLearningSuggestion();
+    els.learningContext.focus();
   });
 }
 
@@ -1908,7 +2107,7 @@ function renderMetrics() {
   renderMetricInsights(paretoEntries, rows, learning, kanban);
   renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]), false);
   renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift)]), false);
-  renderBars(els.learningChart, countEntries(learning.map(r => r.failure || r.question)), true);
+  renderBars(els.learningChart, countEntries(learning.map(r => r.type || r.failure || r.question)), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
   renderOperatorSummary(rows, learning, kanban, session);
   renderCaseRows(rows);
@@ -1916,6 +2115,7 @@ function renderMetrics() {
 
 function getParetoEntries(rows, learning, kanban) {
   const mode = els.paretoMode?.value || 'cause';
+  if (mode === 'learningType') return countEntries(learning.map(r => r.type || 'Evento en espera'));
   if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column)]);
   if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]);
   if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority)]);
