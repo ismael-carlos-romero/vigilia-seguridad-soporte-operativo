@@ -153,7 +153,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningFilterCategory','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -442,6 +442,7 @@ function bindEvents() {
   els.supervisionOperatorFilter?.addEventListener('change', renderSupervision);
   els.supervisionStatusFilter?.addEventListener('change', renderSupervision);
   ['learningSubscriber','learningFailure','learningQuestion','learningContext'].forEach(id => els[id].addEventListener('input', renderLearningSuggestion));
+  ['learningFilterCategory','learningFilterPriority','learningFilterStatus','learningSort'].forEach(id => els[id]?.addEventListener('change', renderLearning));
   els.saveLearning.addEventListener('click', saveLearning);
   els.exportLearning.addEventListener('click', exportLearningBackup);
   els.importLearning.addEventListener('change', importLearningBackup);
@@ -1188,6 +1189,7 @@ function renderSupervision() {
   const filtered = getFilteredSupervisionRows(rows);
   const lanes = { pending: [], review: [], done: [] };
   filtered.forEach(row => lanes[getSupervisionLane(row)].push(row));
+  Object.values(lanes).forEach(lane => lane.sort(sortLearningRows));
   renderSupervisionStats(rows, filtered, lanes);
   renderSupervisionInsights(filtered);
   renderSupervisionLane(els.supervisionPendingList, els.supervisionPendingCount, lanes.pending, 'Sin eventos pendientes.');
@@ -1285,9 +1287,12 @@ function renderSupervisionCard(row) {
   const resolution = row.resolution || {};
   const title = row.failure || row.question || 'Evento sin titulo';
   const summary = row.context || row.question || 'Sin contexto cargado';
+  const category = getLearningCategory(row);
+  const priority = getLearningPriority(row);
   return `<article class="supervision-card">
     <p class="eyebrow">${escapeHtml(row.status || 'Sin estado')} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
     <h3>${escapeHtml(title)}</h3>
+    <div class="learning-tags"><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span></div>
     <p>${escapeHtml(summary.slice(0, 260))}${summary.length > 260 ? '...' : ''}</p>
     <div class="supervision-meta">
       <span>${escapeHtml(row.operator || 'Sin operador')}</span>
@@ -1318,6 +1323,8 @@ async function saveLearning() {
   const record = {
     date: new Date().toISOString(),
     type: els.learningType?.value || 'Evento en espera',
+    category: els.learningCategory?.value || inferLearningCategory({ failure, question, context }),
+    priority: els.learningPriority?.value || inferLearningPriority({ failure, question, context }),
     operator: els.learningOperator.value.trim() || session.operator || 'Sin operador cargado',
     operatorUid: session.uid || state.firebase.currentUser?.uid || '',
     operatorEmail: session.email || state.firebase.currentUser?.email || '',
@@ -1356,10 +1363,17 @@ async function saveLearning() {
 }
 
 function renderLearning() {
-  const rows = getLearningRows().slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-  els.learningCount.textContent = `${rows.length} eventos`;
-  if (!rows.length) {
+  const allRows = getLearningRows().slice();
+  fillLearningFilters(allRows);
+  const rows = getFilteredLearningRows(allRows).sort(sortLearningRows);
+  els.learningCount.textContent = `${rows.length} / ${allRows.length} eventos`;
+  if (!allRows.length) {
     els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin eventos en espera</h2><p>La próxima consulta sin resolver puede convertirse en una solución permanente para todos.</p></div>';
+    renderLearningSavedState();
+    return;
+  }
+  if (!rows.length) {
+    els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin eventos con ese filtro</h2><p>Probá cambiar categoría, prioridad o estado para ampliar la vista.</p></div>';
     renderLearningSavedState();
     return;
   }
@@ -1376,14 +1390,57 @@ function renderLearning() {
   renderLearningSavedState();
 }
 
+function fillLearningFilters(rows) {
+  if (!els.learningFilterCategory) return;
+  const current = els.learningFilterCategory.value || 'Todas las categorías';
+  const categories = ['Todas las categorías', ...new Set(rows.map(row => getLearningCategory(row)).filter(Boolean))].sort((a, b) => a === 'Todas las categorías' ? -1 : b === 'Todas las categorías' ? 1 : a.localeCompare(b));
+  els.learningFilterCategory.innerHTML = categories.map(category => `<option>${escapeHtml(category)}</option>`).join('');
+  els.learningFilterCategory.value = categories.includes(current) ? current : 'Todas las categorías';
+}
+
+function getFilteredLearningRows(rows) {
+  const category = els.learningFilterCategory?.value || 'Todas las categorías';
+  const priority = els.learningFilterPriority?.value || 'Todas las prioridades';
+  const status = els.learningFilterStatus?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const categoryMatch = category === 'Todas las categorías' || getLearningCategory(row) === category;
+    const priorityMatch = priority === 'Todas las prioridades' || getLearningPriority(row) === priority;
+    const statusMatch = status === 'Todos los estados' || (row.status || 'Sin estado') === status;
+    return categoryMatch && priorityMatch && statusMatch;
+  });
+}
+
+function sortLearningRows(a, b) {
+  const mode = els.learningSort?.value || 'Prioridad primero';
+  if (mode === 'Más recientes') return String(b.date || '').localeCompare(String(a.date || ''));
+  if (mode === 'Categoría') return getLearningCategory(a).localeCompare(getLearningCategory(b)) || priorityWeight(b) - priorityWeight(a);
+  if (mode === 'Estado') return String(a.status || '').localeCompare(String(b.status || '')) || priorityWeight(b) - priorityWeight(a);
+  return priorityWeight(b) - priorityWeight(a) || String(b.date || '').localeCompare(String(a.date || ''));
+}
+
+function getLearningCategory(row) {
+  return row.category || row.resolution?.category || inferLearningCategory(row) || 'Sin categoría';
+}
+
+function getLearningPriority(row) {
+  return row.priority || inferLearningPriority(row) || 'Media';
+}
+
+function priorityWeight(row) {
+  return { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 }[getLearningPriority(row)] || 2;
+}
+
 function renderLearningItem(row) {
   const id = row.id || getLearningDocId(row);
   const resolution = row.resolution || {};
   const resolved = ['Validado por supervisor', 'Convertir en procedimiento', 'Resuelto y cargado'].includes(row.status) || Boolean(resolution.procedure);
+  const category = getLearningCategory(row);
+  const priority = getLearningPriority(row);
   return `<article class="knowledge-item learning-item ${resolved ? 'resolved' : ''}">
     <div class="knowledge-main">
       <p class="eyebrow">${escapeHtml(row.type || 'Evento en espera')} · ${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
       <h3>${escapeHtml(row.failure || row.question)}</h3>
+      <div class="learning-tags"><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span></div>
       <p>${escapeHtml(row.question)}</p>
       <p>${escapeHtml(row.context)}</p>
       <p><b>Sugerencia:</b> ${escapeHtml(row.suggestion || 'Sin solución cargada')}</p>
@@ -1440,12 +1497,22 @@ function openLearningResolution(id) {
 
 function inferLearningCategory(row) {
   const text = normalize([row.subscriber, row.failure, row.question, row.context, row.suggestion].join(' '));
+  if (text.includes('safe') || text.includes('vehicular') || text.includes('camion') || text.includes('movil') || text.includes('no reporta')) return 'SAFE / Vehicular';
   if (text.includes('comunic')) return 'Falla de comunicación';
   if (text.includes('tamper')) return 'Tamper / sabotaje';
   if (text.includes('zona')) return 'Evento de zona / intrusión';
   if (text.includes('servic') || text.includes('tecnic')) return 'Servicio técnico';
   if (text.includes('whatsapp') || text.includes('llamad')) return 'Contacto con cliente';
+  if (text.includes('baja') || text.includes('factura') || text.includes('cobran')) return 'Administración';
   return 'Caso particular a validar';
+}
+
+function inferLearningPriority(row) {
+  const text = normalize([row.subscriber, row.failure, row.question, row.context, row.suggestion].join(' '));
+  if (text.includes('panico') || text.includes('asalto') || text.includes('robo') || text.includes('fuego') || text.includes('medica') || text.includes('emergencia') || text.includes('acuda')) return 'Crítica';
+  if (text.includes('reiterad') || text.includes('no responde') || text.includes('sin monitoreo') || text.includes('baja') || text.includes('reclamo') || text.includes('service') || text.includes('servis') || text.includes('tecnico')) return 'Alta';
+  if (text.includes('sugerencia') || text.includes('capacitacion')) return 'Baja';
+  return 'Media';
 }
 
 function buildLearningKeywords(row) {
@@ -1731,10 +1798,12 @@ function applyLearningSuggestion(source, id) {
 function makeSupervisorSummary() {
   const subscriber = els.learningSubscriber?.value.trim() || 'sin abonado';
   const type = els.learningType?.value || 'Evento en espera';
+  const category = els.learningCategory?.value || 'Sin categoría';
+  const priority = els.learningPriority?.value || 'Media';
   const failure = els.learningFailure?.value.trim() || 'sin falla especificada';
   const question = els.learningQuestion?.value.trim() || failure;
   const context = els.learningContext?.value.trim() || 'sin contexto adicional';
-  return `Tipo de carga: ${type}. Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
+  return `Tipo de carga: ${type}. Categoría: ${category}. Prioridad: ${priority}. Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
 }
 
 function getStoredRows(key) {

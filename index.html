@@ -324,6 +324,10 @@
       <p class="helper-copy">Cargá cada evento irregular que no puedas cedular rápido. Queda guardado para consultar con supervisión y convertir la respuesta en procedimiento.</p>
       <label class="field-label" for="learningType">Tipo de carga</label>
       <select id="learningType"><option>Evento en espera</option><option>Duda operativa</option><option>Sugerencia de mejora</option><option>Procedimiento faltante</option><option>Capacitación necesaria</option></select>
+      <label class="field-label" for="learningCategory">Categoría</label>
+      <select id="learningCategory"><option>Evento 911</option><option>SAFE / Vehicular</option><option>Falla técnica</option><option>Comunicación</option><option>Servicio técnico</option><option>Cliente / reclamo</option><option>Administración</option><option>Directiva confusa</option><option>Capacitación</option><option>Otro</option></select>
+      <label class="field-label" for="learningPriority">Prioridad</label>
+      <select id="learningPriority"><option>Media</option><option>Alta</option><option>Crítica</option><option>Baja</option></select>
       <label class="field-label" for="learningOperator">Operador</label>
       <input id="learningOperator" placeholder="Ej: Ismael">
       <label class="field-label" for="learningSubscriber">Abonado / objetivo</label>
@@ -346,6 +350,12 @@
     </aside>
     <section class="knowledge-list-panel">
       <div class="panel-head"><div><p class="eyebrow">Mejora continua</p><h2>Eventos guardados</h2></div><span id="learningCount" class="pill">0</span></div>
+      <div class="learning-toolbar">
+        <select id="learningFilterCategory" aria-label="Filtrar por categoría"><option>Todas las categorías</option></select>
+        <select id="learningFilterPriority" aria-label="Filtrar por prioridad"><option>Todas las prioridades</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select>
+        <select id="learningFilterStatus" aria-label="Filtrar por estado"><option>Todos los estados</option><option>En espera</option><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
+        <select id="learningSort" aria-label="Ordenar eventos"><option>Prioridad primero</option><option>Más recientes</option><option>Categoría</option><option>Estado</option></select>
+      </div>
       <div id="learningList" class="knowledge-list"></div>
     </section>
   </section>
