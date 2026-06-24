@@ -27,7 +27,6 @@ Ejemplo para administrador:
   "level": 10,
   "sector": "Monitoreo 911",
   "shift": "Noche",
-  "station": "Estacion 1",
   "active": true
 }
 ```
@@ -77,22 +76,6 @@ service cloud.firestore {
     }
 
     match /eventos_en_espera/{eventId} {
-      allow create: if activeUser()
-        && request.resource.data.operatorUid == request.auth.uid;
-
-      allow read: if activeUser()
-        && (resource.data.operatorUid == request.auth.uid || supervisor());
-
-      allow update: if activeUser()
-        && (
-          resource.data.operatorUid == request.auth.uid
-          || supervisor()
-        );
-
-      allow delete: if supervisor();
-    }
-
-    match /kanban_tareas/{taskId} {
       allow create: if activeUser()
         && request.resource.data.operatorUid == request.auth.uid;
 
