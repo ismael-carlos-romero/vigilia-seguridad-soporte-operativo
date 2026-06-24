@@ -11,17 +11,22 @@ const state = {
   intakeSuggestIndex: 0,
   intakeRouteTimer: null,
   lastIntakeRouteKey: '',
+  selectedResourceFile: null,
   firebase: {
     enabled: false,
     loaded: false,
     db: null,
     auth: null,
+    storage: null,
     currentUser: null,
     userProfile: null,
     learning: [],
     kanban: [],
+    resources: [],
+    resourcesLoaded: false,
     unsubscribeLearning: null,
     unsubscribeKanban: null,
+    unsubscribeResources: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -153,7 +158,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningFilterCategory','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningFilterCategory','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -183,8 +188,11 @@ function setupSession() {
         localStorage.removeItem(SESSION_KEY);
         if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
         if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
+        if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
         state.firebase.learning = [];
         state.firebase.kanban = [];
+        state.firebase.resources = [];
+        state.firebase.resourcesLoaded = false;
         state.firebase.loaded = false;
         document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
@@ -212,6 +220,7 @@ function setupSession() {
       if (session.active === false) return;
       subscribeLearningCloud();
       subscribeKanbanCloud();
+      subscribeResourcesCloud();
       renderMetrics();
     });
   } else {
@@ -456,6 +465,27 @@ function bindEvents() {
   });
   els.saveResource?.addEventListener('click', saveResource);
   els.resourceFilter?.addEventListener('change', renderResources);
+  els.resourceFile?.addEventListener('change', event => handleResourceFiles(event.target.files));
+  els.resourceDropzone?.addEventListener('click', () => els.resourceFile?.click());
+  els.resourceDropzone?.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      els.resourceFile?.click();
+    }
+  });
+  ['dragenter','dragover'].forEach(type => {
+    els.resourceDropzone?.addEventListener(type, event => {
+      event.preventDefault();
+      els.resourceDropzone.classList.add('drag-over');
+    });
+  });
+  ['dragleave','drop'].forEach(type => {
+    els.resourceDropzone?.addEventListener(type, event => {
+      event.preventDefault();
+      els.resourceDropzone.classList.remove('drag-over');
+    });
+  });
+  els.resourceDropzone?.addEventListener('drop', event => handleResourceFiles(event.dataTransfer.files));
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -478,11 +508,16 @@ function setupFirebase() {
     const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
     state.firebase.db = app.firestore();
     if (window.firebase.auth) state.firebase.auth = app.auth();
+    if (window.firebase.storage) {
+      try { state.firebase.storage = app.storage(); }
+      catch (error) { console.warn('Firebase Storage no disponible', error); }
+    }
     state.firebase.enabled = true;
     state.firebase.status = 'Conectando con base central...';
     if (!state.firebase.auth) {
       subscribeLearningCloud();
       subscribeKanbanCloud();
+      subscribeResourcesCloud();
     }
   } catch (error) {
     console.error('Firebase no pudo iniciar', error);
@@ -1063,46 +1098,218 @@ function prefillResourceFromSector(info, action) {
   els.resourceNotes.focus();
 }
 
-function saveResource() {
+function resourceCollection() {
+  return state.firebase.db?.collection('recursos_biblioteca');
+}
+
+function getResourceDocId(row) {
+  const base = [row.date, row.title, row.sector, row.type, row.link || row.fileUrl || row.fileName || ''].join('|');
+  return row.id || `res_${hashString(base)}`;
+}
+
+function getResourceRows() {
+  const localRows = getStoredRows(RESOURCES_KEY);
+  if (!state.firebase.resourcesLoaded) return localRows;
+  const rowsById = new Map(localRows.map(row => [getResourceDocId(row), row]));
+  state.firebase.resources.forEach(row => {
+    const id = getResourceDocId(row);
+    const existing = rowsById.get(id) || {};
+    rowsById.set(id, {
+      ...existing,
+      ...row,
+      fileDataUrl: row.fileDataUrl || existing.fileDataUrl
+    });
+  });
+  return Array.from(rowsById.values());
+}
+
+function subscribeResourcesCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
+  state.firebase.unsubscribeResources = state.firebase.db.collection('recursos_biblioteca')
+    .orderBy('date', 'desc')
+    .onSnapshot(snapshot => {
+      state.firebase.resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      state.firebase.resourcesLoaded = true;
+      renderResources();
+    }, error => {
+      console.error('No se pudieron leer recursos en Firestore', error);
+      state.firebase.resourcesLoaded = false;
+      renderResources();
+    });
+}
+
+async function saveResourceToCloud(row) {
+  const collection = resourceCollection();
+  if (!collection) return false;
+  const payload = { ...row, updatedAt: new Date().toISOString() };
+  delete payload.fileDataUrl;
+  if (window.firebase?.firestore?.FieldValue) payload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+  await collection.doc(getResourceDocId(row)).set(payload, { merge: true });
+  return true;
+}
+
+function inferResourceTypeFromFile(file) {
+  const type = (file?.type || '').toLowerCase();
+  const name = (file?.name || '').toLowerCase();
+  if (type.includes('pdf') || name.endsWith('.pdf')) return 'Manual PDF';
+  if (type.startsWith('video/') || /\.(mp4|mov|webm)$/i.test(name)) return 'Video explicativo';
+  if (type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(name)) return 'Procedimiento adjunto';
+  if (/\.(docx?|txt)$/i.test(name)) return 'Procedimiento adjunto';
+  return 'Link de apoyo';
+}
+
+function handleResourceFiles(files) {
+  const file = files?.[0];
+  if (!file) return;
+  state.selectedResourceFile = file;
+  if (els.resourceType && (!els.resourceType.value || els.resourceType.value === 'Link de apoyo')) {
+    els.resourceType.value = inferResourceTypeFromFile(file);
+  } else if (els.resourceType && file.type.startsWith('video/')) {
+    els.resourceType.value = 'Video explicativo';
+  } else if (els.resourceType && file.type.includes('pdf')) {
+    els.resourceType.value = 'Manual PDF';
+  }
+  if (els.resourceTitle && !els.resourceTitle.value.trim()) els.resourceTitle.value = file.name.replace(/\.[^.]+$/, '');
+  renderResourceFileStatus();
+}
+
+function renderResourceFileStatus(message) {
+  if (!els.resourceFileStatus) return;
+  const file = state.selectedResourceFile;
+  if (message) {
+    els.resourceFileStatus.textContent = message;
+    return;
+  }
+  els.resourceFileStatus.textContent = file
+    ? `Archivo listo: ${file.name} · ${formatBytes(file.size)}`
+    : 'Sin archivo seleccionado.';
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatBytes(bytes = 0) {
+  if (!bytes) return '0 KB';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+  return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+}
+
+function safeStorageName(name = 'archivo') {
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'archivo';
+}
+
+async function buildResourceFilePayload(file) {
+  if (!file) return {};
+  const base = {
+    fileName: file.name,
+    fileType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    fileSizeLabel: formatBytes(file.size)
+  };
+  if (state.firebase.storage && state.firebase.currentUser) {
+    try {
+      renderResourceFileStatus(`Subiendo ${file.name} a la biblioteca compartida...`);
+      const session = getSession();
+      const path = `recursos/${session.uid || state.firebase.currentUser.uid}/${Date.now()}_${safeStorageName(file.name)}`;
+      const snapshot = await state.firebase.storage.ref().child(path).put(file);
+      const url = await snapshot.ref.getDownloadURL();
+      return { ...base, fileMode: 'firebase-storage', fileUrl: url, storagePath: path };
+    } catch (error) {
+      console.error('No se pudo subir archivo a Storage', error);
+    }
+  }
+  const localLimit = 2.5 * 1024 * 1024;
+  if (file.size <= localLimit && !file.type.startsWith('video/')) {
+    const dataUrl = await readFileAsDataUrl(file);
+    return { ...base, fileMode: 'local-embedded', fileDataUrl: dataUrl };
+  }
+  return {
+    ...base,
+    fileMode: 'metadata-only',
+    fileWarning: 'Archivo registrado como referencia. Para abrirlo desde otra PC, agregá un link de Drive o habilitá Firebase Storage.'
+  };
+}
+
+async function saveResource() {
   const title = els.resourceTitle.value.trim();
   const type = els.resourceType.value;
   const sector = els.resourceSector.value;
   const notes = els.resourceNotes.value.trim();
-  if (!title || !notes) {
-    alert('Cargá título y notas de uso para guardar el recurso.');
+  const selectedFile = state.selectedResourceFile;
+  if (!title || (!notes && !els.resourceLink.value.trim() && !selectedFile)) {
+    alert('Cargá título y una nota, link o archivo para guardar el recurso.');
     return;
   }
-  const session = getSession();
-  const rows = getStoredRows(RESOURCES_KEY);
-  rows.push({
-    date: new Date().toISOString(),
-    type,
-    sector,
-    title,
-    system: els.resourceSystem.value.trim(),
-    user: els.resourceUser.value.trim(),
-    secret: els.resourceSecret.value,
-    link: els.resourceLink.value.trim(),
-    notes,
-    operator: session.operator || 'Sin operador',
-    level: Number(session.level || 1)
-  });
-  localStorage.setItem(RESOURCES_KEY, JSON.stringify(rows));
-  els.resourceTitle.value = '';
-  els.resourceSystem.value = '';
-  els.resourceUser.value = '';
-  els.resourceSecret.value = '';
-  els.resourceLink.value = '';
-  els.resourceNotes.value = '';
-  renderResources();
+  els.saveResource.disabled = true;
+  renderResourceFileStatus(selectedFile ? 'Preparando archivo...' : '');
+  try {
+    const session = getSession();
+    const rows = getStoredRows(RESOURCES_KEY);
+    const filePayload = await buildResourceFilePayload(selectedFile);
+    const record = {
+      date: new Date().toISOString(),
+      type,
+      sector,
+      title,
+      system: els.resourceSystem.value.trim(),
+      user: els.resourceUser.value.trim(),
+      secret: els.resourceSecret.value,
+      link: els.resourceLink.value.trim(),
+      notes: notes || 'Archivo cargado como respaldo operativo.',
+      operator: session.operator || 'Sin operador',
+      operatorUid: session.uid || state.firebase.currentUser?.uid || '',
+      operatorEmail: session.email || state.firebase.currentUser?.email || '',
+      shift: session.shift || 'Sin turno',
+      level: Number(session.level || 1),
+      ...filePayload
+    };
+    rows.push(record);
+    localStorage.setItem(RESOURCES_KEY, JSON.stringify(rows));
+    if (state.firebase.enabled) {
+      try {
+        await saveResourceToCloud(record);
+      } catch (error) {
+        console.error('No se pudo guardar recurso en base central', error);
+        renderResourceFileStatus('Recurso guardado localmente. No se pudo sincronizar con la base central.');
+      }
+    }
+    els.resourceTitle.value = '';
+    els.resourceSystem.value = '';
+    els.resourceUser.value = '';
+    els.resourceSecret.value = '';
+    els.resourceLink.value = '';
+    els.resourceNotes.value = '';
+    if (els.resourceFile) els.resourceFile.value = '';
+    state.selectedResourceFile = null;
+    renderResourceFileStatus('Recurso guardado en biblioteca.');
+    renderResources();
+  } catch (error) {
+    console.error('No se pudo preparar el recurso', error);
+    renderResourceFileStatus('No se pudo preparar ese archivo. Probá con un link de Drive o un archivo más liviano.');
+  } finally {
+    els.saveResource.disabled = false;
+  }
 }
 
 function renderResources() {
   if (!els.resourceList) return;
   const filter = els.resourceFilter?.value || 'Todos los recursos';
-  const rows = getStoredRows(RESOURCES_KEY)
+  const rows = getResourceRows()
     .slice()
-    .reverse()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
     .filter(row => {
       if (filter === 'Todos los recursos') return true;
       if (filter === 'Material de apoyo') return row.type !== 'Acceso / password';
@@ -1135,7 +1342,14 @@ function renderResourceItem(row, index) {
       ? `<div class="resource-secret"><b>Password / dato sensible</b><code>${escapeHtml(row.secret)}</code><button type="button" data-copy-secret="${index}">Copiar</button></div>`
       : '<div class="resource-secret locked"><b>Password / dato sensible</b><span>Oculto. Requiere nivel 8 o superior.</span></div>'
     : '';
-  const link = row.link ? `<a class="video-link" href="${escapeHtml(row.link)}" target="_blank" rel="noopener">Abrir recurso</a>` : '';
+  const externalLink = row.link ? `<a class="video-link" href="${escapeHtml(row.link)}" target="_blank" rel="noopener">Abrir link cargado</a>` : '';
+  const fileHref = row.fileUrl || row.fileDataUrl || '';
+  const fileLink = fileHref
+    ? `<a class="video-link" href="${escapeHtml(fileHref)}" target="_blank" rel="noopener" ${row.fileDataUrl ? `download="${escapeHtml(row.fileName || row.title)}"` : ''}>Abrir archivo</a>`
+    : '';
+  const fileBlock = row.fileName
+    ? `<div class="resource-file"><b>Archivo:</b> ${escapeHtml(row.fileName)} · ${escapeHtml(row.fileSizeLabel || formatBytes(row.fileSize))}<div>${fileLink || '<span>Archivo registrado sin acceso directo.</span>'}</div>${row.fileWarning ? `<p>${escapeHtml(row.fileWarning)}</p>` : ''}</div>`
+    : '';
   return `<article class="knowledge-item resource-item">
     <div>
       <p class="eyebrow">${escapeHtml(row.type)} · ${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p>
@@ -1143,7 +1357,8 @@ function renderResourceItem(row, index) {
       <p><b>Sistema:</b> ${escapeHtml(row.system || 'Sin sistema cargado')}</p>
       <p><b>Usuario / ubicación:</b> ${escapeHtml(row.user || 'Sin referencia cargada')}</p>
       ${secretBlock}
-      ${link}
+      ${fileBlock}
+      ${externalLink}
       <p>${escapeHtml(row.notes)}</p>
     </div>
     <span>${escapeHtml(row.operator || 'Sin operador')}</span>

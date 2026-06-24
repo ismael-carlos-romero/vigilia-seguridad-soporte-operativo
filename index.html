@@ -233,12 +233,19 @@
       <input id="resourceSecret" type="password" placeholder="Opcional. Cargar solo si está autorizado.">
       <label class="field-label" for="resourceLink">Link de archivo, video o manual</label>
       <input id="resourceLink" placeholder="https://...">
+      <label class="field-label" for="resourceFile">Subir archivo a biblioteca</label>
+      <div id="resourceDropzone" class="dropzone" tabindex="0" role="button" aria-label="Subir archivo a biblioteca">
+        <strong>Arrastrá PDF, imagen, video o nota</strong>
+        <span>O hacé clic para seleccionar. Para videos pesados, conviene usar link de Drive o Storage.</span>
+        <input id="resourceFile" type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif,.mp4,.mov,.webm,application/pdf,image/*,video/*,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      </div>
+      <p id="resourceFileStatus" class="save-state">Sin archivo seleccionado.</p>
       <label class="field-label" for="resourceNotes">Notas de uso</label>
       <textarea id="resourceNotes" placeholder="Cuándo se usa, quién lo autorizó, vencimiento, advertencias o procedimiento relacionado."></textarea>
       <button id="saveResource" class="primary" type="button">Guardar recurso</button>
     </aside>
     <section class="knowledge-list-panel">
-      <div class="panel-head"><div><p class="eyebrow">Biblioteca operativa</p><h2>Recursos guardados</h2></div><div class="actions"><select id="resourceFilter"><option>Todos los recursos</option><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Acceso / password</option><option>Material de apoyo</option></select><span id="resourceCount" class="pill">0</span></div></div>
+      <div class="panel-head"><div><p class="eyebrow">Biblioteca operativa</p><h2>Recursos guardados</h2></div><div class="actions"><select id="resourceFilter"><option>Todos los recursos</option><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Acceso / password</option><option>Manual PDF</option><option>Video explicativo</option><option>Procedimiento adjunto</option><option>Material de apoyo</option></select><span id="resourceCount" class="pill">0</span></div></div>
       <div id="resourceList" class="knowledge-list"></div>
     </section>
   </section>
@@ -436,6 +443,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 <script>
   window.VIGILIA_FIREBASE_CONFIG = {
     apiKey: "AIzaSyAetdYkNCTa1gESRjzfIGLsVej958plhc0",
