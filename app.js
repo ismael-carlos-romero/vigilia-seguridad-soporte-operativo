@@ -5,18 +5,28 @@ const state = {
   selectedSafe: null,
   safeResults: [],
   selectedProcedure: null,
+  selectedLearningId: null,
   procedureResults: [],
   procedureSuggestIndex: 0,
   intakeSuggestIndex: 0,
+  intakeRouteTimer: null,
+  lastIntakeRouteKey: '',
+  selectedResourceFile: null,
   firebase: {
     enabled: false,
     loaded: false,
     db: null,
     auth: null,
+    storage: null,
     currentUser: null,
     userProfile: null,
     learning: [],
+    kanban: [],
+    resources: [],
+    resourcesLoaded: false,
     unsubscribeLearning: null,
+    unsubscribeKanban: null,
+    unsubscribeResources: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -25,8 +35,38 @@ const state = {
 const STORAGE_KEY = 'vigiliaCasesV2';
 const DIRECTIVES_KEY = 'vigiliaDirectivesV1';
 const LEARNING_KEY = 'vigiliaLearningV1';
+const KANBAN_KEY = 'vigiliaKanbanV1';
 const SESSION_KEY = 'vigiliaSessionV1';
 const MEDIA_KEY = 'vigiliaMediaV1';
+const RESOURCES_KEY = 'vigiliaResourcesV1';
+const bykomEventTypes = [
+  'Falso disparo',
+  'No llega cierre',
+  'No llega apertura',
+  'Falla de comunicación',
+  'Corte 220 / falta de luz',
+  'Batería baja panel',
+  'Batería baja zona/sensor',
+  'Tamper / sabotaje',
+  'Disparo de alarma',
+  'Pánico / asalto',
+  'Emergencia médica',
+  'Fuego / incendio',
+  'Desactivación fuera de horario',
+  'Falla de enlace',
+  'Panel en prueba',
+  'Orden de mantenimiento',
+  'Evento SAFE / vehicular',
+  'Reclamo administrativo',
+  'Otro evento'
+];
+const kanbanColumns = [
+  { id: 'por-hacer', label: 'Por hacer', hint: 'Tareas o eventos recién cargados' },
+  { id: 'en-espera', label: 'En espera', hint: 'Falta dato, llamado, respuesta o validación' },
+  { id: 'supervision', label: 'Supervisión', hint: 'Requiere criterio o aprobación' },
+  { id: 'resuelto', label: 'Resuelto', hint: 'Caso cerrado o cedulado' },
+  { id: 'procedimiento', label: 'Procedimiento', hint: 'Convertido en regla reutilizable' }
+];
 const quickTerms = ['teclado hace ruido', 'falla bateria', 'falla 220', 'perdida de hora', 'cambiar usuario', 'borrar clave', 'zona abierta', 'DMSS no conecta'];
 const intakeQuickTerms = ['teclado hace ruido', 'no llegó factura', 'quiero dar la baja', 'camión no reporta', 'no puedo ver cámaras', 'alarma se disparó', 'cambiar clave'];
 const intakeStopWords = new Set(['que','con','para','por','una','uno','unos','unas','del','los','las','eso','esta','este','esto','tengo','tiene','hace','cada','me','mi','el','la','de','se','en','y','o','no']);
@@ -139,7 +179,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','mTotal','mRemote','mRisk','mAvoided','mPending','paretoChart','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -153,7 +193,10 @@ document.addEventListener('DOMContentLoaded', () => {
   searchSafe();
   searchProcedures();
   renderDirectives();
+  renderSupervision();
+  renderResources();
   renderLearning();
+  renderKanban();
   renderMetrics();
 });
 
@@ -165,8 +208,14 @@ function setupSession() {
       if (!user) {
         localStorage.removeItem(SESSION_KEY);
         if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
+        if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
+        if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
         state.firebase.learning = [];
+        state.firebase.kanban = [];
+        state.firebase.resources = [];
+        state.firebase.resourcesLoaded = false;
         state.firebase.loaded = false;
+        document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
         els.sessionBadge.textContent = 'Sin sesion';
         els.loginStatus.textContent = 'Ingresá con usuario y contraseña.';
@@ -181,6 +230,7 @@ function setupSession() {
         operator: profile.name || user.displayName || user.email || 'Operador',
         shift: profile.shift || els.loginShift.value || 'Sin turno',
         sector: profile.sector || els.loginSector.value || 'Sin sector',
+        station: profile.station || els.loginStation?.value || 'Estación sin asignar',
         role: profile.role || 'operador',
         level: Number(profile.level || 1),
         active: profile.active !== false,
@@ -190,6 +240,8 @@ function setupSession() {
       applySession(session);
       if (session.active === false) return;
       subscribeLearningCloud();
+      subscribeKanbanCloud();
+      subscribeResourcesCloud();
       renderMetrics();
     });
   } else {
@@ -206,6 +258,7 @@ function setupSession() {
       operator: els.loginOperator.value.trim(),
       shift: els.loginShift.value,
       sector: els.loginSector.value,
+      station: els.loginStation?.value || 'Estación local',
       role: 'operador local',
       level: 1,
       active: true,
@@ -242,6 +295,7 @@ async function loadUserProfile(user) {
     role: 'sin perfil',
     level: 0,
     sector: els.loginSector?.value || 'Monitoreo 911',
+    station: els.loginStation?.value || 'Estación sin asignar',
     active: false,
     missingProfile: true
   };
@@ -249,11 +303,33 @@ async function loadUserProfile(user) {
   try {
     const snap = await state.firebase.db.collection('usuarios').doc(user.uid).get();
     if (!snap.exists) return fallback;
-    return { ...fallback, ...snap.data(), uid: user.uid, missingProfile: false };
+    return normalizeUserProfile({ ...fallback, ...snap.data(), uid: user.uid, missingProfile: false });
   } catch (error) {
     console.error('No se pudo leer perfil de usuario', error);
     return fallback;
   }
+}
+
+function normalizeUserProfile(profile) {
+  const normalized = { ...profile };
+  const pairs = [
+    ['Name', 'name'],
+    ['Email', 'email'],
+    ['Role', 'role'],
+    ['Level', 'level'],
+    ['Sector', 'sector'],
+    ['Shift', 'shift'],
+    ['Station', 'station'],
+    ['Estacion', 'station'],
+    ['Estación', 'station'],
+    ['Active', 'active']
+  ];
+  pairs.forEach(([from, to]) => {
+    if (normalized[to] === undefined && normalized[from] !== undefined) {
+      normalized[to] = normalized[from];
+    }
+  });
+  return normalized;
 }
 
 function getSession() {
@@ -262,11 +338,13 @@ function getSession() {
 }
 
 function applySession(session) {
+  document.body.classList.remove('auth-gate');
   els.loginOverlay.classList.add('hidden');
-  els.sessionBadge.innerHTML = `<b>${escapeHtml(session.operator)}</b><span>Nivel ${escapeHtml(String(session.level || 1))} · ${escapeHtml(session.role || 'operador')} · ${escapeHtml(session.shift)} · ${escapeHtml(session.sector)}</span><button id="logoutSession" type="button">Salir</button>`;
+  els.sessionBadge.innerHTML = `<div class="session-user"><b>${escapeHtml(session.operator)}</b><span>Nivel ${escapeHtml(String(session.level || 1))} · ${escapeHtml(session.role || 'operador')}</span></div><div class="session-chip">Turno: ${escapeHtml(session.shift || 'Sin turno')}</div><div class="session-chip">Sector: ${escapeHtml(session.sector || 'Sin sector')}</div><div class="session-chip">Estación: ${escapeHtml(session.station || 'Sin estación')}</div><button id="logoutSession" type="button">Salir</button>`;
   document.getElementById('logoutSession').addEventListener('click', async () => {
     localStorage.removeItem(SESSION_KEY);
     if (state.firebase.auth) await state.firebase.auth.signOut();
+    document.body.classList.add('auth-gate');
     els.loginOverlay.classList.remove('hidden');
   });
   if (els.intakeOperator && !els.intakeOperator.value) els.intakeOperator.value = session.operator;
@@ -274,6 +352,7 @@ function applySession(session) {
   updateIntakeScript();
   applyPrivilegeVisibility();
   if (session.active === false) {
+    document.body.classList.add('auth-gate');
     els.loginOverlay.classList.remove('hidden');
     els.loginStatus.textContent = 'Usuario inactivo. Pedile a un administrador que habilite el perfil.';
   }
@@ -309,6 +388,9 @@ function setupTabs() {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById(btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'kanban') renderKanban();
+    if (btn.dataset.tab === 'resources') renderResources();
+    if (btn.dataset.tab === 'supervision') renderSupervision();
     renderMetrics();
   }));
 }
@@ -387,10 +469,45 @@ function bindEvents() {
     if (!event.target.closest('.intake-search-wrap')) hideIntakeAutocomplete();
   });
   els.saveDirective.addEventListener('click', saveDirective);
+  els.supervisionOperatorFilter?.addEventListener('change', renderSupervision);
+  els.supervisionStatusFilter?.addEventListener('change', renderSupervision);
   ['learningSubscriber','learningFailure','learningQuestion','learningContext'].forEach(id => els[id].addEventListener('input', renderLearningSuggestion));
+  els.learningEventType?.addEventListener('change', renderLearningSuggestion);
+  ['learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort'].forEach(id => els[id]?.addEventListener('change', renderLearning));
   els.saveLearning.addEventListener('click', saveLearning);
   els.exportLearning.addEventListener('click', exportLearningBackup);
   els.importLearning.addEventListener('change', importLearningBackup);
+  els.closeLearningDialog?.addEventListener('click', () => els.learningDialog.close());
+  els.saveLearningResolution?.addEventListener('click', saveLearningResolution);
+  els.copyLearningResolution?.addEventListener('click', copyLearningResolution);
+  els.saveKanbanTask?.addEventListener('click', saveKanbanTask);
+  els.paretoMode?.addEventListener('change', renderMetrics);
+  document.querySelectorAll('[data-sector-action]').forEach(btn => {
+    btn.addEventListener('click', () => handleSectorAction(btn.dataset.sector, btn.dataset.sectorAction));
+  });
+  els.saveResource?.addEventListener('click', saveResource);
+  els.resourceFilter?.addEventListener('change', renderResources);
+  els.resourceFile?.addEventListener('change', event => handleResourceFiles(event.target.files));
+  els.resourceDropzone?.addEventListener('click', () => els.resourceFile?.click());
+  els.resourceDropzone?.addEventListener('keydown', event => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      els.resourceFile?.click();
+    }
+  });
+  ['dragenter','dragover'].forEach(type => {
+    els.resourceDropzone?.addEventListener(type, event => {
+      event.preventDefault();
+      els.resourceDropzone.classList.add('drag-over');
+    });
+  });
+  ['dragleave','drop'].forEach(type => {
+    els.resourceDropzone?.addEventListener(type, event => {
+      event.preventDefault();
+      els.resourceDropzone.classList.remove('drag-over');
+    });
+  });
+  els.resourceDropzone?.addEventListener('drop', event => handleResourceFiles(event.dataTransfer.files));
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -413,9 +530,17 @@ function setupFirebase() {
     const app = window.firebase.apps?.length ? window.firebase.app() : window.firebase.initializeApp(config);
     state.firebase.db = app.firestore();
     if (window.firebase.auth) state.firebase.auth = app.auth();
+    if (window.firebase.storage) {
+      try { state.firebase.storage = app.storage(); }
+      catch (error) { console.warn('Firebase Storage no disponible', error); }
+    }
     state.firebase.enabled = true;
     state.firebase.status = 'Conectando con base central...';
-    if (!state.firebase.auth) subscribeLearningCloud();
+    if (!state.firebase.auth) {
+      subscribeLearningCloud();
+      subscribeKanbanCloud();
+      subscribeResourcesCloud();
+    }
   } catch (error) {
     console.error('Firebase no pudo iniciar', error);
     state.firebase.status = 'Modo local: no se pudo conectar con Firebase.';
@@ -437,6 +562,7 @@ function subscribeLearningCloud() {
       state.firebase.status = 'Base central conectada';
       migrateLocalLearningToCloud();
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     }, error => {
@@ -444,6 +570,7 @@ function subscribeLearningCloud() {
       state.firebase.loaded = false;
       state.firebase.status = 'Modo local: Firestore no permitio leer datos.';
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     });
@@ -508,6 +635,184 @@ function migrateLocalLearningToCloud() {
   syncLearningRowsToCloud(localRows);
 }
 
+function kanbanCollection() {
+  return state.firebase.db?.collection('kanban_tareas');
+}
+
+function getKanbanRows() {
+  const rows = state.firebase.kanban?.length ? state.firebase.kanban : getStoredRows(KANBAN_KEY);
+  const session = getSession();
+  if (currentLevel() >= 8 || !session.uid) return rows;
+  return rows.filter(row => !row.operatorUid || row.operatorUid === session.uid);
+}
+
+function getKanbanDocId(row) {
+  if (row.id) return row.id;
+  const base = [row.createdAt, row.title, row.subscriber, row.operatorUid].join('|');
+  return `kb_${hashString(base)}`;
+}
+
+function subscribeKanbanCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
+  const collection = state.firebase.db.collection('kanban_tareas');
+  const query = currentLevel() >= 8 || !state.firebase.currentUser
+    ? collection
+    : collection.where('operatorUid', '==', state.firebase.currentUser.uid);
+  state.firebase.unsubscribeKanban = query
+    .onSnapshot(snapshot => {
+      state.firebase.kanban = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderKanban();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer Kanban en Firestore', error);
+      els.kanbanSavedState.textContent = 'Modo local: no se pudo leer Kanban central.';
+      renderKanban();
+    });
+}
+
+async function saveKanbanTask() {
+  const title = els.kanbanTitle.value.trim();
+  if (!title) {
+    els.kanbanSavedState.textContent = 'Cargá un título para la tarjeta.';
+    return;
+  }
+  const session = getSession();
+  const row = {
+    title,
+    subscriber: els.kanbanSubscriber.value.trim(),
+    category: els.kanbanCategory.value,
+    priority: els.kanbanPriority.value,
+    description: els.kanbanDescription.value.trim(),
+    column: 'por-hacer',
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    movements: []
+  };
+  await upsertKanbanTask(row);
+  els.kanbanTitle.value = '';
+  els.kanbanSubscriber.value = '';
+  els.kanbanDescription.value = '';
+  els.kanbanSavedState.textContent = 'Tarjeta agregada al tablero.';
+  renderKanban();
+  renderMetrics();
+}
+
+async function upsertKanbanTask(row) {
+  const docId = getKanbanDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && kanbanCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await kanbanCollection().doc(docId).set(cloudPayload, { merge: true });
+    return;
+  }
+  const rows = getStoredRows(KANBAN_KEY);
+  const index = rows.findIndex(item => getKanbanDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(KANBAN_KEY, JSON.stringify(rows));
+}
+
+async function moveKanbanTask(id, direction) {
+  const rows = getKanbanRows();
+  const row = rows.find(item => getKanbanDocId(item) === id);
+  if (!row) return;
+  const currentIndex = Math.max(0, kanbanColumns.findIndex(column => column.id === row.column));
+  const nextIndex = Math.max(0, Math.min(kanbanColumns.length - 1, currentIndex + direction));
+  if (nextIndex === currentIndex) return;
+  const session = getSession();
+  const next = {
+    ...row,
+    column: kanbanColumns[nextIndex].id,
+    movements: [
+      ...(row.movements || []),
+      {
+        from: kanbanColumns[currentIndex].id,
+        to: kanbanColumns[nextIndex].id,
+        operator: session.operator || 'Sin operador',
+        date: new Date().toISOString()
+      }
+    ]
+  };
+  await upsertKanbanTask(next);
+  renderKanban();
+  renderMetrics();
+}
+
+async function addLearningToKanban(id) {
+  const row = findLearningRow(id);
+  if (!row) return;
+  const session = getSession();
+  const task = {
+    title: row.failure || row.question || 'Evento en espera',
+    subscriber: row.subscriber || '',
+    category: inferLearningCategory(row),
+    priority: normalize(row.status).includes('pendiente') ? 'Alta' : 'Media',
+    description: [row.question, row.context, row.suggestion ? `Sugerencia: ${row.suggestion}` : ''].filter(Boolean).join('\n'),
+    column: 'en-espera',
+    operator: session.operator || row.operator || 'Sin operador',
+    operatorUid: session.uid || row.operatorUid || '',
+    shift: session.shift || row.shift || 'Sin turno',
+    sector: session.sector || row.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    sourceLearningId: id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    movements: []
+  };
+  await upsertKanbanTask(task);
+  els.learningSavedState.textContent = 'Evento enviado al Kanban.';
+  renderKanban();
+  renderMetrics();
+}
+
+function renderKanban() {
+  if (!els.kanbanBoard) return;
+  const rows = getKanbanRows().slice().sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+  els.kanbanCount.textContent = `${rows.length} tarjetas`;
+  els.kanbanStats.innerHTML = renderKanbanStats(rows);
+  els.kanbanBoard.innerHTML = kanbanColumns.map(column => renderKanbanColumn(column, rows.filter(row => (row.column || 'por-hacer') === column.id))).join('');
+  els.kanbanBoard.querySelectorAll('[data-move-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => moveKanbanTask(btn.dataset.moveKanban, Number(btn.dataset.direction)));
+  });
+}
+
+function renderKanbanStats(rows) {
+  const resolved = rows.filter(row => ['resuelto', 'procedimiento'].includes(row.column)).length;
+  const waiting = rows.filter(row => ['en-espera', 'supervision'].includes(row.column)).length;
+  const critical = rows.filter(row => row.priority === 'Crítica' || row.priority === 'Alta').length;
+  return `<div><b>${rows.length}</b><span>Total</span></div><div><b>${resolved}</b><span>Resueltas</span></div><div><b>${waiting}</b><span>En espera/supervisión</span></div><div><b>${critical}</b><span>Alta criticidad</span></div>`;
+}
+
+function renderKanbanColumn(column, rows) {
+  return `<section class="kanban-column">
+    <div class="kanban-column-head"><div><h3>${escapeHtml(column.label)}</h3><p>${escapeHtml(column.hint)}</p></div><span>${rows.length}</span></div>
+    <div class="kanban-cards">${rows.length ? rows.map(renderKanbanCard).join('') : '<div class="kanban-empty">Sin tarjetas</div>'}</div>
+  </section>`;
+}
+
+function renderKanbanCard(row) {
+  const id = getKanbanDocId(row);
+  const currentIndex = Math.max(0, kanbanColumns.findIndex(column => column.id === (row.column || 'por-hacer')));
+  return `<article class="kanban-card priority-${normalize(row.priority || 'media')}">
+    <p class="eyebrow">${escapeHtml(row.priority || 'Media')} · ${escapeHtml(row.category || 'Sin categoría')}</p>
+    <h3>${escapeHtml(row.title || 'Sin título')}</h3>
+    <p>${escapeHtml(row.subscriber || 'Sin abonado')}</p>
+    <p>${escapeHtml(row.description || '')}</p>
+    <div class="kanban-card-meta">${escapeHtml(row.operator || 'Sin operador')} · ${escapeHtml(row.shift || 'Sin turno')}</div>
+    <div class="kanban-move">
+      <button type="button" data-move-kanban="${escapeHtml(id)}" data-direction="-1" ${currentIndex === 0 ? 'disabled' : ''}>←</button>
+      <button type="button" data-move-kanban="${escapeHtml(id)}" data-direction="1" ${currentIndex === kanbanColumns.length - 1 ? 'disabled' : ''}>→</button>
+    </div>
+  </article>`;
+}
+
 function updateIntakeScript() {
   const name = els.intakeOperator.value.trim() || 'operador';
   els.scriptOperatorName.textContent = name;
@@ -541,13 +846,38 @@ function analyzeIntake() {
     .map(result => result.rule);
 }
 
+function clearIntakeAutoRoute() {
+  if (state.intakeRouteTimer) {
+    clearTimeout(state.intakeRouteTimer);
+    state.intakeRouteTimer = null;
+  }
+}
+
+function scheduleIntakeAutoRoute(rule) {
+  const query = els.intakeQuery.value.trim();
+  const normalizedQuery = normalize(query);
+  const routeKey = `${rule.id}|${normalizedQuery}`;
+  clearIntakeAutoRoute();
+  if (query.length < 6 || state.lastIntakeRouteKey === routeKey) return;
+  state.intakeRouteTimer = setTimeout(() => {
+    const currentQuery = els.intakeQuery.value.trim();
+    const currentRule = analyzeIntake()[0];
+    if (!currentRule || currentRule.id !== rule.id || normalize(currentQuery) !== normalizedQuery) return;
+    state.lastIntakeRouteKey = routeKey;
+    applyIntakePrimary(rule, { automatic: true });
+  }, 900);
+}
+
 function renderIntakeResult() {
   const matches = analyzeIntake();
   if (!els.intakeQuery.value.trim()) {
+    clearIntakeAutoRoute();
+    state.lastIntakeRouteKey = '';
     els.intakeResult.innerHTML = '<div class="empty-state"><h2>Ingresá una consulta</h2><p>La recomendación de atención y derivación aparecerá acá.</p></div>';
     return;
   }
   if (!matches.length) {
+    clearIntakeAutoRoute();
     els.intakeResult.innerHTML = `<div class="empty-state"><h2>Consulta no clasificada</h2><p>Tomá datos, validá cuenta y registrá la duda para convertirla en procedimiento.</p><button type="button" class="primary" id="intakePending">Registrar como pendiente</button></div>`;
     document.getElementById('intakePending').addEventListener('click', applyIntakeToPending);
     return;
@@ -576,6 +906,7 @@ function renderIntakeResult() {
   if (safeBtn) safeBtn.addEventListener('click', () => applyIntakeToSafe(primary));
   if (proceduresBtn) proceduresBtn.addEventListener('click', () => applyIntakeToProcedures(primary));
   document.querySelectorAll('.intake-alt-list button').forEach(btn => btn.addEventListener('click', () => chooseIntakeSuggestion(btn.dataset.id)));
+  scheduleIntakeAutoRoute(primary);
 }
 
 function renderIntakeAlternatives(alternatives) {
@@ -653,6 +984,7 @@ function handleIntakeKeys(event) {
     const primary = analyzeIntake()[0];
     if (primary) {
       event.preventDefault();
+      clearIntakeAutoRoute();
       applyIntakePrimary(primary);
     }
   }
@@ -670,7 +1002,8 @@ function applyIntakeToManual(rule) {
   search();
 }
 
-function applyIntakePrimary(rule) {
+function applyIntakePrimary(rule, options = {}) {
+  if (!options.automatic) clearIntakeAutoRoute();
   if (rule.id === 'safe') return applyIntakeToSafe(rule);
   if (rule.id === 'evento-911') return applyIntakeToProcedures(rule);
   if (rule.id === 'manual-tecnico' || rule.id === 'camaras-app') return applyIntakeToManual(rule);
@@ -695,6 +1028,391 @@ function applyIntakeToPending() {
   document.querySelector('[data-tab="call"]').click();
   els.searchInput.value = els.intakeQuery.value;
   showPendingForm();
+}
+
+function goToTab(tabId) {
+  document.querySelector(`[data-tab="${tabId}"]`)?.click();
+}
+
+function getSectorContext(sector) {
+  if (sector === 'SAFE') {
+    const item = state.selectedSafe || state.safeResults[0];
+    return {
+      tab: 'safe',
+      sectorLabel: 'SAFE / Objetivos Móviles',
+      title: item?.event || els.safeSearch.value || 'Consulta SAFE sin clasificar',
+      query: els.safeSearch.value || item?.event || '',
+      context: item ? `Evento SAFE seleccionado: ${item.event}\nCategoría: ${item.category}\nDisparador: ${item.trigger}\nAcción sugerida: ${item.action}` : 'Consulta SAFE pendiente de clasificar.',
+      kanbanCategory: 'SAFE'
+    };
+  }
+  const item = state.selected || state.results[0];
+  return {
+    tab: 'call',
+    sectorLabel: 'Objetivo Fijo 911',
+    title: item?.issue || els.searchInput.value || 'Consulta 911 sin clasificar',
+    query: els.searchInput.value || item?.issue || '',
+    context: item ? `Consulta 911 seleccionada: ${item.issue}\nSistema: ${item.system}\nGuía inicial: ${item.command || item.action || 'Sin guía cargada'}` : 'Consulta 911 pendiente de clasificar.',
+    kanbanCategory: 'Evento 911'
+  };
+}
+
+function handleSectorAction(sector, action) {
+  const info = getSectorContext(sector);
+  if (action === 'search') {
+    goToTab(info.tab);
+    const target = sector === 'SAFE' ? els.safeSearch : els.searchInput;
+    target?.focus();
+    return;
+  }
+  if (action === 'kanban') {
+    prefillKanbanFromSector(info);
+    return;
+  }
+  if (action === 'password' || action === 'material') {
+    prefillResourceFromSector(info, action);
+    return;
+  }
+  prefillLearningFromSector(info, action);
+}
+
+function prefillLearningFromSector(info, action) {
+  const session = getSession();
+  goToTab('learning');
+  if (els.learningType) els.learningType.value = action === 'suggestion' ? 'Sugerencia de mejora' : 'Duda operativa';
+  els.learningOperator.value = session.operator || els.learningOperator.value || '';
+  els.learningSubscriber.value = els.learningSubscriber.value || 'Sin abonado cargado';
+  els.learningFailure.value = action === 'suggestion'
+    ? `Mejora sugerida - ${info.sectorLabel}`
+    : info.title;
+  els.learningQuestion.value = action === 'suggestion'
+    ? 'Qué mejora, procedimiento o dato debería agregarse al sistema'
+    : `Qué criterio falta validar sobre ${info.title}`;
+  els.learningContext.value = `Sector: ${info.sectorLabel}\nConsulta de base: ${info.query || 'Sin búsqueda cargada'}\n\n${info.context}\n\nDescargo del operador: `;
+  els.learningStatus.value = 'Pendiente de validar';
+  renderLearningSuggestion();
+  els.learningContext.focus();
+}
+
+function prefillKanbanFromSector(info) {
+  const session = getSession();
+  goToTab('kanban');
+  els.kanbanTitle.value = info.title;
+  els.kanbanSubscriber.value = els.kanbanSubscriber.value || 'Sin abonado cargado';
+  els.kanbanCategory.value = info.kanbanCategory;
+  els.kanbanPriority.value = info.sectorLabel.includes('SAFE') ? 'Media' : 'Alta';
+  els.kanbanDescription.value = `Sector: ${info.sectorLabel}\nOperador: ${session.operator || 'Sin operador'}\nTurno: ${session.shift || 'Sin turno'}\n\n${info.context}\n\nPróximo paso: `;
+  els.kanbanDescription.focus();
+}
+
+function prefillResourceFromSector(info, action) {
+  goToTab('resources');
+  els.resourceType.value = action === 'password' ? 'Acceso / password' : 'Manual PDF';
+  els.resourceSector.value = info.sectorLabel.includes('SAFE') ? 'SAFE / Objetivos Móviles' : 'Objetivo Fijo 911';
+  els.resourceTitle.value = action === 'password'
+    ? `Acceso pendiente - ${info.sectorLabel}`
+    : `Material de apoyo - ${info.sectorLabel}`;
+  els.resourceSystem.value = action === 'password' ? 'App / herramienta a identificar' : 'Manual, PDF, Drive o video';
+  els.resourceUser.value = '';
+  els.resourceSecret.value = '';
+  els.resourceLink.value = '';
+  els.resourceNotes.value = `Sector: ${info.sectorLabel}\nConsulta de base: ${info.query || 'Sin búsqueda cargada'}\n\n${info.context}\n\nDetalle a cargar: `;
+  els.resourceNotes.focus();
+}
+
+function resourceCollection() {
+  return state.firebase.db?.collection('recursos_biblioteca');
+}
+
+function getResourceDocId(row) {
+  const base = [row.date, row.title, row.sector, row.type, row.link || row.fileUrl || row.fileName || ''].join('|');
+  return row.id || `res_${hashString(base)}`;
+}
+
+function getResourceRows() {
+  const localRows = getStoredRows(RESOURCES_KEY);
+  if (!state.firebase.resourcesLoaded) return localRows;
+  const rowsById = new Map(localRows.map(row => [getResourceDocId(row), row]));
+  state.firebase.resources.forEach(row => {
+    const id = getResourceDocId(row);
+    const existing = rowsById.get(id) || {};
+    rowsById.set(id, {
+      ...existing,
+      ...row,
+      fileDataUrl: row.fileDataUrl || existing.fileDataUrl
+    });
+  });
+  return Array.from(rowsById.values());
+}
+
+function subscribeResourcesCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
+  state.firebase.unsubscribeResources = state.firebase.db.collection('recursos_biblioteca')
+    .orderBy('date', 'desc')
+    .onSnapshot(snapshot => {
+      state.firebase.resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      state.firebase.resourcesLoaded = true;
+      renderResources();
+    }, error => {
+      console.error('No se pudieron leer recursos en Firestore', error);
+      state.firebase.resourcesLoaded = false;
+      renderResources();
+    });
+}
+
+async function saveResourceToCloud(row) {
+  const collection = resourceCollection();
+  if (!collection) return false;
+  const payload = { ...row, updatedAt: new Date().toISOString() };
+  delete payload.fileDataUrl;
+  if (window.firebase?.firestore?.FieldValue) payload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+  await collection.doc(getResourceDocId(row)).set(payload, { merge: true });
+  return true;
+}
+
+function inferResourceTypeFromFile(file) {
+  const type = (file?.type || '').toLowerCase();
+  const name = (file?.name || '').toLowerCase();
+  if (type.includes('pdf') || name.endsWith('.pdf')) return 'Manual PDF';
+  if (type.startsWith('video/') || /\.(mp4|mov|webm)$/i.test(name)) return 'Video explicativo';
+  if (type.startsWith('image/') || /\.(png|jpe?g|webp|gif)$/i.test(name)) return 'Procedimiento adjunto';
+  if (/\.(docx?|txt)$/i.test(name)) return 'Procedimiento adjunto';
+  return 'Link de apoyo';
+}
+
+function handleResourceFiles(files) {
+  const file = files?.[0];
+  if (!file) return;
+  state.selectedResourceFile = file;
+  if (els.resourceType && (!els.resourceType.value || els.resourceType.value === 'Link de apoyo')) {
+    els.resourceType.value = inferResourceTypeFromFile(file);
+  } else if (els.resourceType && file.type.startsWith('video/')) {
+    els.resourceType.value = 'Video explicativo';
+  } else if (els.resourceType && file.type.includes('pdf')) {
+    els.resourceType.value = 'Manual PDF';
+  }
+  if (els.resourceTitle && !els.resourceTitle.value.trim()) els.resourceTitle.value = file.name.replace(/\.[^.]+$/, '');
+  renderResourceFileStatus();
+}
+
+function renderResourceFileStatus(message) {
+  if (!els.resourceFileStatus) return;
+  const file = state.selectedResourceFile;
+  if (message) {
+    els.resourceFileStatus.textContent = message;
+    return;
+  }
+  els.resourceFileStatus.textContent = file
+    ? `Archivo listo: ${file.name} · ${formatBytes(file.size)}`
+    : 'Sin archivo seleccionado.';
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatBytes(bytes = 0) {
+  if (!bytes) return '0 KB';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let size = bytes;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) {
+    size /= 1024;
+    unit += 1;
+  }
+  return `${size.toFixed(unit ? 1 : 0)} ${units[unit]}`;
+}
+
+function safeStorageName(name = 'archivo') {
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '') || 'archivo';
+}
+
+async function buildResourceFilePayload(file) {
+  if (!file) return {};
+  const base = {
+    fileName: file.name,
+    fileType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    fileSizeLabel: formatBytes(file.size)
+  };
+  if (state.firebase.storage && state.firebase.currentUser) {
+    try {
+      renderResourceFileStatus(`Subiendo ${file.name} a la biblioteca compartida...`);
+      const session = getSession();
+      const path = `recursos/${session.uid || state.firebase.currentUser.uid}/${Date.now()}_${safeStorageName(file.name)}`;
+      const snapshot = await state.firebase.storage.ref().child(path).put(file);
+      const url = await snapshot.ref.getDownloadURL();
+      return { ...base, fileMode: 'firebase-storage', fileUrl: url, storagePath: path };
+    } catch (error) {
+      console.error('No se pudo subir archivo a Storage', error);
+    }
+  }
+  const localLimit = 2.5 * 1024 * 1024;
+  if (file.size <= localLimit && !file.type.startsWith('video/')) {
+    const dataUrl = await readFileAsDataUrl(file);
+    return { ...base, fileMode: 'local-embedded', fileDataUrl: dataUrl };
+  }
+  return {
+    ...base,
+    fileMode: 'metadata-only',
+    fileWarning: 'Archivo registrado como referencia. Para abrirlo desde otra PC, agregá un link de Drive o habilitá Firebase Storage.'
+  };
+}
+
+async function saveResource() {
+  const title = els.resourceTitle.value.trim();
+  const type = els.resourceType.value;
+  const sector = els.resourceSector.value;
+  const notes = els.resourceNotes.value.trim();
+  const selectedFile = state.selectedResourceFile;
+  if (!title || (!notes && !els.resourceLink.value.trim() && !selectedFile)) {
+    alert('Cargá título y una nota, link o archivo para guardar el recurso.');
+    return;
+  }
+  els.saveResource.disabled = true;
+  renderResourceFileStatus(selectedFile ? 'Preparando archivo...' : '');
+  try {
+    const session = getSession();
+    const rows = getStoredRows(RESOURCES_KEY);
+    const filePayload = await buildResourceFilePayload(selectedFile);
+    const record = {
+      date: new Date().toISOString(),
+      type,
+      sector,
+      title,
+      system: els.resourceSystem.value.trim(),
+      user: els.resourceUser.value.trim(),
+      secret: els.resourceSecret.value,
+      link: els.resourceLink.value.trim(),
+      notes: notes || 'Archivo cargado como respaldo operativo.',
+      operator: session.operator || 'Sin operador',
+      operatorUid: session.uid || state.firebase.currentUser?.uid || '',
+      operatorEmail: session.email || state.firebase.currentUser?.email || '',
+      shift: session.shift || 'Sin turno',
+      level: Number(session.level || 1),
+      ...filePayload
+    };
+    rows.push(record);
+    localStorage.setItem(RESOURCES_KEY, JSON.stringify(rows));
+    if (state.firebase.enabled) {
+      try {
+        await saveResourceToCloud(record);
+      } catch (error) {
+        console.error('No se pudo guardar recurso en base central', error);
+        renderResourceFileStatus('Recurso guardado localmente. No se pudo sincronizar con la base central.');
+      }
+    }
+    els.resourceTitle.value = '';
+    els.resourceSystem.value = '';
+    els.resourceUser.value = '';
+    els.resourceSecret.value = '';
+    els.resourceLink.value = '';
+    els.resourceNotes.value = '';
+    if (els.resourceFile) els.resourceFile.value = '';
+    state.selectedResourceFile = null;
+    renderResourceFileStatus('Recurso guardado en biblioteca.');
+    renderResources();
+  } catch (error) {
+    console.error('No se pudo preparar el recurso', error);
+    renderResourceFileStatus('No se pudo preparar ese archivo. Probá con un link de Drive o un archivo más liviano.');
+  } finally {
+    els.saveResource.disabled = false;
+  }
+}
+
+function renderResources() {
+  if (!els.resourceList) return;
+  const filter = els.resourceFilter?.value || 'Todos los recursos';
+  const rows = getResourceRows()
+    .slice()
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+    .filter(row => {
+      if (filter === 'Todos los recursos') return true;
+      if (filter === 'Material de apoyo') return row.type !== 'Acceso / password';
+      return row.sector === filter || row.type === filter;
+    });
+  els.resourceCount.textContent = `${rows.length}`;
+  if (!rows.length) {
+    els.resourceList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin recursos guardados</h2><p>Usá Password o Material de apoyo desde 911/SAFE para cargar el primer recurso del sector.</p></div>';
+    return;
+  }
+  els.resourceList.innerHTML = rows.map(renderResourceItem).join('');
+  els.resourceList.querySelectorAll('[data-copy-secret]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = rows[Number(btn.dataset.copySecret)];
+      if (!row?.secret) return;
+      try {
+        await navigator.clipboard.writeText(row.secret);
+        btn.textContent = 'Copiado';
+      } catch {
+        alert('No se pudo copiar automáticamente. Revisá permisos del navegador.');
+      }
+    });
+  });
+  els.resourceList.querySelectorAll('[data-copy-file-url]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = rows[Number(btn.dataset.copyFileUrl)];
+      const href = row?.fileUrl || row?.fileDataUrl || row?.link || '';
+      if (!href) return;
+      try {
+        await navigator.clipboard.writeText(href);
+        btn.textContent = 'Link copiado';
+      } catch {
+        alert('No se pudo copiar automáticamente. Abrí el archivo y copiá el link desde el navegador.');
+      }
+    });
+  });
+}
+
+function renderResourceItem(row, index) {
+  const canSeeSecret = currentLevel() >= 8;
+  const secretBlock = row.secret
+    ? canSeeSecret
+      ? `<div class="resource-secret"><b>Password / dato sensible</b><code>${escapeHtml(row.secret)}</code><button type="button" data-copy-secret="${index}">Copiar</button></div>`
+      : '<div class="resource-secret locked"><b>Password / dato sensible</b><span>Oculto. Requiere nivel 8 o superior.</span></div>'
+    : '';
+  const externalLink = row.link ? `<a class="video-link" href="${escapeHtml(row.link)}" target="_blank" rel="noopener">Abrir link cargado</a>` : '';
+  const fileHref = row.fileUrl || row.fileDataUrl || '';
+  const fileModeLabel = getResourceFileModeLabel(row);
+  const downloadName = escapeHtml(row.fileName || row.title || 'recurso');
+  const fileLink = fileHref
+    ? `<div class="resource-file-actions">
+        <a class="video-link" href="${escapeHtml(fileHref)}" target="_blank" rel="noopener">Abrir archivo</a>
+        <a class="video-link" href="${escapeHtml(fileHref)}" ${row.fileDataUrl ? `download="${downloadName}"` : `download="${downloadName}"`}>Descargar</a>
+        <button type="button" data-copy-file-url="${index}">Copiar link</button>
+      </div>`
+    : '';
+  const fileBlock = row.fileName
+    ? `<div class="resource-file"><b>Archivo:</b> ${escapeHtml(row.fileName)} · ${escapeHtml(row.fileSizeLabel || formatBytes(row.fileSize))} <span class="resource-mode ${escapeHtml(row.fileMode || 'metadata-only')}">${escapeHtml(fileModeLabel)}</span><div>${fileLink || '<span>No hay URL para abrir. Volvé a subirlo con Firebase Storage habilitado o agregá un link de Drive.</span>'}</div>${row.fileWarning ? `<p>${escapeHtml(row.fileWarning)}</p>` : ''}</div>`
+    : '';
+  return `<article class="knowledge-item resource-item">
+    <div>
+      <p class="eyebrow">${escapeHtml(row.type)} · ${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p>
+      <h3>${escapeHtml(row.title)}</h3>
+      <p><b>Sistema:</b> ${escapeHtml(row.system || 'Sin sistema cargado')}</p>
+      <p><b>Usuario / ubicación:</b> ${escapeHtml(row.user || 'Sin referencia cargada')}</p>
+      ${secretBlock}
+      ${fileBlock}
+      ${externalLink}
+      <p>${escapeHtml(row.notes)}</p>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sin operador')}</span>
+  </article>`;
+}
+
+function getResourceFileModeLabel(row) {
+  if (row.fileMode === 'firebase-storage') return 'En nube';
+  if (row.fileMode === 'local-embedded') return 'Local';
+  if (row.fileMode === 'metadata-only') return 'Solo referencia';
+  if (row.fileUrl) return 'En nube';
+  if (row.fileDataUrl) return 'Local';
+  return 'Solo referencia';
 }
 
 function saveDirective() {
@@ -729,6 +1447,133 @@ function renderDirectives() {
   els.directiveList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.sector)} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.title)}</h3><p>${escapeHtml(row.text)}</p></div><span>${escapeHtml(row.source)}</span></article>`).join('');
 }
 
+function renderSupervision() {
+  if (!els.supervisionStats) return;
+  const rows = getLearningRows().slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  fillSupervisionFilters(rows);
+  const filtered = getFilteredSupervisionRows(rows);
+  const lanes = { pending: [], review: [], done: [] };
+  filtered.forEach(row => lanes[getSupervisionLane(row)].push(row));
+  Object.values(lanes).forEach(lane => lane.sort(sortLearningRows));
+  renderSupervisionStats(rows, filtered, lanes);
+  renderSupervisionInsights(filtered);
+  renderSupervisionLane(els.supervisionPendingList, els.supervisionPendingCount, lanes.pending, 'Sin eventos pendientes.');
+  renderSupervisionLane(els.supervisionReviewList, els.supervisionReviewCount, lanes.review, 'Sin eventos en resolucion.');
+  renderSupervisionLane(els.supervisionDoneList, els.supervisionDoneCount, lanes.done, 'Todavia no hay procedimientos creados.');
+}
+
+function fillSupervisionFilters(rows) {
+  if (!els.supervisionOperatorFilter) return;
+  const current = els.supervisionOperatorFilter.value || 'Todos los operadores';
+  const operators = ['Todos los operadores', ...new Set(rows.map(row => row.operator || 'Sin operador').filter(Boolean))].sort((a, b) => a === 'Todos los operadores' ? -1 : b === 'Todos los operadores' ? 1 : a.localeCompare(b));
+  els.supervisionOperatorFilter.innerHTML = operators.map(operator => `<option>${escapeHtml(operator)}</option>`).join('');
+  els.supervisionOperatorFilter.value = operators.includes(current) ? current : 'Todos los operadores';
+}
+
+function getFilteredSupervisionRows(rows) {
+  const operator = els.supervisionOperatorFilter?.value || 'Todos los operadores';
+  const status = els.supervisionStatusFilter?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const operatorMatch = operator === 'Todos los operadores' || (row.operator || 'Sin operador') === operator;
+    const statusMatch = status === 'Todos los estados' || (row.status || 'Sin estado') === status;
+    return operatorMatch && statusMatch;
+  });
+}
+
+function getSupervisionLane(row) {
+  const status = row.status || '';
+  const resolution = row.resolution || {};
+  if (status === 'Resuelto y cargado' || status === 'Convertir en procedimiento' || resolution.procedure) return 'done';
+  if (status === 'Validado por supervisor') return 'review';
+  return 'pending';
+}
+
+function renderSupervisionStats(allRows, filteredRows, lanes) {
+  const resolved = lanes.done.length;
+  const pending = lanes.pending.length;
+  const review = lanes.review.length;
+  const operators = new Set(filteredRows.map(row => row.operator || 'Sin operador'));
+  const resolutionRate = filteredRows.length ? Math.round((resolved / filteredRows.length) * 100) : 0;
+  els.supervisionStats.innerHTML = [
+    ['Eventos filtrados', filteredRows.length],
+    ['Pendientes', pending],
+    ['En resolucion', review],
+    ['Procedimientos creados', resolved],
+    ['Operadores', operators.size],
+    ['Avance', `${resolutionRate}%`]
+  ].map(([label, value]) => `<div><b>${escapeHtml(String(value))}</b><span>${escapeHtml(label)}</span></div>`).join('');
+  if (!allRows.length) {
+    els.supervisionStats.innerHTML = '<div><b>0</b><span>Eventos cargados</span></div><div><b>0%</b><span>Avance</span></div>';
+  }
+}
+
+function renderSupervisionInsights(rows) {
+  if (!rows.length) {
+    els.supervisionInsights.innerHTML = '<p>Cuando los operadores carguen eventos en espera, supervision va a ver patrones, operadores con dudas y temas que conviene convertir en procedimiento.</p>';
+    return;
+  }
+  const topFailures = countEntries(rows.map(row => row.failure || row.question || 'Sin falla'));
+  const topOperators = countEntries(rows.map(row => row.operator || 'Sin operador'));
+  const pendingRows = rows.filter(row => getSupervisionLane(row) !== 'done');
+  const topFailure = topFailures[0] || ['Sin dato', 0];
+  const topOperator = topOperators[0] || ['Sin dato', 0];
+  const resolvedCount = rows.length - pendingRows.length;
+  const tips = [
+    `Tema mas repetido: ${topFailure[0]} (${topFailure[1]} casos).`,
+    `Operador con mas cargas en el filtro: ${topOperator[0]} (${topOperator[1]} casos).`,
+    `Casos sin cierre supervisor: ${pendingRows.length}. Casos ya resueltos: ${resolvedCount}.`
+  ];
+  if (pendingRows.length >= 5) tips.push('Conviene separar 20 minutos de revision por turno para bajar la bandeja pendiente.');
+  if (topFailure[1] >= 3) tips.push('Ese tema ya merece un criterio estandar o una capacitacion corta.');
+  els.supervisionInsights.innerHTML = `<h3>Sugerencias inteligentes</h3>${tips.map(tip => `<p>${escapeHtml(tip)}</p>`).join('')}`;
+}
+
+function renderSupervisionLane(container, countEl, rows, emptyText) {
+  if (!container) return;
+  if (countEl) countEl.textContent = rows.length;
+  if (!rows.length) {
+    container.innerHTML = `<div class="empty-state compact-empty"><h2>${escapeHtml(emptyText)}</h2></div>`;
+    return;
+  }
+  container.innerHTML = rows.map(row => renderSupervisionCard(row)).join('');
+  container.querySelectorAll('[data-supervision-open]').forEach(btn => {
+    btn.addEventListener('click', () => openLearningResolution(btn.dataset.supervisionOpen));
+  });
+  container.querySelectorAll('[data-supervision-copy]').forEach(btn => {
+    btn.addEventListener('click', () => copyLearningSupervisorNote(btn.dataset.supervisionCopy, btn));
+  });
+  container.querySelectorAll('[data-supervision-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => addLearningToKanban(btn.dataset.supervisionKanban));
+  });
+}
+
+function renderSupervisionCard(row) {
+  const id = row.id || getLearningDocId(row);
+  const resolution = row.resolution || {};
+  const title = row.failure || row.question || 'Evento sin titulo';
+  const summary = row.context || row.question || 'Sin contexto cargado';
+  const category = getLearningCategory(row);
+  const eventType = getLearningEventType(row);
+  const priority = getLearningPriority(row);
+  return `<article class="supervision-card">
+    <p class="eyebrow">${escapeHtml(row.status || 'Sin estado')} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
+    <h3>${escapeHtml(title)}</h3>
+    <div class="learning-tags"><span>${escapeHtml(eventType)}</span><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span></div>
+    <p>${escapeHtml(summary.slice(0, 260))}${summary.length > 260 ? '...' : ''}</p>
+    <div class="supervision-meta">
+      <span>${escapeHtml(row.operator || 'Sin operador')}</span>
+      <span>${escapeHtml(row.shift || 'Sin turno')}</span>
+      <span>${escapeHtml(row.type || 'Evento en espera')}</span>
+    </div>
+    ${resolution.procedure ? `<p class="validated-procedure"><b>Criterio:</b> ${escapeHtml(resolution.procedure.slice(0, 180))}${resolution.procedure.length > 180 ? '...' : ''}</p>` : ''}
+    <div class="supervision-card-actions">
+      <button type="button" class="primary" data-supervision-open="${escapeHtml(id)}">${resolution.procedure ? 'Ajustar' : 'Resolver'}</button>
+      <button type="button" data-supervision-copy="${escapeHtml(id)}">Copiar nota</button>
+      <button type="button" data-supervision-kanban="${escapeHtml(id)}">Kanban</button>
+    </div>
+  </article>`;
+}
+
 async function saveLearning() {
   const question = els.learningQuestion.value.trim();
   const failure = els.learningFailure.value.trim();
@@ -741,8 +1586,16 @@ async function saveLearning() {
   const suggestion = getLearningSuggestions()[0];
   const session = getSession();
   const rows = getStoredRows(LEARNING_KEY);
+  const selectedEventType = els.learningEventType?.value || 'Autodetectar por texto';
+  const eventType = selectedEventType === 'Autodetectar por texto'
+    ? inferBykomEventType({ subscriber, failure, question, context })
+    : selectedEventType;
   const record = {
     date: new Date().toISOString(),
+    type: els.learningType?.value || 'Evento en espera',
+    category: els.learningCategory?.value || inferLearningCategory({ failure, question, context }),
+    eventType,
+    priority: els.learningPriority?.value || inferLearningPriority({ failure, question, context }),
     operator: els.learningOperator.value.trim() || session.operator || 'Sin operador cargado',
     operatorUid: session.uid || state.firebase.currentUser?.uid || '',
     operatorEmail: session.email || state.firebase.currentUser?.email || '',
@@ -773,22 +1626,371 @@ async function saveLearning() {
   els.learningFailure.value = '';
   els.learningQuestion.value = '';
   els.learningContext.value = '';
+  if (els.learningEventType) els.learningEventType.value = 'Autodetectar por texto';
   renderLearningSuggestion();
   renderLearning();
+  renderSupervision();
   renderMetrics();
   renderLearningSavedState();
 }
 
 function renderLearning() {
-  const rows = getLearningRows().slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-  els.learningCount.textContent = `${rows.length} eventos`;
-  if (!rows.length) {
+  const allRows = getLearningRows().slice();
+  fillLearningFilters(allRows);
+  const rows = getFilteredLearningRows(allRows).sort(sortLearningRows);
+  els.learningCount.textContent = `${rows.length} / ${allRows.length} eventos`;
+  if (!allRows.length) {
     els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin eventos en espera</h2><p>La próxima consulta sin resolver puede convertirse en una solución permanente para todos.</p></div>';
     renderLearningSavedState();
     return;
   }
-  els.learningList.innerHTML = rows.map(row => `<article class="knowledge-item"><div><p class="eyebrow">${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${new Date(row.date).toLocaleDateString()}</p><h3>${escapeHtml(row.failure || row.question)}</h3><p>${escapeHtml(row.question)}</p><p>${escapeHtml(row.context)}</p><p><b>Sugerencia:</b> ${escapeHtml(row.suggestion || 'Sin solución cargada')}</p><p><b>Resumen supervisor:</b> ${escapeHtml(row.supervisorSummary || '')}</p></div><span>${escapeHtml(row.operator)} · ${escapeHtml(row.shift || 'Sin turno')}</span></article>`).join('');
+  if (!rows.length) {
+    els.learningList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin eventos con ese filtro</h2><p>Probá cambiar categoría, prioridad o estado para ampliar la vista.</p></div>';
+    renderLearningSavedState();
+    return;
+  }
+  els.learningList.innerHTML = rows.map(row => renderLearningItem(row)).join('');
+  els.learningList.querySelectorAll('[data-open-learning]').forEach(btn => {
+    btn.addEventListener('click', () => openLearningResolution(btn.dataset.openLearning));
+  });
+  els.learningList.querySelectorAll('[data-add-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => addLearningToKanban(btn.dataset.addKanban));
+  });
+  els.learningList.querySelectorAll('[data-copy-supervisor]').forEach(btn => {
+    btn.addEventListener('click', () => copyLearningSupervisorNote(btn.dataset.copySupervisor, btn));
+  });
   renderLearningSavedState();
+}
+
+function fillLearningFilters(rows) {
+  if (!els.learningFilterCategory) return;
+  const current = els.learningFilterCategory.value || 'Todas las categorías';
+  const currentEvent = els.learningFilterEventType?.value || 'Todos los eventos Bykom';
+  const categories = ['Todas las categorías', ...new Set(rows.map(row => getLearningCategory(row)).filter(Boolean))].sort((a, b) => a === 'Todas las categorías' ? -1 : b === 'Todas las categorías' ? 1 : a.localeCompare(b));
+  els.learningFilterCategory.innerHTML = categories.map(category => `<option>${escapeHtml(category)}</option>`).join('');
+  els.learningFilterCategory.value = categories.includes(current) ? current : 'Todas las categorías';
+  if (els.learningFilterEventType) {
+    const events = ['Todos los eventos Bykom', ...new Set(rows.map(row => getLearningEventType(row)).filter(Boolean))].sort((a, b) => a === 'Todos los eventos Bykom' ? -1 : b === 'Todos los eventos Bykom' ? 1 : a.localeCompare(b));
+    els.learningFilterEventType.innerHTML = events.map(eventType => `<option>${escapeHtml(eventType)}</option>`).join('');
+    els.learningFilterEventType.value = events.includes(currentEvent) ? currentEvent : 'Todos los eventos Bykom';
+  }
+}
+
+function getFilteredLearningRows(rows) {
+  const category = els.learningFilterCategory?.value || 'Todas las categorías';
+  const eventType = els.learningFilterEventType?.value || 'Todos los eventos Bykom';
+  const priority = els.learningFilterPriority?.value || 'Todas las prioridades';
+  const status = els.learningFilterStatus?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const categoryMatch = category === 'Todas las categorías' || getLearningCategory(row) === category;
+    const eventMatch = eventType === 'Todos los eventos Bykom' || getLearningEventType(row) === eventType;
+    const priorityMatch = priority === 'Todas las prioridades' || getLearningPriority(row) === priority;
+    const statusMatch = status === 'Todos los estados' || (row.status || 'Sin estado') === status;
+    return categoryMatch && eventMatch && priorityMatch && statusMatch;
+  });
+}
+
+function sortLearningRows(a, b) {
+  const mode = els.learningSort?.value || 'Prioridad primero';
+  if (mode === 'Más recientes') return String(b.date || '').localeCompare(String(a.date || ''));
+  if (mode === 'Evento Bykom') return getLearningEventType(a).localeCompare(getLearningEventType(b)) || priorityWeight(b) - priorityWeight(a);
+  if (mode === 'Categoría') return getLearningCategory(a).localeCompare(getLearningCategory(b)) || priorityWeight(b) - priorityWeight(a);
+  if (mode === 'Estado') return String(a.status || '').localeCompare(String(b.status || '')) || priorityWeight(b) - priorityWeight(a);
+  return priorityWeight(b) - priorityWeight(a) || String(b.date || '').localeCompare(String(a.date || ''));
+}
+
+function getLearningCategory(row) {
+  return row.category || row.resolution?.category || inferLearningCategory(row) || 'Sin categoría';
+}
+
+function getLearningPriority(row) {
+  return row.priority || inferLearningPriority(row) || 'Media';
+}
+
+function getLearningEventType(row) {
+  return row.eventType || row.bykomEvent || inferBykomEventType(row) || 'Otro evento';
+}
+
+function priorityWeight(row) {
+  return { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 }[getLearningPriority(row)] || 2;
+}
+
+function renderLearningItem(row) {
+  const id = row.id || getLearningDocId(row);
+  const resolution = row.resolution || {};
+  const resolved = ['Validado por supervisor', 'Convertir en procedimiento', 'Resuelto y cargado'].includes(row.status) || Boolean(resolution.procedure);
+  const category = getLearningCategory(row);
+  const eventType = getLearningEventType(row);
+  const priority = getLearningPriority(row);
+  return `<article class="knowledge-item learning-item ${resolved ? 'resolved' : ''}">
+    <div class="knowledge-main">
+      <p class="eyebrow">${escapeHtml(row.type || 'Evento en espera')} · ${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
+      <h3>${escapeHtml(row.failure || row.question)}</h3>
+      <div class="learning-tags"><span>${escapeHtml(eventType)}</span><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span></div>
+      <p>${escapeHtml(row.question)}</p>
+      <p>${escapeHtml(row.context)}</p>
+      <p><b>Sugerencia:</b> ${escapeHtml(row.suggestion || 'Sin solución cargada')}</p>
+      ${resolution.procedure ? `<p><b>Procedimiento validado:</b> ${escapeHtml(resolution.procedure)}</p>` : ''}
+      <p><b>Resumen supervisor:</b> ${escapeHtml(row.supervisorSummary || '')}</p>
+      <div class="learning-actions">
+        <button type="button" class="primary" data-open-learning="${escapeHtml(id)}">${resolved ? 'Ver / ajustar resolución' : 'Resolver evento'}</button>
+        <button type="button" data-copy-supervisor="${escapeHtml(id)}">Copiar nota supervisor</button>
+        <button type="button" data-add-kanban="${escapeHtml(id)}">Enviar a Kanban</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sin operador')} · ${escapeHtml(row.shift || 'Sin turno')}</span>
+  </article>`;
+}
+
+function safeDate(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Sin fecha' : date.toLocaleDateString();
+}
+
+function safeDateTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Sin fecha' : date.toLocaleString();
+}
+
+function findLearningRow(id) {
+  return getLearningRows().find(row => (row.id || getLearningDocId(row)) === id);
+}
+
+function openLearningResolution(id) {
+  const row = findLearningRow(id);
+  if (!row) return;
+  const resolution = row.resolution || {};
+  state.selectedLearningId = id;
+  els.learningDialogTitle.textContent = row.failure || row.question || 'Evento en espera';
+  els.learningDialogContext.innerHTML = `<p><b>Abonado / objetivo:</b> ${escapeHtml(row.subscriber || 'Sin abonado')}</p>
+    <p><b>Tipo de carga:</b> ${escapeHtml(row.type || 'Evento en espera')}</p>
+    <p><b>Evento Bykom:</b> ${escapeHtml(getLearningEventType(row))}</p>
+    <p><b>Duda:</b> ${escapeHtml(row.question || 'Sin duda cargada')}</p>
+    <p><b>Contexto:</b> ${escapeHtml(row.context || 'Sin contexto cargado')}</p>
+    <p><b>Sugerencia actual:</b> ${escapeHtml(row.suggestion || 'Sin sugerencia')}</p>
+    <p><b>Operador:</b> ${escapeHtml(row.operator || 'Sin operador')} · ${escapeHtml(row.shift || 'Sin turno')}</p>`;
+  els.resolutionStatus.value = row.status || 'Validado por supervisor';
+  els.resolutionCategory.value = resolution.category || inferLearningCategory(row);
+  els.resolutionCause.value = resolution.cause || '';
+  els.resolutionProcedure.value = resolution.procedure || '';
+  els.resolutionBykom.value = resolution.bykomNote || '';
+  els.resolutionRoute.value = resolution.route || '';
+  els.resolutionKeywords.value = resolution.keywords || buildLearningKeywords(row);
+  els.learningResolveState.textContent = currentLevel() >= 8
+    ? 'Resolución lista para supervisión.'
+    : 'Podés completar una propuesta; supervisión debe validar el criterio final.';
+  els.learningDialog.showModal();
+}
+
+function inferLearningCategory(row) {
+  const text = normalize([row.subscriber, row.failure, row.question, row.context, row.suggestion].join(' '));
+  if (text.includes('safe') || text.includes('vehicular') || text.includes('camion') || text.includes('movil') || text.includes('no reporta')) return 'SAFE / Vehicular';
+  if (text.includes('comunic')) return 'Falla de comunicación';
+  if (text.includes('tamper')) return 'Tamper / sabotaje';
+  if (text.includes('zona')) return 'Evento de zona / intrusión';
+  if (text.includes('servic') || text.includes('tecnic')) return 'Servicio técnico';
+  if (text.includes('whatsapp') || text.includes('llamad')) return 'Contacto con cliente';
+  if (text.includes('baja') || text.includes('factura') || text.includes('cobran')) return 'Administración';
+  return 'Caso particular a validar';
+}
+
+function inferBykomEventType(row) {
+  const text = normalize([row.subscriber, row.failure, row.question, row.context, row.suggestion].join(' '));
+  if (text.includes('falso') || text.includes('falsa alarma') || text.includes('falsos disparos')) return 'Falso disparo';
+  if (text.includes('no llega cierre') || text.includes('fallo de cierre') || text.includes('fallo cierre') || text.includes('no cerro') || text.includes('no cerró')) return 'No llega cierre';
+  if (text.includes('no llega apertura') || text.includes('fallo de apertura') || text.includes('fallo apertura') || text.includes('no abrio') || text.includes('no abrió')) return 'No llega apertura';
+  if (text.includes('comunic') || text.includes('gprs') || text.includes('linea telefonica') || text.includes('línea telefónica') || text.includes('ip') || text.includes('no comunica')) return 'Falla de comunicación';
+  if (text.includes('220') || text.includes('corte de luz') || text.includes('falta de luz') || text.includes('energia') || text.includes('energía')) return 'Corte 220 / falta de luz';
+  if (text.includes('bateria baja panel') || text.includes('batería baja panel') || (text.includes('bateria') && text.includes('panel')) || (text.includes('batería') && text.includes('panel'))) return 'Batería baja panel';
+  if ((text.includes('bateria') || text.includes('batería')) && (text.includes('zona') || text.includes('sensor'))) return 'Batería baja zona/sensor';
+  if (text.includes('tamper') || text.includes('sabotaje')) return 'Tamper / sabotaje';
+  if (text.includes('panico') || text.includes('pánico') || text.includes('asalto')) return 'Pánico / asalto';
+  if (text.includes('medica') || text.includes('médica') || text.includes('emergencia medica') || text.includes('emergencia médica')) return 'Emergencia médica';
+  if (text.includes('fuego') || text.includes('incendio')) return 'Fuego / incendio';
+  if (text.includes('desactivacion') && (text.includes('fuera') || text.includes('horario'))) return 'Desactivación fuera de horario';
+  if (text.includes('falla de enlace') || text.includes('enlace')) return 'Falla de enlace';
+  if (text.includes('panel en prueba')) return 'Panel en prueba';
+  if (text.includes('mantenimiento') || text.includes('service') || text.includes('servis') || text.includes('tecnico') || text.includes('técnico')) return 'Orden de mantenimiento';
+  if (text.includes('safe') || text.includes('vehicular') || text.includes('camion') || text.includes('camión') || text.includes('movil') || text.includes('móvil') || text.includes('gps') || text.includes('no reporta')) return 'Evento SAFE / vehicular';
+  if (text.includes('factura') || text.includes('cobranza') || text.includes('baja') || text.includes('reclamo')) return 'Reclamo administrativo';
+  if (text.includes('zona') || text.includes('disparo') || text.includes('intrusion') || text.includes('intrusión')) return 'Disparo de alarma';
+  return 'Otro evento';
+}
+
+function inferLearningPriority(row) {
+  const text = normalize([row.subscriber, row.failure, row.question, row.context, row.suggestion].join(' '));
+  if (text.includes('panico') || text.includes('asalto') || text.includes('robo') || text.includes('fuego') || text.includes('medica') || text.includes('emergencia') || text.includes('acuda')) return 'Crítica';
+  if (text.includes('reiterad') || text.includes('no responde') || text.includes('sin monitoreo') || text.includes('baja') || text.includes('reclamo') || text.includes('service') || text.includes('servis') || text.includes('tecnico')) return 'Alta';
+  if (text.includes('sugerencia') || text.includes('capacitacion')) return 'Baja';
+  return 'Media';
+}
+
+function buildLearningKeywords(row) {
+  return [row.subscriber, row.failure, row.question]
+    .filter(Boolean)
+    .join(', ')
+    .slice(0, 180);
+}
+
+function makeLearningResolutionPayload(row) {
+  const session = getSession();
+  const procedure = els.resolutionProcedure.value.trim();
+  const bykomNote = els.resolutionBykom.value.trim();
+  const category = els.resolutionCategory.value.trim();
+  const cause = els.resolutionCause.value.trim();
+  const route = els.resolutionRoute.value.trim();
+  const keywords = els.resolutionKeywords.value.trim();
+  const status = els.resolutionStatus.value;
+  const resolutionSummary = `Categoría: ${category || 'Sin categoría'}. Criterio: ${cause || 'Sin criterio cargado'}. Procedimiento: ${procedure || 'Sin procedimiento cargado'}. Nota Bykom: ${bykomNote || 'Sin nota estándar'}. Derivación: ${route || 'Sin derivación'}.`;
+  return {
+    ...row,
+    status,
+    suggestion: procedure || row.suggestion || '',
+    supervisorSummary: resolutionSummary,
+    resolution: {
+      category,
+      cause,
+      procedure,
+      bykomNote,
+      route,
+      keywords,
+      supervisorName: session.operator || 'Sin supervisor',
+      supervisorUid: session.uid || '',
+      supervisorLevel: Number(session.level || 0),
+      resolvedAt: new Date().toISOString()
+    },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+async function saveLearningResolution() {
+  const row = findLearningRow(state.selectedLearningId);
+  if (!row) return;
+  const payload = makeLearningResolutionPayload(row);
+  try {
+    await updateLearningRow(payload);
+    els.learningResolveState.textContent = 'Resolución guardada. Este caso ya queda como referencia para futuras búsquedas.';
+    renderLearning();
+    renderSupervision();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar resolución', error);
+    els.learningResolveState.textContent = 'No se pudo guardar la resolución. Revisá permisos o conexión.';
+  }
+}
+
+async function updateLearningRow(row) {
+  const docId = row.id || getLearningDocId(row);
+  if (state.firebase.enabled && learningCollection()) {
+    const payload = { ...row };
+    delete payload.id;
+    if (window.firebase?.firestore?.FieldValue) payload.resolvedSavedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await learningCollection().doc(docId).set(payload, { merge: true });
+    state.firebase.lastCloudSave = new Date().toISOString();
+    return;
+  }
+  const rows = getStoredRows(LEARNING_KEY);
+  const nextRows = rows.map(item => (item.id || getLearningDocId(item)) === docId ? row : item);
+  localStorage.setItem(LEARNING_KEY, JSON.stringify(nextRows));
+}
+
+async function copyLearningResolution() {
+  const row = findLearningRow(state.selectedLearningId);
+  if (!row) return;
+  const payload = makeLearningResolutionPayload(row);
+  const text = `Abonado: ${payload.subscriber || 'Sin abonado'}\nEvento: ${payload.failure || payload.question || 'Sin evento'}\nEstado: ${payload.status}\n${payload.supervisorSummary}`;
+  await copyPlainText(text);
+  els.learningResolveState.textContent = 'Resumen copiado.';
+}
+
+async function copyLearningSupervisorNote(id, button) {
+  const row = findLearningRow(id);
+  if (!row) return;
+  await copyPlainText(makeSupervisorEmailNote(row));
+  if (!button) return;
+  const previous = button.textContent;
+  button.textContent = 'Nota copiada';
+  button.disabled = true;
+  setTimeout(() => {
+    button.textContent = previous;
+    button.disabled = false;
+  }, 1600);
+}
+
+async function copyPlainText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return;
+  } catch {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+  }
+}
+
+function makeSupervisorEmailNote(row) {
+  const resolution = row.resolution || {};
+  const subscriber = row.subscriber || 'Sin abonado/objetivo cargado';
+  const type = row.type || 'Evento en espera';
+  const failure = row.failure || row.question || 'Evento sin titulo';
+  const question = row.question || 'Sin duda concreta cargada';
+  const context = row.context || 'Sin contexto cargado';
+  const suggestion = row.suggestion || 'Sin sugerencia automatica disponible';
+  const operator = row.operator || state.currentUser?.name || 'Sin operador';
+  const shift = row.shift || state.currentUser?.shift || 'Sin turno';
+  const sector = row.sector || state.currentUser?.sector || 'Sin sector';
+  const station = row.station || state.currentUser?.station || 'Sin estacion';
+  const status = row.status || 'Pendiente de validar';
+  const summary = row.supervisorSummary || buildSupervisorSummaryFromRow(row);
+  const resolutionBlock = resolution.procedure
+    ? `\nResolucion ya cargada:\n${resolution.procedure}\n\nNota Bykom sugerida:\n${resolution.bykomNote || 'Sin nota Bykom cargada'}\n`
+    : '';
+
+  return [
+    `Asunto sugerido: Validacion de evento en espera - ${subscriber} - ${failure}`,
+    '',
+    'Hola, envio este evento para validar el procedimiento correcto.',
+    '',
+    'Solicito confirmacion para poder cedularlo correctamente en Bykom y, si corresponde, dejar el criterio como procedimiento reutilizable para los operadores.',
+    '',
+    `Abonado / objetivo: ${subscriber}`,
+    `Tipo de carga: ${type}`,
+    `Falla / evento: ${failure}`,
+    `Estado actual: ${status}`,
+    `Operador: ${operator}`,
+    `Turno: ${shift}`,
+    `Sector: ${sector}`,
+    `Estacion: ${station}`,
+    `Fecha de carga: ${safeDateTime(row.date)}`,
+    '',
+    `Duda concreta:\n${question}`,
+    '',
+    `Contexto / acciones realizadas:\n${context}`,
+    '',
+    `Sugerencia del sistema:\n${suggestion}`,
+    resolutionBlock,
+    `Resumen para supervision:\n${summary}`,
+    '',
+    'Pedido concreto:',
+    'Confirmar cual es el procedimiento correcto, como debe cedularse en Bykom y si corresponde generar mantenimiento, dejar en espera, informar al cliente, derivar a otro sector o convertirlo en una directiva/procedimiento.',
+  ].filter(Boolean).join('\n');
+}
+
+function buildSupervisorSummaryFromRow(row) {
+  const parts = [
+    `Tipo de carga: ${row.type || 'Evento en espera'}.`,
+    `Abonado ${row.subscriber || 'sin abonado'}.`,
+    `Falla/evento: ${row.failure || 'sin falla cargada'}.`,
+    `Duda: ${row.question || 'sin duda concreta'}.`,
+    `Contexto: ${row.context || 'sin contexto'}.`,
+  ];
+  return `${parts.join(' ')} Se solicita validar el procedimiento correcto para cargarlo como solucion reutilizable.`;
 }
 
 function renderLearningSavedState() {
@@ -840,6 +2042,7 @@ function importLearningBackup(event) {
       localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
       syncLearningRowsToCloud(incoming);
       renderLearning();
+      renderSupervision();
       renderMetrics();
       renderLearningSavedState();
     } catch {
@@ -904,10 +2107,17 @@ function applyLearningSuggestion(source, id) {
 
 function makeSupervisorSummary() {
   const subscriber = els.learningSubscriber?.value.trim() || 'sin abonado';
+  const type = els.learningType?.value || 'Evento en espera';
+  const category = els.learningCategory?.value || 'Sin categoría';
+  const selectedEventType = els.learningEventType?.value || 'Autodetectar por texto';
+  const priority = els.learningPriority?.value || 'Media';
   const failure = els.learningFailure?.value.trim() || 'sin falla especificada';
   const question = els.learningQuestion?.value.trim() || failure;
   const context = els.learningContext?.value.trim() || 'sin contexto adicional';
-  return `Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
+  const eventType = selectedEventType === 'Autodetectar por texto'
+    ? inferBykomEventType({ subscriber, failure, question, context })
+    : selectedEventType;
+  return `Tipo de carga: ${type}. Evento Bykom: ${eventType}. Categoría: ${category}. Prioridad: ${priority}. Abonado ${subscriber}. Falla/evento: ${failure}. Duda: ${question}. Contexto: ${context}. Se solicita validar procedimiento correcto para cargarlo como solución reutilizable.`;
 }
 
 function getStoredRows(key) {
@@ -992,9 +2202,12 @@ function renderSafeDetail() {
   document.getElementById('copySafeNote').addEventListener('click', copySafeNote);
   document.getElementById('safeLearning').addEventListener('click', () => {
     document.querySelector('[data-tab="learning"]').click();
+    if (els.learningType) els.learningType.value = 'Duda operativa';
+    els.learningFailure.value = item.event;
     els.learningQuestion.value = item.event;
     els.learningContext.value = `Duda o mejora sobre SAFE: ${item.trigger}`;
     els.learningStatus.value = 'Pendiente de validar';
+    renderLearningSuggestion();
   });
 }
 
@@ -1199,9 +2412,14 @@ function renderProcedureDetail() {
   els.procedureDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">${escapeHtml(item.category)} · ${escapeHtml(item.code)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Chequeos del operador', procedureChecks(item.checks))}${procedureBlock('Acción recomendada', escapeHtml(item.action))}${procedureBlock('Oportunidad de automatización', escapeHtml(item.automation))}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota operativa sugerida</h2><textarea id="procedureNote">${escapeHtml(makeProcedureNote(item))}</textarea><div class="actions"><button class="primary" id="copyProcedureNote">Copiar nota</button><button id="procedurePending">Registrar duda operativa</button></div></div>`;
   document.getElementById('copyProcedureNote').addEventListener('click', copyProcedureNote);
   document.getElementById('procedurePending').addEventListener('click', () => {
-    document.querySelector('[data-tab="call"]').click();
-    els.searchInput.value = item.event;
-    showPendingForm();
+    goToTab('learning');
+    if (els.learningType) els.learningType.value = 'Duda operativa';
+    els.learningFailure.value = item.event;
+    els.learningQuestion.value = `Qué criterio falta validar sobre ${item.event}`;
+    els.learningContext.value = `Procedimiento operativo: ${item.event}\nCódigo: ${item.code}\nDisparador: ${item.trigger}\nAcción cargada: ${item.action}\n\nDuda del operador: `;
+    els.learningStatus.value = 'Pendiente de validar';
+    renderLearningSuggestion();
+    els.learningContext.focus();
   });
 }
 
@@ -1386,6 +2604,7 @@ function getCases() {
 function renderMetrics() {
   const rows = getCases();
   const learning = getLearningRows();
+  const kanban = getKanbanRows();
   const session = getSession();
   const total = rows.length;
   const remote = rows.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
@@ -1397,13 +2616,46 @@ function renderMetrics() {
   els.mRisk.textContent = risk;
   els.mAvoided.textContent = avoided;
   els.mPending.textContent = pending;
-  renderBars(els.paretoChart, countEntries([...rows.map(r => r.issue), ...learning.map(r => r.failure || r.question)]), true);
-  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator)]), false);
-  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift)]), false);
-  renderBars(els.learningChart, countEntries(learning.map(r => r.failure || r.question)), true);
+  const paretoEntries = getParetoEntries(rows, learning, kanban);
+  renderBars(els.paretoChart, paretoEntries, true);
+  renderMetricInsights(paretoEntries, rows, learning, kanban);
+  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]), false);
+  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift)]), false);
+  renderBars(els.learningChart, countEntries(learning.map(r => getLearningEventType(r))), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
-  renderOperatorSummary(rows, learning, session);
+  renderOperatorSummary(rows, learning, kanban, session);
   renderCaseRows(rows);
+}
+
+function getParetoEntries(rows, learning, kanban) {
+  const mode = els.paretoMode?.value || 'cause';
+  if (mode === 'learningType') return countEntries(learning.map(r => getLearningEventType(r) || r.type || 'Evento en espera'));
+  if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column)]);
+  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]);
+  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority)]);
+  if (mode === 'kanban') return countEntries(kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column));
+  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category)]);
+}
+
+function renderMetricInsights(entries, rows, learning, kanban) {
+  if (!els.metricInsights) return;
+  if (!entries.length) {
+    els.metricInsights.innerHTML = '<p>Todavía no hay datos suficientes para sugerencias.</p>';
+    return;
+  }
+  const [topLabel, topValue] = entries[0];
+  const total = entries.reduce((sum, item) => sum + item[1], 0);
+  const topPercent = Math.round(topValue * 100 / total);
+  const openLearning = learning.filter(row => !['Resuelto y cargado', 'Convertir en procedimiento'].includes(row.status)).length;
+  const stuck = kanban.filter(row => ['en-espera', 'supervision'].includes(row.column)).length;
+  const risk = rows.filter(row => row.mood === 'Riesgo de baja').length;
+  const ideas = [
+    `El foco principal es "${topLabel}", con ${topPercent}% del total visible. Si se estandariza ese grupo, baja el mayor cuello de botella.`,
+    openLearning ? `Hay ${openLearning} eventos en espera: conviene resolverlos por lote y convertir los repetidos en procedimiento.` : 'No hay dudas abiertas relevantes: buen momento para revisar calidad de procedimientos.',
+    stuck ? `El Kanban tiene ${stuck} tarjetas en espera/supervisión. Revisá si dependen de la misma persona o sector.` : 'El Kanban no muestra acumulación en espera.',
+    risk ? `Hay ${risk} casos con riesgo de baja. Esa métrica pesa más que la cantidad bruta de eventos levantados.` : 'No aparecen riesgos de baja cargados en el historial actual.'
+  ];
+  els.metricInsights.innerHTML = `<h3>Lectura inteligente</h3><ul>${ideas.map(idea => `<li>${escapeHtml(idea)}</li>`).join('')}</ul>`;
 }
 
 function countEntries(values) {
@@ -1418,7 +2670,7 @@ function countBy(rows, key) {
   return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
 }
 
-function renderOperatorSummary(rows, learning, session) {
+function renderOperatorSummary(rows, learning, kanban, session) {
   if (!els.operatorSummary) return;
   if (!session.operator) {
     els.operatorSummary.innerHTML = '<p class="empty-state compact-empty">Iniciá sesión para ver tus métricas.</p>';
@@ -1426,8 +2678,10 @@ function renderOperatorSummary(rows, learning, session) {
   }
   const mine = rows.filter(r => r.operator === session.operator);
   const myLearning = learning.filter(r => r.operator === session.operator);
+  const myKanban = kanban.filter(r => r.operator === session.operator);
   const resolved = mine.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
-  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${session.shift || 'Sin turno'}</b><span>turno actual</span></div></div>`;
+  const myResolvedTasks = myKanban.filter(r => ['resuelto', 'procedimiento'].includes(r.column)).length;
+  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div></div>`;
 }
 
 function renderBars(el, entries, pareto) {

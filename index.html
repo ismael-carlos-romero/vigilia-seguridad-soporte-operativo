@@ -6,7 +6,7 @@
   <title>Vigilia Seguridad Soporte Operativo</title>
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="auth-gate">
 <section id="loginOverlay" class="login-overlay">
   <form id="loginForm" class="login-card">
     <p class="eyebrow">Inicio de turno</p>
@@ -16,12 +16,15 @@
     <input id="loginEmail" type="email" placeholder="Ej: ismael@vigilia.com" autocomplete="username">
     <label class="field-label" for="loginPassword">Contraseña</label>
     <input id="loginPassword" type="password" placeholder="Contraseña" autocomplete="current-password">
-    <label class="field-label" for="loginOperator">Operador</label>
-    <input id="loginOperator" placeholder="Ej: Ismael Romero">
-    <label class="field-label" for="loginShift">Turno</label>
-    <select id="loginShift"><option>Noche</option><option>Mañana</option><option>Tarde</option><option>Franco / apoyo</option></select>
-    <label class="field-label" for="loginSector">Sector</label>
-    <select id="loginSector"><option>Monitoreo 911</option><option>SAFE</option><option>Supervisión</option><option>Administración</option></select>
+    <div class="login-session-fields" aria-hidden="true">
+      <label class="field-label" for="loginOperator">Operador</label>
+      <input id="loginOperator" placeholder="Ej: Ismael Romero">
+      <label class="field-label" for="loginShift">Turno</label>
+      <select id="loginShift"><option>Noche</option><option>Mañana</option><option>Tarde</option><option>Franco / apoyo</option></select>
+      <label class="field-label" for="loginSector">Sector</label>
+      <select id="loginSector"><option>Monitoreo 911</option><option>SAFE</option><option>Supervisión</option><option>Administración</option></select>
+      <input id="loginStation" value="Estación sin asignar">
+    </div>
     <button class="primary" type="submit">Ingresar</button>
     <p id="loginStatus" class="save-state">Ingresá con un usuario habilitado por administración.</p>
   </form>
@@ -29,10 +32,97 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Vigilia Seguridad Soporte Operativo</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
+<section id="manual" class="view">
+  <section class="manual-hero">
+    <p class="eyebrow">Manual de uso</p>
+    <h2>Vigilia Seguridad Soporte Operativo</h2>
+    <p>Este sistema ordena la atención operativa, reduce dudas repetidas y convierte cada evento irregular en conocimiento reutilizable. Su objetivo es que el operador tenga una guía rápida para actuar, registrar, derivar y aprender sin depender siempre de instrucciones sueltas por WhatsApp, mail o memoria.</p>
+  </section>
+  <section class="manual-layout">
+    <article class="manual-card">
+      <p class="eyebrow">Objetivo</p>
+      <h3>Para qué sirve</h3>
+      <p>Centraliza procedimientos, directivas, eventos en espera, tareas y métricas para que la Central de Monitoreo trabaje con criterios claros, medibles y mejorables.</p>
+      <ul>
+        <li>Guiar al operador durante llamadas y eventos.</li>
+        <li>Derivar consultas al sector correcto.</li>
+        <li>Consultar procedimientos de Objetivo Fijo 911 y SAFE.</li>
+        <li>Registrar dudas que necesitan validación de supervisión.</li>
+        <li>Convertir respuestas de supervisores en nuevos procedimientos.</li>
+      </ul>
+    </article>
+    <article class="manual-card">
+      <p class="eyebrow">Uso diario</p>
+      <h3>Flujo recomendado</h3>
+      <ol class="manual-flow">
+        <li><b>Ingresar al turno:</b> iniciar sesión para que el sistema registre operador, turno, sector y estación.</li>
+        <li><b>Recibir consulta:</b> cargar lo que dice el cliente en la sección Ingreso.</li>
+        <li><b>Validar cuenta:</b> confirmar abonado, titular, palabra clave o dato adicional y revisar Bykom cuando corresponda.</li>
+        <li><b>Seguir guía:</b> abrir la sección sugerida por el sistema y aplicar procedimiento.</li>
+        <li><b>Cerrar o escalar:</b> si se resuelve, registrar; si queda duda, guardarla en Aprendizajes.</li>
+      </ol>
+    </article>
+    <article class="manual-card">
+      <p class="eyebrow">Secciones</p>
+      <h3>Qué hace cada módulo</h3>
+      <ul>
+        <li><b>Ingreso:</b> clasifica llamadas y sugiere sector, preguntas y acción inicial.</li>
+        <li><b>Objetivo Fijo (911):</b> guía para fallas, teclados, paneles, apps y soporte domiciliario.</li>
+        <li><b>Objetivos Móviles (SAFE):</b> guía para unidades, camiones, GPS, sin reporte y seguimiento vehicular.</li>
+        <li><b>Procedimientos:</b> base operativa para eventos recibidos en Bykom.</li>
+        <li><b>Supervisión:</b> directivas internas cargadas por responsables.</li>
+        <li><b>Aprendizajes:</b> eventos en espera, dudas y casos que deben validarse.</li>
+        <li><b>Kanban:</b> tablero visual para ordenar tareas y seguimientos.</li>
+        <li><b>Métricas:</b> Pareto, eventos por operador, turno, estado y aprendizaje.</li>
+      </ul>
+    </article>
+    <article class="manual-card">
+      <p class="eyebrow">Roles</p>
+      <h3>Responsabilidades</h3>
+      <ul>
+        <li><b>Operador:</b> consulta, ejecuta procedimientos, registra eventos en espera y alimenta el sistema.</li>
+        <li><b>Supervisor / encargado:</b> valida dudas, define criterios correctos y convierte casos en procedimientos.</li>
+        <li><b>Administrador:</b> gestiona usuarios, permisos, estructura del sistema y calidad de la base de conocimiento.</li>
+      </ul>
+    </article>
+    <article class="manual-card wide">
+      <p class="eyebrow">Mejora continua</p>
+      <h3>Cómo una duda se convierte en procedimiento</h3>
+      <p>Cuando un operador encuentra un evento que no puede cedular con seguridad, lo carga en Aprendizajes con abonado, falla, duda concreta y contexto. El sistema sugiere una posible solución, permite copiar una nota estandarizada para supervisión y guarda el caso. Luego, el supervisor valida el criterio correcto y esa respuesta queda asentada como procedimiento reutilizable para otros operadores.</p>
+    </article>
+    <article class="manual-card wide">
+      <p class="eyebrow">Guion breve para video</p>
+      <h3>Presentación sugerida</h3>
+      <div class="script-box manual-script">
+        <p>Vigilia Seguridad Soporte Operativo es un sistema interno creado para acompañar al operador en la Central de Monitoreo.</p>
+        <p>Su objetivo es reducir dudas, ordenar procedimientos y transformar cada evento irregular en conocimiento reutilizable.</p>
+        <p>El operador ingresa una consulta o llamada, el sistema sugiere el sector correspondiente, muestra preguntas guía y orienta la acción inicial.</p>
+        <p>Si el caso pertenece a Objetivo Fijo 911, SAFE, supervisión o servicio técnico, el sistema permite avanzar hacia la sección correcta y consultar el procedimiento.</p>
+        <p>Cuando aparece una duda que no se puede resolver en el momento, se registra en Aprendizajes. Luego, supervisión valida el criterio correcto y esa respuesta queda disponible para futuros casos.</p>
+        <p>Además, el tablero Kanban y las métricas permiten medir eventos, dudas, tareas, turnos y oportunidades de mejora.</p>
+        <p>La finalidad es profesionalizar la operación, disminuir cuellos de botella y construir una base de conocimiento viva para toda la empresa.</p>
+      </div>
+    </article>
+  </section>
+</section>
 <section id="call" class="view">
+  <section class="sector-menu" aria-label="Acciones rápidas Objetivo Fijo 911">
+    <div>
+      <p class="eyebrow">Menú 911</p>
+      <h2>Objetivo Fijo</h2>
+    </div>
+    <div class="sector-actions">
+      <button type="button" class="primary" data-sector-action="search" data-sector="911">Buscar consulta del cliente</button>
+      <button type="button" data-sector-action="doubt" data-sector="911">Dudas</button>
+      <button type="button" data-sector-action="suggestion" data-sector="911">Sugerencias</button>
+      <button type="button" data-sector-action="password" data-sector="911">Password</button>
+      <button type="button" data-sector-action="material" data-sector="911">Material de apoyo</button>
+      <button type="button" data-sector-action="kanban" data-sector="911">Seguimiento / Kanban</button>
+    </div>
+  </section>
   <section class="search-band">
     <div class="search-copy"><p class="eyebrow">Objetivo Fijo (911)</p><h2>Buscar la consulta del cliente</h2><p>Escribí como habla el cliente: teclado hace ruido, falla 2, batería, no puedo activar, DMSS no conecta.</p></div>
     <div class="search-box"><input id="searchInput" type="search" placeholder="Buscar síntoma, modelo, tecla, LED o app" autocomplete="off"><select id="systemFilter"></select></div>
@@ -94,6 +184,20 @@
   </section>
 </section>
 <section id="safe" class="view">
+  <section class="sector-menu" aria-label="Acciones rápidas SAFE">
+    <div>
+      <p class="eyebrow">Menú SAFE</p>
+      <h2>Objetivos Móviles</h2>
+    </div>
+    <div class="sector-actions">
+      <button type="button" class="primary" data-sector-action="search" data-sector="SAFE">Buscar consulta del cliente</button>
+      <button type="button" data-sector-action="doubt" data-sector="SAFE">Dudas</button>
+      <button type="button" data-sector-action="suggestion" data-sector="SAFE">Sugerencias</button>
+      <button type="button" data-sector-action="password" data-sector="SAFE">Password</button>
+      <button type="button" data-sector-action="material" data-sector="SAFE">Material de apoyo</button>
+      <button type="button" data-sector-action="kanban" data-sector="SAFE">Seguimiento / Kanban</button>
+    </div>
+  </section>
   <section class="search-band procedure-band">
     <div class="search-copy"><p class="eyebrow">Objetivos Móviles</p><h2>SAFE / Monitoreo vehicular</h2><p>Buscá la novedad del móvil o unidad. La guía separa si se resuelve desde monitoreo, si se agenda seguimiento o si se deriva.</p></div>
     <div class="search-box"><input id="safeSearch" type="search" placeholder="Buscar camión no reporta, pánico, desvío, parada, GPS" autocomplete="off"><select id="safeCategory"><option>Todos los eventos SAFE</option><option>Comunicación</option><option>Emergencia</option><option>Ruta</option><option>Soporte</option></select></div>
@@ -106,6 +210,43 @@
     </aside>
     <section id="safeDetail" class="procedure-detail">
       <div class="empty-state"><h2>Seleccioná un evento SAFE</h2><p>La guía mostrará preguntas, acción inicial y registro sugerido.</p></div>
+    </section>
+  </section>
+</section>
+<section id="resources" class="view">
+  <section class="knowledge-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Recursos internos</p><h2>Accesos y material de apoyo</h2>
+      <p class="helper-copy">Registrá referencias de apps, usuarios, passwords autorizados, manuales, PDFs, links de Drive o videos explicativos para que no queden perdidos en WhatsApp.</p>
+      <div class="security-note"><b>Importante:</b> no cargues claves reales sin autorización y reglas de permisos. Para operadores de nivel bajo, el dato sensible se muestra oculto.</div>
+      <label class="field-label" for="resourceType">Tipo</label>
+      <select id="resourceType"><option>Acceso / password</option><option>Manual PDF</option><option>Video explicativo</option><option>Link de apoyo</option><option>App / herramienta</option><option>Procedimiento adjunto</option></select>
+      <label class="field-label" for="resourceSector">Sector</label>
+      <select id="resourceSector"><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Todos los sectores</option><option>Supervisión</option><option>Técnica</option></select>
+      <label class="field-label" for="resourceTitle">Título</label>
+      <input id="resourceTitle" placeholder="Ej: Usuario DMSS, manual A2K4, video falla comunicación">
+      <label class="field-label" for="resourceSystem">App, sistema o referencia</label>
+      <input id="resourceSystem" placeholder="Ej: DMSS, Hik-Connect, Bykom, Drive, WhatsApp">
+      <label class="field-label" for="resourceUser">Usuario / cuenta / ubicación</label>
+      <input id="resourceUser" placeholder="Ej: usuario app, mail, carpeta Drive o responsable">
+      <label class="field-label" for="resourceSecret">Password / dato sensible</label>
+      <input id="resourceSecret" type="password" placeholder="Opcional. Cargar solo si está autorizado.">
+      <label class="field-label" for="resourceLink">Link de archivo, video o manual</label>
+      <input id="resourceLink" placeholder="https://...">
+      <label class="field-label" for="resourceFile">Subir archivo a biblioteca</label>
+      <div id="resourceDropzone" class="dropzone" tabindex="0" role="button" aria-label="Subir archivo a biblioteca">
+        <strong>Arrastrá PDF, imagen, video o nota</strong>
+        <span>O hacé clic para seleccionar. Para videos pesados, conviene usar link de Drive o Storage.</span>
+        <input id="resourceFile" type="file" accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif,.mp4,.mov,.webm,application/pdf,image/*,video/*,text/plain,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      </div>
+      <p id="resourceFileStatus" class="save-state">Sin archivo seleccionado.</p>
+      <label class="field-label" for="resourceNotes">Notas de uso</label>
+      <textarea id="resourceNotes" placeholder="Cuándo se usa, quién lo autorizó, vencimiento, advertencias o procedimiento relacionado."></textarea>
+      <button id="saveResource" class="primary" type="button">Guardar recurso</button>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Biblioteca operativa</p><h2>Recursos guardados</h2></div><div class="actions"><select id="resourceFilter"><option>Todos los recursos</option><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Acceso / password</option><option>Manual PDF</option><option>Video explicativo</option><option>Procedimiento adjunto</option><option>Material de apoyo</option></select><span id="resourceCount" class="pill">0</span></div></div>
+      <div id="resourceList" class="knowledge-list"></div>
     </section>
   </section>
 </section>
@@ -126,6 +267,43 @@
   </section>
 </section>
 <section id="supervision" class="view">
+  <section class="supervision-dashboard">
+    <section class="chart-panel supervision-overview">
+      <div class="panel-head">
+        <div>
+          <p class="eyebrow">Bandeja de supervisión</p>
+          <h2>Eventos para validar y convertir en criterio</h2>
+        </div>
+        <div class="supervision-toolbar">
+          <select id="supervisionOperatorFilter" aria-label="Filtrar por operador"><option>Todos los operadores</option></select>
+          <select id="supervisionStatusFilter" aria-label="Filtrar por estado">
+            <option>Todos los estados</option>
+            <option>En espera</option>
+            <option>Pendiente de validar</option>
+            <option>Validado por supervisor</option>
+            <option>Convertir en procedimiento</option>
+            <option>Resuelto y cargado</option>
+          </select>
+        </div>
+      </div>
+      <div id="supervisionStats" class="supervision-stats"></div>
+      <div id="supervisionInsights" class="supervision-insights"></div>
+    </section>
+    <section class="supervision-columns">
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 1</p><h2>Pendiente</h2></div><span id="supervisionPendingCount" class="pill">0</span></div>
+        <div id="supervisionPendingList" class="supervision-list"></div>
+      </section>
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 2</p><h2>En resolución</h2></div><span id="supervisionReviewCount" class="pill">0</span></div>
+        <div id="supervisionReviewList" class="supervision-list"></div>
+      </section>
+      <section class="supervision-lane">
+        <div class="panel-head"><div><p class="eyebrow">Paso 3</p><h2>Procedimiento creado</h2></div><span id="supervisionDoneCount" class="pill">0</span></div>
+        <div id="supervisionDoneList" class="supervision-list"></div>
+      </section>
+    </section>
+  </section>
   <section class="knowledge-layout">
     <aside class="knowledge-form">
       <p class="eyebrow">Directivas internas</p><h2>Supervisión</h2>
@@ -151,6 +329,14 @@
     <aside class="knowledge-form">
       <p class="eyebrow">Retroalimentación</p><h2>Eventos en espera / revisar</h2>
       <p class="helper-copy">Cargá cada evento irregular que no puedas cedular rápido. Queda guardado para consultar con supervisión y convertir la respuesta en procedimiento.</p>
+      <label class="field-label" for="learningType">Tipo de carga</label>
+      <select id="learningType"><option>Evento en espera</option><option>Duda operativa</option><option>Sugerencia de mejora</option><option>Procedimiento faltante</option><option>Capacitación necesaria</option></select>
+      <label class="field-label" for="learningCategory">Categoría</label>
+      <select id="learningCategory"><option>Evento 911</option><option>SAFE / Vehicular</option><option>Falla técnica</option><option>Comunicación</option><option>Servicio técnico</option><option>Cliente / reclamo</option><option>Administración</option><option>Directiva confusa</option><option>Capacitación</option><option>Otro</option></select>
+      <label class="field-label" for="learningEventType">Evento Bykom</label>
+      <select id="learningEventType"><option>Autodetectar por texto</option><option>Falso disparo</option><option>No llega cierre</option><option>No llega apertura</option><option>Falla de comunicación</option><option>Corte 220 / falta de luz</option><option>Batería baja panel</option><option>Batería baja zona/sensor</option><option>Tamper / sabotaje</option><option>Disparo de alarma</option><option>Pánico / asalto</option><option>Emergencia médica</option><option>Fuego / incendio</option><option>Desactivación fuera de horario</option><option>Falla de enlace</option><option>Panel en prueba</option><option>Orden de mantenimiento</option><option>Evento SAFE / vehicular</option><option>Reclamo administrativo</option><option>Otro evento</option></select>
+      <label class="field-label" for="learningPriority">Prioridad</label>
+      <select id="learningPriority"><option>Media</option><option>Alta</option><option>Crítica</option><option>Baja</option></select>
       <label class="field-label" for="learningOperator">Operador</label>
       <input id="learningOperator" placeholder="Ej: Ismael">
       <label class="field-label" for="learningSubscriber">Abonado / objetivo</label>
@@ -173,22 +359,94 @@
     </aside>
     <section class="knowledge-list-panel">
       <div class="panel-head"><div><p class="eyebrow">Mejora continua</p><h2>Eventos guardados</h2></div><span id="learningCount" class="pill">0</span></div>
+      <div class="learning-toolbar">
+        <select id="learningFilterCategory" aria-label="Filtrar por categoría"><option>Todas las categorías</option></select>
+        <select id="learningFilterEventType" aria-label="Filtrar por evento Bykom"><option>Todos los eventos Bykom</option></select>
+        <select id="learningFilterPriority" aria-label="Filtrar por prioridad"><option>Todas las prioridades</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select>
+        <select id="learningFilterStatus" aria-label="Filtrar por estado"><option>Todos los estados</option><option>En espera</option><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
+        <select id="learningSort" aria-label="Ordenar eventos"><option>Prioridad primero</option><option>Más recientes</option><option>Evento Bykom</option><option>Categoría</option><option>Estado</option></select>
+      </div>
       <div id="learningList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="kanban" class="view">
+  <section class="kanban-layout">
+    <aside class="knowledge-form kanban-form">
+      <p class="eyebrow">Productividad visual</p><h2>Crear tarjeta</h2>
+      <p class="helper-copy">Usá el tablero para ordenar eventos, dudas, seguimientos y tareas del turno. Cada movimiento alimenta métricas.</p>
+      <label class="field-label" for="kanbanTitle">Título</label>
+      <input id="kanbanTitle" placeholder="Ej: UB-3248 validar nota por zonas">
+      <label class="field-label" for="kanbanSubscriber">Abonado / objetivo</label>
+      <input id="kanbanSubscriber" placeholder="Ej: UB-3248 Gatti Pablo">
+      <label class="field-label" for="kanbanCategory">Categoría</label>
+      <select id="kanbanCategory"><option>Evento 911</option><option>Falla técnica</option><option>Cliente no contacta</option><option>Servicio técnico</option><option>SAFE</option><option>Administración</option><option>Mejora de proceso</option></select>
+      <label class="field-label" for="kanbanPriority">Prioridad</label>
+      <select id="kanbanPriority"><option>Media</option><option>Alta</option><option>Crítica</option><option>Baja</option></select>
+      <label class="field-label" for="kanbanDescription">Contexto</label>
+      <textarea id="kanbanDescription" placeholder="Qué pasó, qué falta resolver y a quién consultar."></textarea>
+      <button id="saveKanbanTask" class="primary" type="button">Agregar al tablero</button>
+      <p id="kanbanSavedState" class="save-state">Las tarjetas quedan asociadas al operador y al turno.</p>
+    </aside>
+    <section class="kanban-panel">
+      <div class="panel-head">
+        <div><p class="eyebrow">Tablero operativo</p><h2>Kanban de seguimiento</h2></div>
+        <span id="kanbanCount" class="pill">0 tarjetas</span>
+      </div>
+      <div id="kanbanStats" class="kanban-stats"></div>
+      <div id="kanbanBoard" class="kanban-board"></div>
     </section>
   </section>
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto de causas</h2><button id="exportCsv">Exportar CSV</button></div><div id="paretoChart" class="bars"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="kanban">Kanban</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>
 <section id="cases" class="view"><section class="chart-panel"><div class="panel-head"><h2>Historial local</h2><button id="clearCases" class="ghost">Limpiar historial</button></div><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Abonado</th><th>Sistema</th><th>Consulta</th><th>Resultado</th><th>Satisfacción</th></tr></thead><tbody id="caseRows"></tbody></table></div></section></section>
 </main>
 <dialog id="savedDialog"><p>Caso guardado. La nota quedó lista para pegar en Bykom.</p><button id="closeDialog">Aceptar</button></dialog>
+<dialog id="learningDialog" class="learning-dialog">
+  <form method="dialog" id="learningResolveForm">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">Resolución supervisada</p>
+        <h2 id="learningDialogTitle">Evento en espera</h2>
+      </div>
+      <button id="closeLearningDialog" type="button" class="ghost">Cerrar</button>
+    </div>
+    <div id="learningDialogContext" class="dialog-context"></div>
+    <label class="field-label" for="resolutionStatus">Estado final</label>
+    <select id="resolutionStatus">
+      <option>Validado por supervisor</option>
+      <option>Convertir en procedimiento</option>
+      <option>Resuelto y cargado</option>
+      <option>Pendiente de validar</option>
+    </select>
+    <label class="field-label" for="resolutionCategory">Categoría</label>
+    <input id="resolutionCategory" placeholder="Ej: Intrusión / nota particular / cliente no contacta">
+    <label class="field-label" for="resolutionCause">Causa o criterio operativo</label>
+    <textarea id="resolutionCause" placeholder="Cuál fue el criterio para resolver este caso."></textarea>
+    <label class="field-label" for="resolutionProcedure">Procedimiento correcto</label>
+    <textarea id="resolutionProcedure" placeholder="Pasos concretos que debe seguir el operador la próxima vez."></textarea>
+    <label class="field-label" for="resolutionBykom">Nota estándar para Bykom</label>
+    <textarea id="resolutionBykom" placeholder="Texto sugerido para cedular o dejar asentado."></textarea>
+    <label class="field-label" for="resolutionRoute">Derivación / responsable</label>
+    <input id="resolutionRoute" placeholder="Ej: Supervisión 911, Servicio técnico, aviso por WhatsApp">
+    <label class="field-label" for="resolutionKeywords">Palabras clave de búsqueda</label>
+    <input id="resolutionKeywords" placeholder="Ej: zona 9, zona 10, no responde, llamar Pablo, móvil">
+    <div class="actions">
+      <button id="saveLearningResolution" class="primary" type="button">Guardar resolución</button>
+      <button id="copyLearningResolution" type="button">Copiar resumen</button>
+    </div>
+    <p id="learningResolveState" class="save-state">La resolución quedará asociada a este evento.</p>
+  </form>
+</dialog>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></script>
 <script>
   window.VIGILIA_FIREBASE_CONFIG = {
     apiKey: "AIzaSyAetdYkNCTa1gESRjzfIGLsVej958plhc0",
