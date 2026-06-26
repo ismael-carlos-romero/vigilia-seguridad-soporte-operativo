@@ -1,0 +1,16 @@
+nombre,email,password_temporal,role,level,sector,shift,active,notas
+Matias Delgado,matias.delgado@vigilia-operativo.local,Vig#MDel26!7q,operador,3,Monitoreo 911,Sin asignar,true,Operador de Monitoreo
+Claudio Monzon,claudio.monzon@vigilia-operativo.local,Vig#CMon26!8r,operador,3,Monitoreo 911,Sin asignar,true,Operador de Monitoreo
+Juan,juan.operador@vigilia-operativo.local,Vig#Juan26!9s,operador,3,Monitoreo 911,Sin asignar,true,Operador de Monitoreo - completar apellido si corresponde
+Lorena Ojeda,lorena.ojeda@vigilia-operativo.local,Vig#LOje26!4t,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo
+Ricardo,ricardo.operador@vigilia-operativo.local,Vig#Rica26!5u,operador,3,Monitoreo 911,Sin asignar,true,Operador de Monitoreo - completar apellido si corresponde
+Cintia Sanchez,cintia.sanchez@vigilia-operativo.local,Vig#CSan26!6v,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo
+Vanina,vanina.operadora@vigilia-operativo.local,Vig#Vani26!7w,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo - completar apellido si corresponde
+Dario Mendez,dario.mendez@vigilia-operativo.local,Vig#DMen26!8x,operador,3,Monitoreo 911,Sin asignar,true,Operador de Monitoreo
+Pamela Lopez,pamela.lopez@vigilia-operativo.local,Vig#PLop26!9y,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo
+Luciana Pansarasa,luciana.pansarasa@vigilia-operativo.local,Vig#LPan26!4z,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo
+Marina,marina.operadora@vigilia-operativo.local,Vig#Mari26!5a,operador,3,Monitoreo 911,Sin asignar,true,Operadora de Monitoreo - completar apellido si corresponde
+Hector Vera,hector.vera@vigilia-operativo.local,Vig#HVer26!6b,supervisor,8,Supervisión / Monitoreo 911,Sin asignar,true,Supervisor
+Cristian Nieto,cristian.nieto@vigilia-operativo.local,Vig#CNie26!7c,tecnico,6,Técnica,Sin asignar,true,Técnica
+Mariano Martinez,mariano.martinez@vigilia-operativo.local,Vig#MMar26!8d,gerente,9,Gerencia,Sin asignar,true,Gerente
+Lautaro Castro,lautaro.castro@vigilia-operativo.local,Vig#LCas26!9e,ceo,10,Dirección,Sin asignar,true,Dueño CEO

@@ -122,3 +122,4 @@
 .supervision-card-actions button{padding:7px 9px;margin:0}
 @media(max-width:1180px){.supervision-columns{grid-template-columns:1fr}.supervision-stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.learning-toolbar{grid-template-columns:1fr}.supervision-stats{grid-template-columns:repeat(2,1fr)}.supervision-toolbar{justify-content:stretch}.supervision-toolbar select{min-width:0}}
+.manual-note{margin-top:12px;border:1px solid var(--line);border-radius:6px;background:#f8fafb;padding:10px 12px}

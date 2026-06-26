@@ -88,6 +88,29 @@
         <li><b>Administrador:</b> gestiona usuarios, permisos, estructura del sistema y calidad de la base de conocimiento.</li>
       </ul>
     </article>
+    <article class="manual-card">
+      <p class="eyebrow">Permisos</p>
+      <h3>Niveles de usuario</h3>
+      <ul>
+        <li><b>Nivel 3 - Operador:</b> usa Ingreso, 911, SAFE, Procedimientos, Aprendizajes, Kanban y Métricas propias.</li>
+        <li><b>Nivel 6 - Técnica:</b> consulta recursos técnicos, materiales de apoyo y eventos derivados a servicio técnico.</li>
+        <li><b>Nivel 8 - Supervisor:</b> revisa eventos de operadores, resuelve dudas y valida criterios operativos.</li>
+        <li><b>Nivel 9 - Gerencia:</b> ve métricas globales, seguimiento por sector y prioridades de mejora.</li>
+        <li><b>Nivel 10 - Administrador:</b> administra usuarios, permisos, recursos sensibles y configuración general.</li>
+      </ul>
+    </article>
+    <article class="manual-card wide">
+      <p class="eyebrow">Alta de usuarios</p>
+      <h3>Cómo crear usuarios y contraseñas</h3>
+      <ol class="manual-flow">
+        <li><b>Crear usuario en Firebase Authentication:</b> cargar email y contraseña temporal.</li>
+        <li><b>Copiar el UID:</b> Firebase genera un identificador único para ese usuario.</li>
+        <li><b>Crear perfil en Firestore:</b> en la colección <b>usuarios</b>, crear un documento usando ese UID.</li>
+        <li><b>Cargar campos obligatorios:</b> name, email, role, level, sector, shift y active.</li>
+        <li><b>Probar ingreso:</b> entrar a la web con ese usuario y verificar que muestre nombre, nivel, turno, sector y estación.</li>
+      </ol>
+      <p class="manual-note">La planilla de base está en <b>usuarios_vigilia_firebase.csv</b>. Las contraseñas son temporales y conviene cambiarlas cuando el sistema pase a uso real.</p>
+    </article>
     <article class="manual-card wide">
       <p class="eyebrow">Mejora continua</p>
       <h3>Cómo una duda se convierte en procedimiento</h3>
