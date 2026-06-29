@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Presentación - Soporte Operativo Interno</title>
+  <style>
+    body { margin:0; background:#111923; font-family:Arial, sans-serif; }
+    .stage { width:100vw; height:100vh; display:grid; place-items:center; overflow:hidden; }
+    .slide { display:none; }
+    .slide.active { display:block; }
+    img { max-width:100vw; max-height:100vh; width:100vw; height:auto; display:block; }
+    .controls { position:fixed; right:18px; bottom:18px; display:flex; gap:8px; }
+    button { border:1px solid #d8dee6; background:#fff; border-radius:6px; padding:9px 12px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <main class="stage"><section class="slide"><img src="placa_01.png" alt="Placa 1"></section>
+<section class="slide"><img src="placa_02.png" alt="Placa 2"></section>
+<section class="slide"><img src="placa_03.png" alt="Placa 3"></section>
+<section class="slide"><img src="placa_04.png" alt="Placa 4"></section>
+<section class="slide"><img src="placa_05.png" alt="Placa 5"></section>
+<section class="slide"><img src="placa_06.png" alt="Placa 6"></section>
+<section class="slide"><img src="placa_07.png" alt="Placa 7"></section>
+<section class="slide"><img src="placa_08.png" alt="Placa 8"></section></main>
+  <div class="controls"><button id="prev">Anterior</button><button id="play">Pausar</button><button id="next">Siguiente</button></div>
+  <script>
+    const slides = [...document.querySelectorAll('.slide')];
+    let index = 0;
+    let playing = true;
+    const show = n => { slides[index].classList.remove('active'); index = (n + slides.length) % slides.length; slides[index].classList.add('active'); };
+    slides[0].classList.add('active');
+    const timer = setInterval(() => { if (playing) show(index + 1); }, 4200);
+    document.getElementById('prev').onclick = () => show(index - 1);
+    document.getElementById('next').onclick = () => show(index + 1);
+    document.getElementById('play').onclick = event => { playing = !playing; event.target.textContent = playing ? 'Pausar' : 'Reproducir'; };
+  </script>
+</body>
+</html>
