@@ -1,7 +1,7 @@
 # Analisis del Libro de Protocolo de Seguridad
 
 Material revisado: carpeta `Libro de Protocolo de Seguridad_`, con 64 fotografias de paginas del libro.  
-Objetivo del analisis: detectar conceptos que puedan fortalecer el sistema "Vigilia Seguridad Soporte Operativo" como herramienta de trabajo, aprendizaje, supervision y mejora continua.
+Objetivo del analisis: detectar conceptos que puedan fortalecer el sistema "Soporte Operativo Interno de Vigilia Seguridad" como herramienta de trabajo, aprendizaje, supervision y mejora continua.
 
 ## Hallazgos principales
 

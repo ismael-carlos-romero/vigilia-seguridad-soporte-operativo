@@ -6,6 +6,7 @@ const state = {
   safeResults: [],
   selectedProcedure: null,
   selectedLearningId: null,
+  editingLearningId: null,
   procedureResults: [],
   procedureSuggestIndex: 0,
   intakeSuggestIndex: 0,
@@ -179,7 +180,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -475,6 +476,7 @@ function bindEvents() {
   els.learningEventType?.addEventListener('change', renderLearningSuggestion);
   ['learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort'].forEach(id => els[id]?.addEventListener('change', renderLearning));
   els.saveLearning.addEventListener('click', saveLearning);
+  els.cancelLearningEdit?.addEventListener('click', cancelLearningEdit);
   els.exportLearning.addEventListener('click', exportLearningBackup);
   els.importLearning.addEventListener('change', importLearningBackup);
   els.closeLearningDialog?.addEventListener('click', () => els.learningDialog.close());
@@ -1590,7 +1592,7 @@ async function saveLearning() {
   const eventType = selectedEventType === 'Autodetectar por texto'
     ? inferBykomEventType({ subscriber, failure, question, context })
     : selectedEventType;
-  const record = {
+  const baseRecord = {
     date: new Date().toISOString(),
     type: els.learningType?.value || 'Evento en espera',
     category: els.learningCategory?.value || inferLearningCategory({ failure, question, context }),
@@ -1611,6 +1613,38 @@ async function saveLearning() {
     suggestion: suggestion ? `${suggestion.source}: ${suggestion.title}` : 'Sin solución cargada',
     supervisorSummary: makeSupervisorSummary()
   };
+  if (state.editingLearningId) {
+    const original = findLearningRow(state.editingLearningId) || {};
+    const editedRecord = {
+      ...original,
+      ...baseRecord,
+      id: original.id || state.editingLearningId,
+      date: original.date || baseRecord.date,
+      operatorUid: original.operatorUid || baseRecord.operatorUid,
+      operatorEmail: original.operatorEmail || baseRecord.operatorEmail,
+      role: original.role || baseRecord.role,
+      level: Number(original.level || baseRecord.level || 1),
+      editedBy: session.operator || 'Sin operador',
+      editedAt: new Date().toISOString()
+    };
+    if (original.resolution) editedRecord.resolution = original.resolution;
+    try {
+      await updateLearningRow(editedRecord);
+      localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
+      resetLearningForm();
+      resetLearningEditMode('Cambios guardados. El evento fue actualizado.');
+      renderLearning();
+      renderSupervision();
+      renderMetrics();
+      renderLearningSavedState();
+    } catch (error) {
+      console.error('No se pudo actualizar el evento', error);
+      state.firebase.status = 'No se pudo actualizar el evento. Revisá permisos o conexión.';
+      renderLearningSavedState();
+    }
+    return;
+  }
+  const record = baseRecord;
   rows.push(record);
   localStorage.setItem(LEARNING_KEY, JSON.stringify(rows));
   localStorage.setItem(`${LEARNING_KEY}:lastSave`, new Date().toISOString());
@@ -1622,12 +1656,7 @@ async function saveLearning() {
       state.firebase.status = 'Modo local: no se pudo guardar en la base central. Quedo respaldo en este navegador.';
     }
   }
-  els.learningSubscriber.value = '';
-  els.learningFailure.value = '';
-  els.learningQuestion.value = '';
-  els.learningContext.value = '';
-  if (els.learningEventType) els.learningEventType.value = 'Autodetectar por texto';
-  renderLearningSuggestion();
+  resetLearningForm();
   renderLearning();
   renderSupervision();
   renderMetrics();
@@ -1658,6 +1687,9 @@ function renderLearning() {
   });
   els.learningList.querySelectorAll('[data-copy-supervisor]').forEach(btn => {
     btn.addEventListener('click', () => copyLearningSupervisorNote(btn.dataset.copySupervisor, btn));
+  });
+  els.learningList.querySelectorAll('[data-edit-learning]').forEach(btn => {
+    btn.addEventListener('click', () => editLearning(btn.dataset.editLearning));
   });
   renderLearningSavedState();
 }
@@ -1733,6 +1765,7 @@ function renderLearningItem(row) {
       ${resolution.procedure ? `<p><b>Procedimiento validado:</b> ${escapeHtml(resolution.procedure)}</p>` : ''}
       <p><b>Resumen supervisor:</b> ${escapeHtml(row.supervisorSummary || '')}</p>
       <div class="learning-actions">
+        <button type="button" data-edit-learning="${escapeHtml(id)}">Editar carga</button>
         <button type="button" class="primary" data-open-learning="${escapeHtml(id)}">${resolved ? 'Ver / ajustar resolución' : 'Resolver evento'}</button>
         <button type="button" data-copy-supervisor="${escapeHtml(id)}">Copiar nota supervisor</button>
         <button type="button" data-add-kanban="${escapeHtml(id)}">Enviar a Kanban</button>
@@ -1754,6 +1787,70 @@ function safeDateTime(value) {
 
 function findLearningRow(id) {
   return getLearningRows().find(row => (row.id || getLearningDocId(row)) === id);
+}
+
+function editLearning(id) {
+  const row = findLearningRow(id);
+  if (!row) return;
+  state.editingLearningId = id;
+  setSelectValue(els.learningType, row.type || 'Evento en espera');
+  setSelectValue(els.learningCategory, row.category || getLearningCategory(row));
+  setSelectValue(els.learningEventType, row.eventType || getLearningEventType(row));
+  setSelectValue(els.learningPriority, row.priority || getLearningPriority(row));
+  setSelectValue(els.learningStatus, row.status || 'En espera');
+  els.learningOperator.value = row.operator || '';
+  els.learningSubscriber.value = row.subscriber || '';
+  els.learningFailure.value = row.failure || '';
+  els.learningQuestion.value = row.question || '';
+  els.learningContext.value = row.context || '';
+  els.saveLearning.textContent = 'Guardar cambios';
+  els.cancelLearningEdit?.classList.remove('hidden');
+  if (els.learningEditState) {
+    els.learningEditState.textContent = `Editando: ${row.subscriber || 'sin abonado'} · ${row.failure || row.question || 'evento sin título'}`;
+  }
+  renderLearningSuggestion();
+  document.querySelector('#learning .knowledge-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  els.learningSubscriber.focus();
+}
+
+function setSelectValue(select, value) {
+  if (!select) return;
+  const safeValue = value || '';
+  const exists = Array.from(select.options).some(option => option.value === safeValue || option.textContent === safeValue);
+  if (safeValue && !exists) {
+    const option = document.createElement('option');
+    option.value = safeValue;
+    option.textContent = safeValue;
+    select.appendChild(option);
+  }
+  if (safeValue) select.value = safeValue;
+}
+
+function resetLearningForm() {
+  setSelectValue(els.learningType, 'Evento en espera');
+  setSelectValue(els.learningCategory, 'Evento 911');
+  setSelectValue(els.learningEventType, 'Autodetectar por texto');
+  setSelectValue(els.learningPriority, 'Media');
+  setSelectValue(els.learningStatus, 'En espera');
+  const session = getSession();
+  els.learningOperator.value = session.operator || '';
+  els.learningSubscriber.value = '';
+  els.learningFailure.value = '';
+  els.learningQuestion.value = '';
+  els.learningContext.value = '';
+  renderLearningSuggestion();
+}
+
+function cancelLearningEdit() {
+  resetLearningForm();
+  resetLearningEditMode('Edición cancelada. Modo carga nueva.');
+}
+
+function resetLearningEditMode(message = 'Modo carga nueva.') {
+  state.editingLearningId = null;
+  if (els.saveLearning) els.saveLearning.textContent = 'Guardar evento en espera';
+  els.cancelLearningEdit?.classList.add('hidden');
+  if (els.learningEditState) els.learningEditState.textContent = message;
 }
 
 function openLearningResolution(id) {
@@ -1890,7 +1987,13 @@ async function updateLearningRow(row) {
     return;
   }
   const rows = getStoredRows(LEARNING_KEY);
-  const nextRows = rows.map(item => (item.id || getLearningDocId(item)) === docId ? row : item);
+  let updated = false;
+  const nextRows = rows.map(item => {
+    if ((item.id || getLearningDocId(item)) !== docId) return item;
+    updated = true;
+    return row;
+  });
+  if (!updated) nextRows.push(row);
   localStorage.setItem(LEARNING_KEY, JSON.stringify(nextRows));
 }
 
@@ -2009,7 +2112,7 @@ function exportLearningBackup() {
   const rows = getLearningRows();
   const payload = {
     exportedAt: new Date().toISOString(),
-    app: 'Vigilia Seguridad Soporte Operativo',
+    app: 'Soporte Operativo Interno de Vigilia Seguridad',
     type: 'eventos-en-espera',
     count: rows.length,
     rows
@@ -2712,4 +2815,5 @@ function exportCsv() {
 
 function csvCell(value) { return `"${String(value || '').replaceAll('"','""')}"`; }
 function escapeHtml(text) { return String(text || '').replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch])); }
+
 

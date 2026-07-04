@@ -1,10 +1,10 @@
-# Vigilia Seguridad Soporte Operativo
+# Soporte Operativo Interno de Vigilia Seguridad
 
 ## Manual breve de uso
 
 ### Objetivo del sistema
 
-Vigilia Seguridad Soporte Operativo es una herramienta interna para acompañar el trabajo de la Central de Monitoreo. Su objetivo es reducir dudas operativas, ordenar procedimientos, derivar consultas al sector correcto y transformar cada evento irregular en conocimiento reutilizable.
+Soporte Operativo Interno de Vigilia Seguridad es una herramienta interna para acompañar el trabajo de la Central de Monitoreo. Su objetivo es reducir dudas operativas, ordenar procedimientos, derivar consultas al sector correcto y transformar cada evento irregular en conocimiento reutilizable.
 
 El sistema busca que la informacion no quede dispersa en WhatsApp, mails, hojas impresas o memoria individual. Cada consulta, directiva, duda y resolucion puede quedar documentada, medida y disponible para otros operadores.
 
@@ -89,7 +89,7 @@ Luego, el supervisor revisa el caso, confirma el criterio correcto y carga la re
 
 ### Guion breve para video de presentacion
 
-Vigilia Seguridad Soporte Operativo es un sistema interno creado para acompanar al operador en la Central de Monitoreo.
+Soporte Operativo Interno de Vigilia Seguridad es un sistema interno creado para acompanar al operador en la Central de Monitoreo.
 
 Su objetivo es reducir dudas, ordenar procedimientos y transformar cada evento irregular en conocimiento reutilizable.
 

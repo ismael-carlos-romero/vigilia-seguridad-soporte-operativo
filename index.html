@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vigilia Seguridad Soporte Operativo</title>
+  <title>Soporte Operativo Interno de Vigilia Seguridad</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="auth-gate">
@@ -30,7 +30,7 @@
   </form>
 </section>
 <header class="topbar">
-  <div><p class="eyebrow">Central de Monitoreo</p><h1>Vigilia Seguridad Soporte Operativo</h1></div>
+  <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
   <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
@@ -38,10 +38,26 @@
 <section id="manual" class="view">
   <section class="manual-hero">
     <p class="eyebrow">Manual de uso</p>
-    <h2>Vigilia Seguridad Soporte Operativo</h2>
+    <h2>Soporte Operativo Interno de Vigilia Seguridad</h2>
     <p>Este sistema ordena la atención operativa, reduce dudas repetidas y convierte cada evento irregular en conocimiento reutilizable. Su objetivo es que el operador tenga una guía rápida para actuar, registrar, derivar y aprender sin depender siempre de instrucciones sueltas por WhatsApp, mail o memoria.</p>
   </section>
   <section class="manual-layout">
+    <article class="manual-card wide presentation-resource">
+      <div>
+        <p class="eyebrow">Recurso informativo</p>
+        <h3>Video presentación del sistema</h3>
+        <p>Resumen breve para explicar a supervisión qué hace el Soporte Operativo Interno, qué problema resuelve y cómo convierte dudas operativas en procedimientos reutilizables.</p>
+        <div class="resource-actions">
+          <a href="recursos/presentacion/presentacion_soporte_operativo_vigilia.html" target="_blank" rel="noopener">Abrir presentación</a>
+          <a href="recursos/presentacion/presentacion_soporte_operativo_vigilia.gif" target="_blank" rel="noopener">Ver animación</a>
+          <a href="recursos/presentacion/presentacion_soporte_operativo_vigilia.avi" download>Descargar video</a>
+          <a href="recursos/presentacion/guion_video_presentacion.md" target="_blank" rel="noopener">Leer guion</a>
+        </div>
+      </div>
+      <a class="presentation-preview" href="recursos/presentacion/presentacion_soporte_operativo_vigilia.html" target="_blank" rel="noopener" aria-label="Abrir video presentación">
+        <img src="recursos/presentacion/presentacion_soporte_operativo_vigilia.gif" alt="Video presentación del Soporte Operativo Interno de Vigilia Seguridad">
+      </a>
+    </article>
     <article class="manual-card">
       <p class="eyebrow">Objetivo</p>
       <h3>Para qué sirve</h3>
@@ -120,7 +136,7 @@
       <p class="eyebrow">Guion breve para video</p>
       <h3>Presentación sugerida</h3>
       <div class="script-box manual-script">
-        <p>Vigilia Seguridad Soporte Operativo es un sistema interno creado para acompañar al operador en la Central de Monitoreo.</p>
+        <p>Soporte Operativo Interno de Vigilia Seguridad es un sistema interno creado para acompañar al operador en la Central de Monitoreo.</p>
         <p>Su objetivo es reducir dudas, ordenar procedimientos y transformar cada evento irregular en conocimiento reutilizable.</p>
         <p>El operador ingresa una consulta o llamada, el sistema sugiere el sector correspondiente, muestra preguntas guía y orienta la acción inicial.</p>
         <p>Si el caso pertenece a Objetivo Fijo 911, SAFE, supervisión o servicio técnico, el sistema permite avanzar hacia la sección correcta y consultar el procedimiento.</p>
@@ -373,7 +389,9 @@
       <label class="field-label" for="learningStatus">Estado</label>
       <select id="learningStatus"><option>En espera</option><option>Pendiente de validar</option><option>Validado por supervisor</option><option>Convertir en procedimiento</option><option>Resuelto y cargado</option></select>
       <div id="learningSuggestion" class="suggestion-box">Ingresá abonado, falla y contexto para recibir sugerencias.</div>
+      <p id="learningEditState" class="save-state">Modo carga nueva.</p>
       <button id="saveLearning" class="primary" type="button">Guardar evento en espera</button>
+      <button id="cancelLearningEdit" class="ghost hidden" type="button">Cancelar edición</button>
       <div class="backup-actions">
         <button id="exportLearning" type="button">Exportar respaldo</button>
         <label class="import-label">Importar respaldo<input id="importLearning" type="file" accept="application/json,.json"></label>
