@@ -24,10 +24,13 @@ const state = {
     learning: [],
     kanban: [],
     resources: [],
+    suggestions: [],
     resourcesLoaded: false,
+    suggestionsLoaded: false,
     unsubscribeLearning: null,
     unsubscribeKanban: null,
     unsubscribeResources: null,
+    unsubscribeSuggestions: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -40,6 +43,7 @@ const KANBAN_KEY = 'vigiliaKanbanV1';
 const SESSION_KEY = 'vigiliaSessionV1';
 const MEDIA_KEY = 'vigiliaMediaV1';
 const RESOURCES_KEY = 'vigiliaResourcesV1';
+const SUGGESTIONS_KEY = 'vigiliaSuggestionsV1';
 const bykomEventTypes = [
   'Falso disparo',
   'No llega cierre',
@@ -180,7 +184,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionReviewList','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -197,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSupervision();
   renderResources();
   renderLearning();
+  renderSuggestions();
   renderKanban();
   renderMetrics();
 });
@@ -211,10 +216,13 @@ function setupSession() {
         if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
         if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
         if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
+        if (state.firebase.unsubscribeSuggestions) state.firebase.unsubscribeSuggestions();
         state.firebase.learning = [];
         state.firebase.kanban = [];
         state.firebase.resources = [];
+        state.firebase.suggestions = [];
         state.firebase.resourcesLoaded = false;
+        state.firebase.suggestionsLoaded = false;
         state.firebase.loaded = false;
         document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
@@ -243,6 +251,7 @@ function setupSession() {
       subscribeLearningCloud();
       subscribeKanbanCloud();
       subscribeResourcesCloud();
+      subscribeSuggestionsCloud();
       renderMetrics();
     });
   } else {
@@ -350,6 +359,7 @@ function applySession(session) {
   });
   if (els.intakeOperator && !els.intakeOperator.value) els.intakeOperator.value = session.operator;
   if (els.learningOperator && !els.learningOperator.value) els.learningOperator.value = session.operator;
+  if (els.suggestionOperator && !els.suggestionOperator.value) els.suggestionOperator.value = session.operator;
   updateIntakeScript();
   applyPrivilegeVisibility();
   if (session.active === false) {
@@ -392,6 +402,7 @@ function setupTabs() {
     if (btn.dataset.tab === 'kanban') renderKanban();
     if (btn.dataset.tab === 'resources') renderResources();
     if (btn.dataset.tab === 'supervision') renderSupervision();
+    if (btn.dataset.tab === 'suggestions') renderSuggestions();
     renderMetrics();
   }));
 }
@@ -479,6 +490,8 @@ function bindEvents() {
   els.cancelLearningEdit?.addEventListener('click', cancelLearningEdit);
   els.exportLearning.addEventListener('click', exportLearningBackup);
   els.importLearning.addEventListener('change', importLearningBackup);
+  els.saveSuggestion?.addEventListener('click', saveSuggestion);
+  ['suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact'].forEach(id => els[id]?.addEventListener('change', renderSuggestions));
   els.closeLearningDialog?.addEventListener('click', () => els.learningDialog.close());
   els.saveLearningResolution?.addEventListener('click', saveLearningResolution);
   els.copyLearningResolution?.addEventListener('click', copyLearningResolution);
@@ -542,6 +555,7 @@ function setupFirebase() {
       subscribeLearningCloud();
       subscribeKanbanCloud();
       subscribeResourcesCloud();
+      subscribeSuggestionsCloud();
     }
   } catch (error) {
     console.error('Firebase no pudo iniciar', error);
@@ -770,6 +784,218 @@ async function addLearningToKanban(id) {
   };
   await upsertKanbanTask(task);
   els.learningSavedState.textContent = 'Evento enviado al Kanban.';
+  renderKanban();
+  renderMetrics();
+}
+
+function suggestionsCollection() {
+  return state.firebase.db?.collection('sugerencias_mejora');
+}
+
+function getSuggestionRows() {
+  const rows = state.firebase.suggestionsLoaded ? state.firebase.suggestions : getStoredRows(SUGGESTIONS_KEY);
+  const session = getSession();
+  if (currentLevel() >= 8 || !session.uid) return rows;
+  return rows.filter(row => !row.operatorUid || row.operatorUid === session.uid);
+}
+
+function getSuggestionDocId(row) {
+  if (row.id) return row.id;
+  const base = [row.createdAt || row.date, row.operatorUid, row.title, row.description].join('|');
+  return `sug_${hashString(base)}`;
+}
+
+function subscribeSuggestionsCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeSuggestions) state.firebase.unsubscribeSuggestions();
+  const collection = state.firebase.db.collection('sugerencias_mejora');
+  const query = currentLevel() >= 8 || !state.firebase.currentUser
+    ? collection
+    : collection.where('operatorUid', '==', state.firebase.currentUser.uid);
+  state.firebase.unsubscribeSuggestions = query
+    .onSnapshot(snapshot => {
+      state.firebase.suggestions = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+      state.firebase.suggestionsLoaded = true;
+      renderSuggestions();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudieron leer sugerencias en Firestore', error);
+      if (els.suggestionSavedState) els.suggestionSavedState.textContent = 'Modo local: no se pudo leer sugerencias centrales.';
+      renderSuggestions();
+    });
+}
+
+async function saveSuggestion() {
+  const title = els.suggestionTitle?.value.trim();
+  const description = els.suggestionDescription?.value.trim();
+  if (!title || !description) {
+    if (els.suggestionSavedState) els.suggestionSavedState.textContent = 'Cargá título y descripción para guardar la sugerencia.';
+    return;
+  }
+  const session = getSession();
+  const row = {
+    title,
+    description,
+    benefit: els.suggestionBenefit?.value.trim() || '',
+    targetSector: els.suggestionSector?.value || session.sector || 'Sin sector',
+    type: els.suggestionType?.value || 'Mejora de proceso',
+    impact: els.suggestionImpact?.value || 'Media',
+    status: els.suggestionStatus?.value || 'Nueva',
+    operator: els.suggestionOperator?.value.trim() || session.operator || 'Sin operador',
+    operatorUid: session.uid || state.firebase.currentUser?.uid || '',
+    operatorEmail: session.email || state.firebase.currentUser?.email || '',
+    role: session.role || 'operador',
+    level: Number(session.level || 1),
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  await upsertSuggestion(row);
+  if (els.suggestionTitle) els.suggestionTitle.value = '';
+  if (els.suggestionDescription) els.suggestionDescription.value = '';
+  if (els.suggestionBenefit) els.suggestionBenefit.value = '';
+  if (els.suggestionStatus) els.suggestionStatus.value = 'Nueva';
+  if (els.suggestionSavedState) els.suggestionSavedState.textContent = 'Sugerencia guardada. Queda disponible para revisión y mejora continua.';
+  renderSuggestions();
+  renderMetrics();
+}
+
+async function upsertSuggestion(row) {
+  const docId = getSuggestionDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && suggestionsCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await suggestionsCollection().doc(docId).set(cloudPayload, { merge: true });
+  }
+  const rows = getStoredRows(SUGGESTIONS_KEY);
+  const index = rows.findIndex(item => getSuggestionDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(SUGGESTIONS_KEY, JSON.stringify(rows));
+}
+
+function renderSuggestions() {
+  if (!els.suggestionList) return;
+  const allRows = getSuggestionRows().slice();
+  const rows = allRows.filter(row => {
+    const sector = els.suggestionFilterSector?.value || 'Todos los sectores';
+    const status = els.suggestionFilterStatus?.value || 'Todos los estados';
+    const impact = els.suggestionFilterImpact?.value || 'Todos los impactos';
+    return (sector === 'Todos los sectores' || row.targetSector === sector)
+      && (status === 'Todos los estados' || row.status === status)
+      && (impact === 'Todos los impactos' || row.impact === impact);
+  }).sort((a, b) => suggestionImpactWeight(b) - suggestionImpactWeight(a) || String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+  if (els.suggestionCount) els.suggestionCount.textContent = `${rows.length} / ${allRows.length} sugerencias`;
+  if (!allRows.length) {
+    els.suggestionList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin sugerencias cargadas</h2><p>La próxima idea del turno puede convertirse en una mejora para todo el equipo.</p></div>';
+    return;
+  }
+  if (!rows.length) {
+    els.suggestionList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin sugerencias con ese filtro</h2><p>Probá cambiar sector, estado o impacto para ampliar la vista.</p></div>';
+    return;
+  }
+  els.suggestionList.innerHTML = rows.map(renderSuggestionItem).join('');
+  els.suggestionList.querySelectorAll('[data-copy-suggestion]').forEach(btn => {
+    btn.addEventListener('click', () => copySuggestion(btn.dataset.copySuggestion, btn));
+  });
+  els.suggestionList.querySelectorAll('[data-suggestion-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => addSuggestionToKanban(btn.dataset.suggestionKanban));
+  });
+}
+
+function renderSuggestionItem(row) {
+  const id = row.id || getSuggestionDocId(row);
+  return `<article class="knowledge-item suggestion-item impact-${normalize(row.impact || 'media')}">
+    <div class="knowledge-main">
+      <p class="eyebrow">${escapeHtml(row.status || 'Nueva')} · ${escapeHtml(row.targetSector || 'Sin sector')} · ${safeDate(row.createdAt)}</p>
+      <h3>${escapeHtml(row.title || 'Sugerencia sin título')}</h3>
+      <div class="learning-tags"><span>${escapeHtml(row.type || 'Mejora')}</span><span>${escapeHtml(row.impact || 'Media')}</span><span>${escapeHtml(row.shift || 'Sin turno')}</span></div>
+      <p>${escapeHtml(row.description || '')}</p>
+      ${row.benefit ? `<p><b>Beneficio esperado:</b> ${escapeHtml(row.benefit)}</p>` : ''}
+      <div class="learning-actions">
+        <button type="button" data-copy-suggestion="${escapeHtml(id)}">Copiar sugerencia</button>
+        <button type="button" data-suggestion-kanban="${escapeHtml(id)}">Enviar a Kanban</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sin operador')} · ${escapeHtml(row.sector || 'Sin sector')}</span>
+  </article>`;
+}
+
+function suggestionImpactWeight(row) {
+  return { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 }[row.impact] || 2;
+}
+
+function findSuggestionRow(id) {
+  return getSuggestionRows().find(row => (row.id || getSuggestionDocId(row)) === id);
+}
+
+function makeSuggestionNote(row) {
+  return [
+    `Asunto sugerido: Sugerencia de mejora - ${row.targetSector || 'Sin sector'} - ${row.title || 'Sin titulo'}`,
+    '',
+    'Hola, dejo registrada una sugerencia de mejora para evaluar.',
+    '',
+    `Sector al que aplica: ${row.targetSector || 'Sin sector'}`,
+    `Tipo: ${row.type || 'Mejora'}`,
+    `Impacto estimado: ${row.impact || 'Media'}`,
+    `Estado: ${row.status || 'Nueva'}`,
+    `Operador: ${row.operator || 'Sin operador'}`,
+    `Turno: ${row.shift || 'Sin turno'}`,
+    `Estacion: ${row.station || 'Sin estacion'}`,
+    `Fecha: ${safeDateTime(row.createdAt)}`,
+    '',
+    `Idea / sugerencia:\n${row.title || ''}`,
+    '',
+    `Descripcion:\n${row.description || ''}`,
+    '',
+    `Beneficio esperado:\n${row.benefit || 'No cargado'}`,
+    '',
+    'Pedido concreto:',
+    'Evaluar si esta sugerencia puede transformarse en mejora del sistema, procedimiento, capacitación, automatización o directiva interna.'
+  ].join('\n');
+}
+
+async function copySuggestion(id, button) {
+  const row = findSuggestionRow(id);
+  if (!row) return;
+  await copyPlainText(makeSuggestionNote(row));
+  const previous = button.textContent;
+  button.textContent = 'Sugerencia copiada';
+  button.disabled = true;
+  setTimeout(() => {
+    button.textContent = previous;
+    button.disabled = false;
+  }, 1500);
+}
+
+async function addSuggestionToKanban(id) {
+  const row = findSuggestionRow(id);
+  if (!row) return;
+  const session = getSession();
+  const task = {
+    title: row.title || 'Sugerencia de mejora',
+    subscriber: row.targetSector || '',
+    category: 'Mejora de proceso',
+    priority: row.impact || 'Media',
+    description: [row.description, row.benefit ? `Beneficio esperado: ${row.benefit}` : '', `Tipo: ${row.type || 'Mejora'}`].filter(Boolean).join('\n'),
+    column: 'por-hacer',
+    operator: session.operator || row.operator || 'Sin operador',
+    operatorUid: session.uid || row.operatorUid || '',
+    shift: session.shift || row.shift || 'Sin turno',
+    sector: session.sector || row.sector || 'Sin sector',
+    station: session.station || row.station || 'Sin estación',
+    sourceSuggestionId: id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    movements: []
+  };
+  await upsertKanbanTask(task);
+  if (els.suggestionSavedState) els.suggestionSavedState.textContent = 'Sugerencia enviada al Kanban para seguimiento.';
   renderKanban();
   renderMetrics();
 }
@@ -2708,6 +2934,7 @@ function renderMetrics() {
   const rows = getCases();
   const learning = getLearningRows();
   const kanban = getKanbanRows();
+  const suggestions = getSuggestionRows();
   const session = getSession();
   const total = rows.length;
   const remote = rows.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
@@ -2719,28 +2946,29 @@ function renderMetrics() {
   els.mRisk.textContent = risk;
   els.mAvoided.textContent = avoided;
   els.mPending.textContent = pending;
-  const paretoEntries = getParetoEntries(rows, learning, kanban);
+  const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions);
   renderBars(els.paretoChart, paretoEntries, true);
-  renderMetricInsights(paretoEntries, rows, learning, kanban);
-  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]), false);
-  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift)]), false);
+  renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions);
+  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator)]), false);
+  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift), ...suggestions.map(r => r.shift)]), false);
   renderBars(els.learningChart, countEntries(learning.map(r => getLearningEventType(r))), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
-  renderOperatorSummary(rows, learning, kanban, session);
+  renderOperatorSummary(rows, learning, kanban, session, suggestions);
   renderCaseRows(rows);
 }
 
-function getParetoEntries(rows, learning, kanban) {
+function getParetoEntries(rows, learning, kanban, suggestions = []) {
   const mode = els.paretoMode?.value || 'cause';
   if (mode === 'learningType') return countEntries(learning.map(r => getLearningEventType(r) || r.type || 'Evento en espera'));
   if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column)]);
-  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator)]);
-  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority)]);
+  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator)]);
+  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact)]);
   if (mode === 'kanban') return countEntries(kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column));
-  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category)]);
+  if (mode === 'suggestions') return countEntries(suggestions.map(r => r.type || r.targetSector || 'Sugerencia'));
+  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type)]);
 }
 
-function renderMetricInsights(entries, rows, learning, kanban) {
+function renderMetricInsights(entries, rows, learning, kanban, suggestions = []) {
   if (!els.metricInsights) return;
   if (!entries.length) {
     els.metricInsights.innerHTML = '<p>Todavía no hay datos suficientes para sugerencias.</p>';
@@ -2752,10 +2980,12 @@ function renderMetricInsights(entries, rows, learning, kanban) {
   const openLearning = learning.filter(row => !['Resuelto y cargado', 'Convertir en procedimiento'].includes(row.status)).length;
   const stuck = kanban.filter(row => ['en-espera', 'supervision'].includes(row.column)).length;
   const risk = rows.filter(row => row.mood === 'Riesgo de baja').length;
+  const openSuggestions = suggestions.filter(row => !['Implementada', 'Descartada'].includes(row.status)).length;
   const ideas = [
     `El foco principal es "${topLabel}", con ${topPercent}% del total visible. Si se estandariza ese grupo, baja el mayor cuello de botella.`,
     openLearning ? `Hay ${openLearning} eventos en espera: conviene resolverlos por lote y convertir los repetidos en procedimiento.` : 'No hay dudas abiertas relevantes: buen momento para revisar calidad de procedimientos.',
     stuck ? `El Kanban tiene ${stuck} tarjetas en espera/supervisión. Revisá si dependen de la misma persona o sector.` : 'El Kanban no muestra acumulación en espera.',
+    openSuggestions ? `Hay ${openSuggestions} sugerencias abiertas. Revisarlas por impacto permite capturar mejoras que nacen del trabajo real del sector.` : 'No hay sugerencias abiertas pendientes de revisión.',
     risk ? `Hay ${risk} casos con riesgo de baja. Esa métrica pesa más que la cantidad bruta de eventos levantados.` : 'No aparecen riesgos de baja cargados en el historial actual.'
   ];
   els.metricInsights.innerHTML = `<h3>Lectura inteligente</h3><ul>${ideas.map(idea => `<li>${escapeHtml(idea)}</li>`).join('')}</ul>`;
@@ -2773,7 +3003,7 @@ function countBy(rows, key) {
   return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
 }
 
-function renderOperatorSummary(rows, learning, kanban, session) {
+function renderOperatorSummary(rows, learning, kanban, session, suggestions = []) {
   if (!els.operatorSummary) return;
   if (!session.operator) {
     els.operatorSummary.innerHTML = '<p class="empty-state compact-empty">Iniciá sesión para ver tus métricas.</p>';
@@ -2782,9 +3012,10 @@ function renderOperatorSummary(rows, learning, kanban, session) {
   const mine = rows.filter(r => r.operator === session.operator);
   const myLearning = learning.filter(r => r.operator === session.operator);
   const myKanban = kanban.filter(r => r.operator === session.operator);
+  const mySuggestions = suggestions.filter(r => r.operator === session.operator);
   const resolved = mine.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
   const myResolvedTasks = myKanban.filter(r => ['resuelto', 'procedimiento'].includes(r.column)).length;
-  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div></div>`;
+  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div><div><b>${mySuggestions.length}</b><span>sugerencias de mejora</span></div></div>`;
 }
 
 function renderBars(el, entries, pareto) {

@@ -32,7 +32,7 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
 <section id="manual" class="view">
@@ -91,6 +91,7 @@
         <li><b>Procedimientos:</b> base operativa para eventos recibidos en Bykom.</li>
         <li><b>Supervisión:</b> directivas internas cargadas por responsables.</li>
         <li><b>Aprendizajes:</b> eventos en espera, dudas y casos que deben validarse.</li>
+        <li><b>Sugerencias:</b> espacio para que cada usuario proponga mejoras del sistema, procesos, comunicación o capacitación.</li>
         <li><b>Kanban:</b> tablero visual para ordenar tareas y seguimientos.</li>
         <li><b>Métricas:</b> Pareto, eventos por operador, turno, estado y aprendizaje.</li>
       </ul>
@@ -108,7 +109,7 @@
       <p class="eyebrow">Permisos</p>
       <h3>Niveles de usuario</h3>
       <ul>
-        <li><b>Nivel 3 - Operador:</b> usa Ingreso, 911, SAFE, Procedimientos, Aprendizajes, Kanban y Métricas propias.</li>
+        <li><b>Nivel 3 - Operador:</b> usa Ingreso, 911, SAFE, Procedimientos, Aprendizajes, Sugerencias, Kanban y Métricas propias.</li>
         <li><b>Nivel 6 - Técnica:</b> consulta recursos técnicos, materiales de apoyo y eventos derivados a servicio técnico.</li>
         <li><b>Nivel 8 - Supervisor:</b> revisa eventos de operadores, resuelve dudas y valida criterios operativos.</li>
         <li><b>Nivel 9 - Gerencia:</b> ve métricas globales, seguimiento por sector y prioridades de mejora.</li>
@@ -131,6 +132,11 @@
       <p class="eyebrow">Mejora continua</p>
       <h3>Cómo una duda se convierte en procedimiento</h3>
       <p>Cuando un operador encuentra un evento que no puede cedular con seguridad, lo carga en Aprendizajes con abonado, falla, duda concreta y contexto. El sistema sugiere una posible solución, permite copiar una nota estandarizada para supervisión y guarda el caso. Luego, el supervisor valida el criterio correcto y esa respuesta queda asentada como procedimiento reutilizable para otros operadores.</p>
+    </article>
+    <article class="manual-card wide">
+      <p class="eyebrow">Mejora continua</p>
+      <h3>Espacio de sugerencias</h3>
+      <p>Las ideas de mejora no deberían perderse en comentarios sueltos. En Sugerencias, cada operador puede registrar un aporte con sector, tipo, impacto y beneficio esperado. Las propuestas quedan visibles para revisión, pueden copiarse como nota formal o enviarse al Kanban para seguimiento.</p>
     </article>
     <article class="manual-card wide">
       <p class="eyebrow">Guion breve para video</p>
@@ -411,6 +417,42 @@
     </section>
   </section>
 </section>
+<section id="suggestions" class="view">
+  <section class="knowledge-layout suggestions-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Mejora continua</p>
+      <h2>Espacio de sugerencias</h2>
+      <p class="helper-copy">Cargá ideas, aportes o mejoras detectadas desde el trabajo real del sector. La sugerencia queda registrada para evaluar, priorizar y convertir en acción.</p>
+      <label class="field-label" for="suggestionOperator">Usuario que propone</label>
+      <input id="suggestionOperator" placeholder="Ej: Ismael Romero">
+      <label class="field-label" for="suggestionSector">Sector al que aplica</label>
+      <select id="suggestionSector"><option>Monitoreo 911</option><option>SAFE / Objetivos Móviles</option><option>Supervisión</option><option>Técnica</option><option>Administración</option><option>Sistema / app</option><option>Todos los sectores</option><option>Otro</option></select>
+      <label class="field-label" for="suggestionType">Tipo de sugerencia</label>
+      <select id="suggestionType"><option>Mejora de proceso</option><option>Mejora del sistema</option><option>Procedimiento faltante</option><option>Automatización</option><option>Métrica / indicador</option><option>Capacitación</option><option>Comunicación interna</option><option>Material de apoyo</option><option>Otro</option></select>
+      <label class="field-label" for="suggestionImpact">Impacto estimado</label>
+      <select id="suggestionImpact"><option>Media</option><option>Alta</option><option>Crítica</option><option>Baja</option></select>
+      <label class="field-label" for="suggestionTitle">Título de la idea</label>
+      <input id="suggestionTitle" placeholder="Ej: Automatizar aviso de corte 220">
+      <label class="field-label" for="suggestionDescription">Descargo / descripción</label>
+      <textarea id="suggestionDescription" placeholder="Qué problema viste, cuándo ocurre, qué se podría mejorar y qué ejemplo real lo demuestra."></textarea>
+      <label class="field-label" for="suggestionBenefit">Beneficio esperado</label>
+      <textarea id="suggestionBenefit" placeholder="Ej: ahorrar llamadas repetidas, bajar estrés del operador, evitar dudas, mejorar respuesta al cliente."></textarea>
+      <label class="field-label" for="suggestionStatus">Estado</label>
+      <select id="suggestionStatus"><option>Nueva</option><option>En revisión</option><option>Aprobada</option><option>Implementada</option><option>Descartada</option></select>
+      <button id="saveSuggestion" class="primary" type="button">Guardar sugerencia</button>
+      <p id="suggestionSavedState" class="save-state">Las sugerencias quedan asociadas al usuario, turno, sector y estación.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Ideas del equipo</p><h2>Sugerencias guardadas</h2></div><span id="suggestionCount" class="pill">0 sugerencias</span></div>
+      <div class="learning-toolbar">
+        <select id="suggestionFilterSector" aria-label="Filtrar sugerencias por sector"><option>Todos los sectores</option><option>Monitoreo 911</option><option>SAFE / Objetivos Móviles</option><option>Supervisión</option><option>Técnica</option><option>Administración</option><option>Sistema / app</option><option>Todos los sectores</option><option>Otro</option></select>
+        <select id="suggestionFilterStatus" aria-label="Filtrar sugerencias por estado"><option>Todos los estados</option><option>Nueva</option><option>En revisión</option><option>Aprobada</option><option>Implementada</option><option>Descartada</option></select>
+        <select id="suggestionFilterImpact" aria-label="Filtrar sugerencias por impacto"><option>Todos los impactos</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select>
+      </div>
+      <div id="suggestionList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
 <section id="kanban" class="view">
   <section class="kanban-layout">
     <aside class="knowledge-form kanban-form">
@@ -441,7 +483,7 @@
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="kanban">Kanban</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="kanban">Kanban</option><option value="suggestions">Sugerencias</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>

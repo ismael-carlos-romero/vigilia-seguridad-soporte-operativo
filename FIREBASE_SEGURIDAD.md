@@ -108,6 +108,22 @@ service cloud.firestore {
       allow delete: if supervisor();
     }
 
+    match /sugerencias_mejora/{suggestionId} {
+      allow create: if activeUser()
+        && request.resource.data.operatorUid == request.auth.uid;
+
+      allow read: if activeUser()
+        && (resource.data.operatorUid == request.auth.uid || supervisor());
+
+      allow update: if activeUser()
+        && (
+          resource.data.operatorUid == request.auth.uid
+          || supervisor()
+        );
+
+      allow delete: if supervisor();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
