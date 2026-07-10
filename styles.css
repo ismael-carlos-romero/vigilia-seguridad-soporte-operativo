@@ -100,6 +100,12 @@
 .learning-tags .priority-alta{background:#fff4df;color:var(--amber)}
 .learning-tags .priority-media{background:#edf5ff;color:var(--blue)}
 .learning-tags .priority-baja{background:#eef8f7;color:var(--teal)}
+.learning-age-badge{border:1px solid transparent}
+.learning-age-badge.ok{background:#edf5ff!important;color:var(--blue)!important}
+.learning-age-badge.warning{background:#fff4df!important;color:var(--amber)!important}
+.learning-age-badge.overdue{background:#fff0ee!important;color:var(--red)!important}
+.learning-age-badge.resolved{background:#eef8f7!important;color:var(--teal)!important}
+.learning-item.learning-overdue{border-left:4px solid var(--red)}
 .supervision-dashboard{display:grid;gap:14px;margin-bottom:14px}
 .supervision-overview{padding:16px}
 .supervision-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
@@ -131,3 +137,4 @@
 @media(max-width:1180px){.supervision-columns{grid-template-columns:1fr}.supervision-stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:760px){.learning-toolbar{grid-template-columns:1fr}.supervision-stats{grid-template-columns:repeat(2,1fr)}.supervision-toolbar{justify-content:stretch}.supervision-toolbar select{min-width:0}}
 .manual-note{margin-top:12px;border:1px solid var(--line);border-radius:6px;background:#f8fafb;padding:10px 12px}
+.metrics-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}

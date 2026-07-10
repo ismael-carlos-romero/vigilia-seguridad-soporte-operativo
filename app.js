@@ -184,7 +184,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -485,7 +485,8 @@ function bindEvents() {
   els.supervisionStatusFilter?.addEventListener('change', renderSupervision);
   ['learningSubscriber','learningFailure','learningQuestion','learningContext'].forEach(id => els[id].addEventListener('input', renderLearningSuggestion));
   els.learningEventType?.addEventListener('change', renderLearningSuggestion);
-  ['learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningSort'].forEach(id => els[id]?.addEventListener('change', renderLearning));
+  els.learningSearch?.addEventListener('input', renderLearning);
+  ['learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort'].forEach(id => els[id]?.addEventListener('change', renderLearning));
   els.saveLearning.addEventListener('click', saveLearning);
   els.cancelLearningEdit?.addEventListener('click', cancelLearningEdit);
   els.exportLearning.addEventListener('click', exportLearningBackup);
@@ -1820,6 +1821,8 @@ async function saveLearning() {
     : selectedEventType;
   const baseRecord = {
     date: new Date().toISOString(),
+    openedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     type: els.learningType?.value || 'Evento en espera',
     category: els.learningCategory?.value || inferLearningCategory({ failure, question, context }),
     eventType,
@@ -1846,12 +1849,15 @@ async function saveLearning() {
       ...baseRecord,
       id: original.id || state.editingLearningId,
       date: original.date || baseRecord.date,
+      openedAt: original.openedAt || original.date || baseRecord.openedAt,
+      resolvedAt: original.resolvedAt || original.resolution?.resolvedAt || '',
       operatorUid: original.operatorUid || baseRecord.operatorUid,
       operatorEmail: original.operatorEmail || baseRecord.operatorEmail,
       role: original.role || baseRecord.role,
       level: Number(original.level || baseRecord.level || 1),
       editedBy: session.operator || 'Sin operador',
-      editedAt: new Date().toISOString()
+      editedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
     if (original.resolution) editedRecord.resolution = original.resolution;
     try {
@@ -1935,26 +1941,61 @@ function fillLearningFilters(rows) {
 }
 
 function getFilteredLearningRows(rows) {
+  const search = (els.learningSearch?.value || '').trim();
   const category = els.learningFilterCategory?.value || 'Todas las categorías';
   const eventType = els.learningFilterEventType?.value || 'Todos los eventos Bykom';
   const priority = els.learningFilterPriority?.value || 'Todas las prioridades';
   const status = els.learningFilterStatus?.value || 'Todos los estados';
+  const ageFilter = els.learningAgeFilter?.value || 'Todas las fechas';
   return rows.filter(row => {
+    const searchMatch = matchesLearningSearch(row, search);
     const categoryMatch = category === 'Todas las categorías' || getLearningCategory(row) === category;
     const eventMatch = eventType === 'Todos los eventos Bykom' || getLearningEventType(row) === eventType;
     const priorityMatch = priority === 'Todas las prioridades' || getLearningPriority(row) === priority;
     const statusMatch = status === 'Todos los estados' || (row.status || 'Sin estado') === status;
-    return categoryMatch && eventMatch && priorityMatch && statusMatch;
+    const ageMatch = matchesLearningAgeFilter(row, ageFilter);
+    return searchMatch && categoryMatch && eventMatch && priorityMatch && statusMatch && ageMatch;
   });
 }
 
 function sortLearningRows(a, b) {
   const mode = els.learningSort?.value || 'Prioridad primero';
+  if (mode === 'Atraso primero') return Number(isLearningOverdue(b)) - Number(isLearningOverdue(a)) || getLearningAgeDays(b) - getLearningAgeDays(a) || priorityWeight(b) - priorityWeight(a);
+  if (mode === 'Más antiguos abiertos') return Number(isLearningResolved(a)) - Number(isLearningResolved(b)) || String(getLearningOpenedAt(a) || '').localeCompare(String(getLearningOpenedAt(b) || ''));
   if (mode === 'Más recientes') return String(b.date || '').localeCompare(String(a.date || ''));
+  if (mode === 'Abonado') return String(a.subscriber || '').localeCompare(String(b.subscriber || '')) || priorityWeight(b) - priorityWeight(a);
   if (mode === 'Evento Bykom') return getLearningEventType(a).localeCompare(getLearningEventType(b)) || priorityWeight(b) - priorityWeight(a);
   if (mode === 'Categoría') return getLearningCategory(a).localeCompare(getLearningCategory(b)) || priorityWeight(b) - priorityWeight(a);
   if (mode === 'Estado') return String(a.status || '').localeCompare(String(b.status || '')) || priorityWeight(b) - priorityWeight(a);
   return priorityWeight(b) - priorityWeight(a) || String(b.date || '').localeCompare(String(a.date || ''));
+}
+
+function matchesLearningSearch(row, query) {
+  if (!query) return true;
+  const haystack = normalize([
+    row.subscriber,
+    row.failure,
+    row.question,
+    row.context,
+    row.suggestion,
+    row.supervisorSummary,
+    row.operator,
+    row.shift,
+    getLearningCategory(row),
+    getLearningEventType(row)
+  ].join(' '));
+  const needle = normalize(query);
+  const compactHaystack = haystack.replace(/[^a-z0-9]/g, '');
+  const compactNeedle = needle.replace(/[^a-z0-9]/g, '');
+  return haystack.includes(needle) || (compactNeedle && compactHaystack.includes(compactNeedle));
+}
+
+function matchesLearningAgeFilter(row, filter) {
+  if (filter === 'Resueltos') return isLearningResolved(row);
+  if (filter === 'Atrasados') return isLearningOverdue(row);
+  if (filter === 'Abiertos hoy') return !isLearningResolved(row) && getLearningAgeDays(row) === 0;
+  if (filter === 'Abiertos 2+ días') return !isLearningResolved(row) && getLearningAgeDays(row) >= 2;
+  return true;
 }
 
 function getLearningCategory(row) {
@@ -1973,18 +2014,91 @@ function priorityWeight(row) {
   return { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 }[getLearningPriority(row)] || 2;
 }
 
+function isResolvedStatus(status) {
+  return ['Validado por supervisor', 'Convertir en procedimiento', 'Resuelto y cargado'].includes(status);
+}
+
+function isLearningResolved(row) {
+  return isResolvedStatus(row.status) || Boolean(row.resolution?.procedure);
+}
+
+function getLearningOpenedAt(row) {
+  return row.openedAt || row.date || row.createdAt || row.updatedAt || '';
+}
+
+function getLearningResolvedAt(row) {
+  if (!isLearningResolved(row)) return '';
+  return row.resolvedAt || row.resolution?.resolvedAt || row.resolution?.date || row.resolution?.updatedAt || row.editedAt || row.updatedAt || '';
+}
+
+function daysBetween(startValue, endValue) {
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 0;
+  return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86400000));
+}
+
+function getLearningAgeDays(row) {
+  const openedAt = getLearningOpenedAt(row);
+  const endAt = getLearningResolvedAt(row) || new Date().toISOString();
+  return daysBetween(openedAt, endAt);
+}
+
+function learningOverdueLimit(row) {
+  const priority = getLearningPriority(row);
+  if (priority === 'Crítica') return 2;
+  if (priority === 'Alta') return 3;
+  if (priority === 'Media') return 5;
+  return 7;
+}
+
+function isLearningOverdue(row) {
+  return !isLearningResolved(row) && getLearningAgeDays(row) >= learningOverdueLimit(row);
+}
+
+function formatDays(days) {
+  if (days <= 0) return 'hoy';
+  if (days === 1) return '1 día';
+  return `${days} días`;
+}
+
+function getLearningAgeLabel(row) {
+  const days = getLearningAgeDays(row);
+  if (isLearningResolved(row)) return `Resuelto en ${formatDays(days)}`;
+  if (isLearningOverdue(row)) return `Atrasado · ${formatDays(days)}`;
+  return `Abierto · ${formatDays(days)}`;
+}
+
+function getLearningAgeClass(row) {
+  if (isLearningResolved(row)) return 'resolved';
+  if (isLearningOverdue(row)) return 'overdue';
+  if (getLearningAgeDays(row) >= Math.max(1, learningOverdueLimit(row) - 1)) return 'warning';
+  return 'ok';
+}
+
+function getLearningAgeBucket(row) {
+  if (isLearningResolved(row)) return 'Resueltos';
+  if (isLearningOverdue(row)) return 'Atrasados';
+  const days = getLearningAgeDays(row);
+  if (days === 0) return 'Abiertos hoy';
+  if (days <= 2) return 'Abiertos 1-2 días';
+  if (days <= 5) return 'Abiertos 3-5 días';
+  return 'Abiertos 6+ días';
+}
+
 function renderLearningItem(row) {
   const id = row.id || getLearningDocId(row);
   const resolution = row.resolution || {};
-  const resolved = ['Validado por supervisor', 'Convertir en procedimiento', 'Resuelto y cargado'].includes(row.status) || Boolean(resolution.procedure);
+  const resolved = isLearningResolved(row);
   const category = getLearningCategory(row);
   const eventType = getLearningEventType(row);
   const priority = getLearningPriority(row);
-  return `<article class="knowledge-item learning-item ${resolved ? 'resolved' : ''}">
+  const ageClass = getLearningAgeClass(row);
+  return `<article class="knowledge-item learning-item ${resolved ? 'resolved' : ''} ${ageClass === 'overdue' ? 'learning-overdue' : ''}">
     <div class="knowledge-main">
-      <p class="eyebrow">${escapeHtml(row.type || 'Evento en espera')} · ${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${safeDate(row.date)}</p>
+      <p class="eyebrow">${escapeHtml(row.type || 'Evento en espera')} · ${escapeHtml(row.status)} · ${escapeHtml(row.subscriber || 'Sin abonado')} · Ingreso: ${safeDate(getLearningOpenedAt(row))}</p>
       <h3>${escapeHtml(row.failure || row.question)}</h3>
-      <div class="learning-tags"><span>${escapeHtml(eventType)}</span><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span></div>
+      <div class="learning-tags"><span>${escapeHtml(eventType)}</span><span>${escapeHtml(category)}</span><span class="priority-${normalize(priority).replace(/\s+/g, '-')}">${escapeHtml(priority)}</span><span class="learning-age-badge ${ageClass}">${escapeHtml(getLearningAgeLabel(row))}</span></div>
       <p>${escapeHtml(row.question)}</p>
       <p>${escapeHtml(row.context)}</p>
       <p><b>Sugerencia:</b> ${escapeHtml(row.suggestion || 'Sin solución cargada')}</p>
@@ -2091,6 +2205,7 @@ function openLearningResolution(id) {
     <p><b>Duda:</b> ${escapeHtml(row.question || 'Sin duda cargada')}</p>
     <p><b>Contexto:</b> ${escapeHtml(row.context || 'Sin contexto cargado')}</p>
     <p><b>Sugerencia actual:</b> ${escapeHtml(row.suggestion || 'Sin sugerencia')}</p>
+    <p><b>Tiempo:</b> ${escapeHtml(getLearningAgeLabel(row))}</p>
     <p><b>Operador:</b> ${escapeHtml(row.operator || 'Sin operador')} · ${escapeHtml(row.shift || 'Sin turno')}</p>`;
   els.resolutionStatus.value = row.status || 'Validado por supervisor';
   els.resolutionCategory.value = resolution.category || inferLearningCategory(row);
@@ -2164,10 +2279,15 @@ function makeLearningResolutionPayload(row) {
   const route = els.resolutionRoute.value.trim();
   const keywords = els.resolutionKeywords.value.trim();
   const status = els.resolutionStatus.value;
+  const now = new Date().toISOString();
+  const shouldMarkResolved = isResolvedStatus(status) || Boolean(procedure);
+  const resolvedAt = shouldMarkResolved ? (row.resolvedAt || row.resolution?.resolvedAt || now) : '';
   const resolutionSummary = `Categoría: ${category || 'Sin categoría'}. Criterio: ${cause || 'Sin criterio cargado'}. Procedimiento: ${procedure || 'Sin procedimiento cargado'}. Nota Bykom: ${bykomNote || 'Sin nota estándar'}. Derivación: ${route || 'Sin derivación'}.`;
   return {
     ...row,
     status,
+    openedAt: row.openedAt || row.date || now,
+    resolvedAt,
     suggestion: procedure || row.suggestion || '',
     supervisorSummary: resolutionSummary,
     resolution: {
@@ -2180,9 +2300,9 @@ function makeLearningResolutionPayload(row) {
       supervisorName: session.operator || 'Sin supervisor',
       supervisorUid: session.uid || '',
       supervisorLevel: Number(session.level || 0),
-      resolvedAt: new Date().toISOString()
+      resolvedAt
     },
-    updatedAt: new Date().toISOString()
+    updatedAt: now
   };
 }
 
@@ -2941,11 +3061,18 @@ function renderMetrics() {
   const risk = rows.filter(r => r.mood === 'Riesgo de baja').length;
   const avoided = rows.filter(r => r.outcome === 'Servicio técnico evitado').length;
   const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length + learning.filter(r => r.status !== 'Resuelto y cargado').length;
+  const overdue = learning.filter(row => isLearningOverdue(row)).length;
+  const resolvedLearning = learning.filter(row => isLearningResolved(row));
+  const avgResolution = resolvedLearning.length
+    ? Math.round(resolvedLearning.reduce((sum, row) => sum + getLearningAgeDays(row), 0) / resolvedLearning.length)
+    : 0;
   els.mTotal.textContent = total;
   els.mRemote.textContent = total ? `${Math.round(remote * 100 / total)}%` : '0%';
   els.mRisk.textContent = risk;
   els.mAvoided.textContent = avoided;
   els.mPending.textContent = pending;
+  if (els.mOverdue) els.mOverdue.textContent = overdue;
+  if (els.mAvgResolution) els.mAvgResolution.textContent = `${avgResolution}d`;
   const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions);
   renderBars(els.paretoChart, paretoEntries, true);
   renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions);
@@ -2963,6 +3090,7 @@ function getParetoEntries(rows, learning, kanban, suggestions = []) {
   if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column)]);
   if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator)]);
   if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact)]);
+  if (mode === 'age') return countEntries(learning.map(row => getLearningAgeBucket(row)));
   if (mode === 'kanban') return countEntries(kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column));
   if (mode === 'suggestions') return countEntries(suggestions.map(r => r.type || r.targetSector || 'Sugerencia'));
   return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type)]);
@@ -2978,12 +3106,18 @@ function renderMetricInsights(entries, rows, learning, kanban, suggestions = [])
   const total = entries.reduce((sum, item) => sum + item[1], 0);
   const topPercent = Math.round(topValue * 100 / total);
   const openLearning = learning.filter(row => !['Resuelto y cargado', 'Convertir en procedimiento'].includes(row.status)).length;
+  const overdueLearning = learning.filter(row => isLearningOverdue(row)).length;
+  const resolvedLearning = learning.filter(row => isLearningResolved(row));
+  const avgResolution = resolvedLearning.length
+    ? Math.round(resolvedLearning.reduce((sum, row) => sum + getLearningAgeDays(row), 0) / resolvedLearning.length)
+    : 0;
   const stuck = kanban.filter(row => ['en-espera', 'supervision'].includes(row.column)).length;
   const risk = rows.filter(row => row.mood === 'Riesgo de baja').length;
   const openSuggestions = suggestions.filter(row => !['Implementada', 'Descartada'].includes(row.status)).length;
   const ideas = [
     `El foco principal es "${topLabel}", con ${topPercent}% del total visible. Si se estandariza ese grupo, baja el mayor cuello de botella.`,
     openLearning ? `Hay ${openLearning} eventos en espera: conviene resolverlos por lote y convertir los repetidos en procedimiento.` : 'No hay dudas abiertas relevantes: buen momento para revisar calidad de procedimientos.',
+    overdueLearning ? `Hay ${overdueLearning} eventos atrasados según prioridad. Esos deberían revisarse primero para que no se acumulen dudas de turno a turno.` : `No hay eventos atrasados. Promedio de resolución actual: ${avgResolution} días.`,
     stuck ? `El Kanban tiene ${stuck} tarjetas en espera/supervisión. Revisá si dependen de la misma persona o sector.` : 'El Kanban no muestra acumulación en espera.',
     openSuggestions ? `Hay ${openSuggestions} sugerencias abiertas. Revisarlas por impacto permite capturar mejoras que nacen del trabajo real del sector.` : 'No hay sugerencias abiertas pendientes de revisión.',
     risk ? `Hay ${risk} casos con riesgo de baja. Esa métrica pesa más que la cantidad bruta de eventos levantados.` : 'No aparecen riesgos de baja cargados en el historial actual.'
