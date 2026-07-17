@@ -25,12 +25,15 @@ const state = {
     kanban: [],
     resources: [],
     suggestions: [],
+    drivers: [],
     resourcesLoaded: false,
     suggestionsLoaded: false,
+    driversLoaded: false,
     unsubscribeLearning: null,
     unsubscribeKanban: null,
     unsubscribeResources: null,
     unsubscribeSuggestions: null,
+    unsubscribeDrivers: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -44,6 +47,25 @@ const SESSION_KEY = 'vigiliaSessionV1';
 const MEDIA_KEY = 'vigiliaMediaV1';
 const RESOURCES_KEY = 'vigiliaResourcesV1';
 const SUGGESTIONS_KEY = 'vigiliaSuggestionsV1';
+const DRIVERS_KEY = 'vigiliaDriversV1';
+const defaultDirectives = [
+  {
+    id: 'kike-atcl-2026-07-16',
+    date: '2026-07-16T15:34:00-03:00',
+    title: 'Pedidos de clientes por ATCL y registro escrito',
+    source: 'Kike / Reunión jueves 16-07-2026',
+    sector: 'Todos los sectores',
+    text: 'Todo pedido de cliente debe quedar cargado mediante ATCL. Si se requiere hablar con Técnica, hacerlo por WhatsApp y dejar registro. No realizar pedidos verbales o presenciales a Cristian, porque después no queda trazabilidad y puede no ejecutarse lo solicitado por el cliente.'
+  },
+  {
+    id: 'kike-choferes-2026-07-16',
+    date: '2026-07-16T15:39:00-03:00',
+    title: 'Base de choferes y transportistas por hojas de ruta',
+    source: 'Kike / Reunión jueves 16-07-2026',
+    sector: 'SAFE / Objetivos Móviles',
+    text: 'Armar una base de datos de los choferes y transportistas que llegan por mail con hojas de ruta, para poder buscarlos por empresa, chofer, teléfono, dominio, unidad o recorrido.'
+  }
+];
 const bykomEventTypes = [
   'Falso disparo',
   'No llega cierre',
@@ -184,7 +206,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -200,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderDirectives();
   renderSupervision();
   renderResources();
+  renderDrivers();
   renderLearning();
   renderSuggestions();
   renderKanban();
@@ -217,12 +240,15 @@ function setupSession() {
         if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
         if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
         if (state.firebase.unsubscribeSuggestions) state.firebase.unsubscribeSuggestions();
+        if (state.firebase.unsubscribeDrivers) state.firebase.unsubscribeDrivers();
         state.firebase.learning = [];
         state.firebase.kanban = [];
         state.firebase.resources = [];
         state.firebase.suggestions = [];
+        state.firebase.drivers = [];
         state.firebase.resourcesLoaded = false;
         state.firebase.suggestionsLoaded = false;
+        state.firebase.driversLoaded = false;
         state.firebase.loaded = false;
         document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
@@ -252,6 +278,7 @@ function setupSession() {
       subscribeKanbanCloud();
       subscribeResourcesCloud();
       subscribeSuggestionsCloud();
+      subscribeDriversCloud();
       renderMetrics();
     });
   } else {
@@ -401,6 +428,7 @@ function setupTabs() {
     document.getElementById(btn.dataset.tab).classList.add('active');
     if (btn.dataset.tab === 'kanban') renderKanban();
     if (btn.dataset.tab === 'resources') renderResources();
+    if (btn.dataset.tab === 'drivers') renderDrivers();
     if (btn.dataset.tab === 'supervision') renderSupervision();
     if (btn.dataset.tab === 'suggestions') renderSuggestions();
     renderMetrics();
@@ -524,6 +552,10 @@ function bindEvents() {
     });
   });
   els.resourceDropzone?.addEventListener('drop', event => handleResourceFiles(event.dataTransfer.files));
+  els.saveDriver?.addEventListener('click', saveDriver);
+  els.driverSearch?.addEventListener('input', renderDrivers);
+  els.driverCarrierFilter?.addEventListener('change', renderDrivers);
+  els.driverStatusFilter?.addEventListener('change', renderDrivers);
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -1644,6 +1676,193 @@ function getResourceFileModeLabel(row) {
   return 'Solo referencia';
 }
 
+function driversCollection() {
+  return state.firebase.db?.collection('transportistas_choferes');
+}
+
+function getDriverRows() {
+  const rows = state.firebase.driversLoaded ? state.firebase.drivers : getStoredRows(DRIVERS_KEY);
+  return rows.slice().sort((a, b) => String(b.routeDate || b.createdAt || '').localeCompare(String(a.routeDate || a.createdAt || '')));
+}
+
+function getDriverDocId(row) {
+  if (row.id) return row.id;
+  const base = [row.createdAt || row.routeDate, row.carrier, row.name, row.phone, row.plate, row.route].join('|');
+  return `drv_${hashString(base)}`;
+}
+
+function subscribeDriversCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeDrivers) state.firebase.unsubscribeDrivers();
+  state.firebase.unsubscribeDrivers = state.firebase.db.collection('transportistas_choferes')
+    .onSnapshot(snapshot => {
+      state.firebase.drivers = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.routeDate || b.createdAt || '').localeCompare(String(a.routeDate || a.createdAt || '')));
+      state.firebase.driversLoaded = true;
+      renderDrivers();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer choferes en Firestore', error);
+      state.firebase.driversLoaded = false;
+      if (els.driverSavedState) els.driverSavedState.textContent = 'Modo local: no se pudo leer la base central de choferes.';
+      renderDrivers();
+    });
+}
+
+async function saveDriver() {
+  const carrier = els.driverCarrier?.value.trim() || '';
+  const name = els.driverName?.value.trim() || '';
+  const phone = els.driverPhone?.value.trim() || '';
+  const plate = els.driverPlate?.value.trim() || '';
+  const route = els.driverRoute?.value.trim() || '';
+  if (!carrier && !name && !phone && !plate) {
+    if (els.driverSavedState) els.driverSavedState.textContent = 'Cargá al menos transportista, chofer, teléfono o dominio para guardar.';
+    return;
+  }
+  const session = getSession();
+  const now = new Date().toISOString();
+  const row = {
+    carrier,
+    name,
+    phone,
+    plate,
+    route,
+    mailSource: els.driverMailSource?.value.trim() || '',
+    routeDate: els.driverRouteDate?.value || '',
+    status: els.driverStatus?.value || 'Activo',
+    notes: els.driverNotes?.value.trim() || '',
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: now,
+    updatedAt: now
+  };
+  try {
+    await upsertDriver(row);
+    ['driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverNotes'].forEach(id => {
+      if (els[id]) els[id].value = '';
+    });
+    if (els.driverStatus) els.driverStatus.value = 'Activo';
+    if (els.driverSavedState) els.driverSavedState.textContent = state.firebase.enabled
+      ? 'Chofer guardado en la base central.'
+      : 'Chofer guardado localmente. Cuando Firebase esté disponible se podrá centralizar.';
+    renderDrivers();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar chofer', error);
+    if (els.driverSavedState) els.driverSavedState.textContent = 'No se pudo guardar. Revisá permisos de Firebase o conexión.';
+  }
+}
+
+async function upsertDriver(row) {
+  const docId = getDriverDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && driversCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await driversCollection().doc(docId).set(cloudPayload, { merge: true });
+    return;
+  }
+  const rows = getStoredRows(DRIVERS_KEY);
+  const index = rows.findIndex(item => getDriverDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(DRIVERS_KEY, JSON.stringify(rows));
+}
+
+function renderDrivers() {
+  if (!els.driverList) return;
+  const rows = getDriverRows();
+  fillDriverCarrierFilter(rows);
+  const filtered = filterDrivers(rows);
+  if (els.driverCount) els.driverCount.textContent = `${filtered.length} / ${rows.length} choferes`;
+  if (!rows.length) {
+    els.driverList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin choferes guardados</h2><p>Usá esta sección para cargar transportistas que llegan por mail con hojas de ruta.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    els.driverList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin resultados con ese filtro</h2><p>Probá buscar por empresa, chofer, teléfono, dominio o recorrido.</p></div>';
+    return;
+  }
+  els.driverList.innerHTML = filtered.map(row => renderDriverItem(row)).join('');
+  els.driverList.querySelectorAll('[data-copy-driver]').forEach(btn => {
+    btn.addEventListener('click', () => copyDriverCard(btn.dataset.copyDriver, btn));
+  });
+}
+
+function fillDriverCarrierFilter(rows) {
+  if (!els.driverCarrierFilter) return;
+  const current = els.driverCarrierFilter.value || 'Todos los transportistas';
+  const carriers = ['Todos los transportistas', ...Array.from(new Set(rows.map(row => row.carrier).filter(Boolean))).sort((a, b) => a.localeCompare(b))];
+  els.driverCarrierFilter.innerHTML = carriers.map(carrier => `<option>${escapeHtml(carrier)}</option>`).join('');
+  els.driverCarrierFilter.value = carriers.includes(current) ? current : 'Todos los transportistas';
+}
+
+function filterDrivers(rows) {
+  const query = normalize(els.driverSearch?.value || '');
+  const carrier = els.driverCarrierFilter?.value || 'Todos los transportistas';
+  const status = els.driverStatusFilter?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const text = normalize([row.carrier, row.name, row.phone, row.plate, row.route, row.mailSource, row.notes].join(' '));
+    const matchesQuery = !query || text.includes(query);
+    const matchesCarrier = carrier === 'Todos los transportistas' || row.carrier === carrier;
+    const matchesStatus = status === 'Todos los estados' || row.status === status;
+    return matchesQuery && matchesCarrier && matchesStatus;
+  });
+}
+
+function renderDriverItem(row) {
+  const id = getDriverDocId(row);
+  const title = [row.carrier, row.name].filter(Boolean).join(' · ') || row.plate || row.phone || 'Chofer sin identificar';
+  const subtitle = [row.phone, row.plate].filter(Boolean).join(' · ') || 'Sin teléfono/dominio cargado';
+  return `<article class="knowledge-item driver-item">
+    <div>
+      <p class="eyebrow">${escapeHtml(row.status || 'Activo')} · ${escapeHtml(safeDate(row.routeDate || row.createdAt))}</p>
+      <h3>${escapeHtml(title)}</h3>
+      <div class="driver-meta"><span>${escapeHtml(subtitle)}</span><span>${escapeHtml(row.route || 'Sin recorrido cargado')}</span></div>
+      ${row.mailSource ? `<p><b>Origen:</b> ${escapeHtml(row.mailSource)}</p>` : ''}
+      ${row.notes ? `<p>${escapeHtml(row.notes)}</p>` : ''}
+      <div class="learning-actions">
+        <button type="button" data-copy-driver="${escapeHtml(id)}">Copiar ficha</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sistema')}</span>
+  </article>`;
+}
+
+async function copyDriverCard(id, button) {
+  const row = getDriverRows().find(item => getDriverDocId(item) === id);
+  if (!row) return;
+  try {
+    await navigator.clipboard.writeText(makeDriverCard(row));
+    if (button) {
+      const previous = button.textContent;
+      button.textContent = 'Ficha copiada';
+      setTimeout(() => { button.textContent = previous; }, 1400);
+    }
+  } catch (error) {
+    console.error('No se pudo copiar ficha de chofer', error);
+  }
+}
+
+function makeDriverCard(row) {
+  return [
+    'Ficha de chofer / transportista',
+    `Transportista: ${row.carrier || 'Sin dato'}`,
+    `Chofer: ${row.name || 'Sin dato'}`,
+    `Teléfono/WhatsApp: ${row.phone || 'Sin dato'}`,
+    `Dominio/unidad: ${row.plate || 'Sin dato'}`,
+    `Hoja de ruta/recorrido: ${row.route || 'Sin dato'}`,
+    `Fecha hoja de ruta: ${row.routeDate || 'Sin dato'}`,
+    `Estado: ${row.status || 'Activo'}`,
+    `Origen del dato: ${row.mailSource || 'Sin dato'}`,
+    `Observaciones: ${row.notes || 'Sin observaciones'}`
+  ].join('\n');
+}
+
 function saveDirective() {
   const title = els.directiveTitle.value.trim();
   const text = els.directiveText.value.trim();
@@ -1653,6 +1872,7 @@ function saveDirective() {
   }
   const rows = getStoredRows(DIRECTIVES_KEY);
   rows.push({
+    id: `dir_${hashString([new Date().toISOString(), title, text].join('|'))}`,
     date: new Date().toISOString(),
     title,
     source: els.directiveSource.value.trim() || 'Sin responsable cargado',
@@ -1667,7 +1887,12 @@ function saveDirective() {
 }
 
 function renderDirectives() {
-  const rows = getStoredRows(DIRECTIVES_KEY).slice().reverse();
+  const savedRows = getStoredRows(DIRECTIVES_KEY);
+  const savedIds = new Set(savedRows.map(row => row.id).filter(Boolean));
+  const rows = [
+    ...defaultDirectives.filter(row => !savedIds.has(row.id)),
+    ...savedRows
+  ].slice().sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   els.directiveCount.textContent = `${rows.length} reglas`;
   if (!rows.length) {
     els.directiveList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin directivas cargadas</h2><p>Cuando un supervisor indique una regla, registrala acá para que no se pierda en mensajes.</p></div>';

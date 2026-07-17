@@ -32,7 +32,7 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
 <section id="manual" class="view">
@@ -292,6 +292,46 @@
     <section class="knowledge-list-panel">
       <div class="panel-head"><div><p class="eyebrow">Biblioteca operativa</p><h2>Recursos guardados</h2></div><div class="actions"><select id="resourceFilter"><option>Todos los recursos</option><option>Objetivo Fijo 911</option><option>SAFE / Objetivos Móviles</option><option>Acceso / password</option><option>Manual PDF</option><option>Video explicativo</option><option>Procedimiento adjunto</option><option>Material de apoyo</option></select><span id="resourceCount" class="pill">0</span></div></div>
       <div id="resourceList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="drivers" class="view">
+  <section class="knowledge-layout drivers-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Base operativa</p><h2>Choferes y transportistas</h2>
+      <p class="helper-copy">Cargá los datos que llegan por mail en hojas de ruta para tener una base consultable y no depender de mensajes perdidos.</p>
+      <label class="field-label" for="driverCarrier">Transportista / empresa</label>
+      <input id="driverCarrier" placeholder="Ej: Mauri Transporte">
+      <label class="field-label" for="driverName">Chofer</label>
+      <input id="driverName" placeholder="Ej: Juan Pérez">
+      <label class="field-label" for="driverPhone">Teléfono / WhatsApp</label>
+      <input id="driverPhone" placeholder="Ej: +54 9 11...">
+      <label class="field-label" for="driverPlate">Dominio / unidad</label>
+      <input id="driverPlate" placeholder="Ej: AB123CD / interno 12">
+      <label class="field-label" for="driverRoute">Hoja de ruta / recorrido</label>
+      <input id="driverRoute" placeholder="Ej: Cliente, zona, origen-destino">
+      <label class="field-label" for="driverMailSource">Origen del dato</label>
+      <input id="driverMailSource" placeholder="Ej: mail recibido, asunto, remitente">
+      <label class="field-label" for="driverRouteDate">Fecha de hoja de ruta</label>
+      <input id="driverRouteDate" type="date">
+      <label class="field-label" for="driverStatus">Estado</label>
+      <select id="driverStatus"><option>Activo</option><option>Pendiente de validar</option><option>Temporal</option><option>Inactivo</option></select>
+      <label class="field-label" for="driverNotes">Observaciones</label>
+      <textarea id="driverNotes" placeholder="Datos útiles: horarios, responsable, protocolo, advertencias, vínculo con SAFE."></textarea>
+      <button id="saveDriver" class="primary" type="button">Guardar chofer</button>
+      <p id="driverSavedState" class="save-state">Cada carga queda asociada al usuario, turno y estación.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Directiva Kike 16/07/2026</p><h2>Base de choferes</h2></div><span id="driverCount" class="pill">0 choferes</span></div>
+      <div class="directive-highlight">
+        <b>Regla:</b> cargar los choferes/transportistas que llegan por mail con hojas de ruta para poder buscarlos por empresa, chofer, teléfono, dominio o recorrido.
+      </div>
+      <div class="learning-toolbar">
+        <input id="driverSearch" placeholder="Buscar chofer, transportista, teléfono, dominio o ruta">
+        <select id="driverCarrierFilter" aria-label="Filtrar por transportista"><option>Todos los transportistas</option></select>
+        <select id="driverStatusFilter" aria-label="Filtrar por estado"><option>Todos los estados</option><option>Activo</option><option>Pendiente de validar</option><option>Temporal</option><option>Inactivo</option></select>
+      </div>
+      <div id="driverList" class="knowledge-list"></div>
     </section>
   </section>
 </section>

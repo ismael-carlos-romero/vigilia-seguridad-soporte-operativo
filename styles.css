@@ -94,6 +94,10 @@
 .resource-file-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .resource-file-actions button{padding:6px 8px}
 .learning-toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:0 0 12px}
+.directive-highlight{border-left:4px solid var(--teal);background:#eef8f7;border-radius:6px;padding:10px 12px;margin-bottom:12px;color:#273440;line-height:1.4}
+.driver-item{align-items:stretch}
+.driver-meta{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.driver-meta span{display:inline-flex;align-items:center;max-width:100%;white-space:normal;font-size:12px;font-weight:700;color:var(--blue);background:#edf5ff;border-radius:999px;padding:5px 8px;overflow-wrap:anywhere}
 .learning-tags{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
 .learning-tags span{font-size:12px;font-weight:700;color:var(--teal);background:#e9f4f3;border-radius:999px;padding:5px 8px}
 .learning-tags .priority-critica{background:#fff0ee;color:var(--red)}

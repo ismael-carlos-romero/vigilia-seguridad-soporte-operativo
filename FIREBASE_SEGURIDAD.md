@@ -124,6 +124,18 @@ service cloud.firestore {
       allow delete: if supervisor();
     }
 
+    match /transportistas_choferes/{driverId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
+    match /recursos_biblioteca/{resourceId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
