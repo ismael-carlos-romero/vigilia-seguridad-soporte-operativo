@@ -242,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSuggestions();
   renderKanban();
   renderMetrics();
+  activateTab(document.querySelector('.tab.active')?.dataset.tab || 'intake', { render: false });
 });
 
 function setupSession() {
@@ -443,26 +444,41 @@ function applyPrivilegeVisibility() {
     tab.title = tab.disabled ? `Requiere nivel ${min} o superior` : '';
   });
   const activeTab = document.querySelector('.tab.active');
-  if (activeTab?.disabled) document.querySelector('[data-tab="intake"]').click();
+  if (activeTab?.disabled) activateTab('intake');
 }
 
 function setupTabs() {
   document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => {
-    if (btn.disabled) return;
-    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(btn.dataset.tab).classList.add('active');
-    if (btn.dataset.tab === 'kanban') renderKanban();
-    if (btn.dataset.tab === 'resources') renderResources();
-    if (btn.dataset.tab === 'drivers') renderDrivers();
-    if (btn.dataset.tab === 'trips') renderTrips();
-    if (btn.dataset.tab === 'intimations') renderIntimations();
-    if (btn.dataset.tab === 'responses') renderResponses();
-    if (btn.dataset.tab === 'supervision') renderSupervision();
-    if (btn.dataset.tab === 'suggestions') renderSuggestions();
-    renderMetrics();
+    activateTab(btn.dataset.tab);
   }));
+}
+
+function activateTab(tabId, options = {}) {
+  const fallbackId = document.getElementById('intake') ? 'intake' : document.querySelector('.view')?.id;
+  const targetId = document.getElementById(tabId) ? tabId : fallbackId;
+  const tab = document.querySelector(`[data-tab="${targetId}"]`);
+  const view = targetId ? document.getElementById(targetId) : null;
+  if (!tab || tab.disabled || !view) return;
+
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === tab));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v === view));
+
+  if (options.render === false) return;
+  renderActiveView(targetId);
+}
+
+function renderActiveView(tabId) {
+  if (tabId === 'kanban') renderKanban();
+  if (tabId === 'resources') renderResources();
+  if (tabId === 'drivers') renderDrivers();
+  if (tabId === 'trips') renderTrips();
+  if (tabId === 'intimations') renderIntimations();
+  if (tabId === 'responses') renderResponses();
+  if (tabId === 'supervision') renderSupervision();
+  if (tabId === 'learning') renderLearning();
+  if (tabId === 'suggestions') renderSuggestions();
+  if (tabId === 'metrics') renderMetrics();
+  if (tabId !== 'metrics') renderMetrics();
 }
 
 function setupFilters() {
