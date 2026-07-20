@@ -26,14 +26,23 @@ const state = {
     resources: [],
     suggestions: [],
     drivers: [],
+    trips: [],
+    intimations: [],
+    responses: [],
     resourcesLoaded: false,
     suggestionsLoaded: false,
     driversLoaded: false,
+    tripsLoaded: false,
+    intimationsLoaded: false,
+    responsesLoaded: false,
     unsubscribeLearning: null,
     unsubscribeKanban: null,
     unsubscribeResources: null,
     unsubscribeSuggestions: null,
     unsubscribeDrivers: null,
+    unsubscribeTrips: null,
+    unsubscribeIntimations: null,
+    unsubscribeResponses: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -48,6 +57,9 @@ const MEDIA_KEY = 'vigiliaMediaV1';
 const RESOURCES_KEY = 'vigiliaResourcesV1';
 const SUGGESTIONS_KEY = 'vigiliaSuggestionsV1';
 const DRIVERS_KEY = 'vigiliaDriversV1';
+const TRIPS_KEY = 'vigiliaTripsV1';
+const INTIMATIONS_KEY = 'vigiliaIntimationsV1';
+const RESPONSES_KEY = 'vigiliaResponsesV1';
 const defaultDirectives = [
   {
     id: 'kike-atcl-2026-07-16',
@@ -206,7 +218,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','tripCompany','tripUnit','tripDriver','tripPhone','tripClient','tripAddress','tripMapsLink','tripDate','tripStatus','tripNotes','saveTrip','tripSavedState','tripSearch','tripCompanyFilter','tripStatusFilter','tripCount','tripList','intimationSubscriber','intimationCustomer','intimationReason','intimationCause','intimationMailSource','intimationDate','intimationStatus','intimationOwner','intimationNotes','saveIntimation','intimationSavedState','intimationSearch','intimationCauseFilter','intimationStatusFilter','intimationCount','intimationList','responseTitle','responseSector','responseChannel','responseTags','responseText','saveResponse','responseSavedState','responseSearch','responseSectorFilter','responseChannelFilter','responseCount','responseList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -223,6 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSupervision();
   renderResources();
   renderDrivers();
+  renderTrips();
+  renderIntimations();
+  renderResponses();
   renderLearning();
   renderSuggestions();
   renderKanban();
@@ -241,14 +256,23 @@ function setupSession() {
         if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
         if (state.firebase.unsubscribeSuggestions) state.firebase.unsubscribeSuggestions();
         if (state.firebase.unsubscribeDrivers) state.firebase.unsubscribeDrivers();
+        if (state.firebase.unsubscribeTrips) state.firebase.unsubscribeTrips();
+        if (state.firebase.unsubscribeIntimations) state.firebase.unsubscribeIntimations();
+        if (state.firebase.unsubscribeResponses) state.firebase.unsubscribeResponses();
         state.firebase.learning = [];
         state.firebase.kanban = [];
         state.firebase.resources = [];
         state.firebase.suggestions = [];
         state.firebase.drivers = [];
+        state.firebase.trips = [];
+        state.firebase.intimations = [];
+        state.firebase.responses = [];
         state.firebase.resourcesLoaded = false;
         state.firebase.suggestionsLoaded = false;
         state.firebase.driversLoaded = false;
+        state.firebase.tripsLoaded = false;
+        state.firebase.intimationsLoaded = false;
+        state.firebase.responsesLoaded = false;
         state.firebase.loaded = false;
         document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
@@ -279,6 +303,9 @@ function setupSession() {
       subscribeResourcesCloud();
       subscribeSuggestionsCloud();
       subscribeDriversCloud();
+      subscribeTripsCloud();
+      subscribeIntimationsCloud();
+      subscribeResponsesCloud();
       renderMetrics();
     });
   } else {
@@ -429,6 +456,9 @@ function setupTabs() {
     if (btn.dataset.tab === 'kanban') renderKanban();
     if (btn.dataset.tab === 'resources') renderResources();
     if (btn.dataset.tab === 'drivers') renderDrivers();
+    if (btn.dataset.tab === 'trips') renderTrips();
+    if (btn.dataset.tab === 'intimations') renderIntimations();
+    if (btn.dataset.tab === 'responses') renderResponses();
     if (btn.dataset.tab === 'supervision') renderSupervision();
     if (btn.dataset.tab === 'suggestions') renderSuggestions();
     renderMetrics();
@@ -556,6 +586,18 @@ function bindEvents() {
   els.driverSearch?.addEventListener('input', renderDrivers);
   els.driverCarrierFilter?.addEventListener('change', renderDrivers);
   els.driverStatusFilter?.addEventListener('change', renderDrivers);
+  els.saveTrip?.addEventListener('click', saveTrip);
+  els.tripSearch?.addEventListener('input', renderTrips);
+  els.tripCompanyFilter?.addEventListener('change', renderTrips);
+  els.tripStatusFilter?.addEventListener('change', renderTrips);
+  els.saveIntimation?.addEventListener('click', saveIntimation);
+  els.intimationSearch?.addEventListener('input', renderIntimations);
+  els.intimationCauseFilter?.addEventListener('change', renderIntimations);
+  els.intimationStatusFilter?.addEventListener('change', renderIntimations);
+  els.saveResponse?.addEventListener('click', saveResponse);
+  els.responseSearch?.addEventListener('input', renderResponses);
+  els.responseSectorFilter?.addEventListener('change', renderResponses);
+  els.responseChannelFilter?.addEventListener('change', renderResponses);
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -1861,6 +1903,524 @@ function makeDriverCard(row) {
     `Origen del dato: ${row.mailSource || 'Sin dato'}`,
     `Observaciones: ${row.notes || 'Sin observaciones'}`
   ].join('\n');
+}
+
+function tripsCollection() {
+  return state.firebase.db?.collection?.('viajes_safe');
+}
+
+function getTripRows() {
+  const rows = state.firebase.tripsLoaded ? state.firebase.trips : getStoredRows(TRIPS_KEY);
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getTripDocId(row) {
+  const base = [row.company, row.unit, row.driver, row.tripDate, row.client].filter(Boolean).join('|') || row.createdAt || JSON.stringify(row);
+  return row.id || `trip_${hashString(base)}`;
+}
+
+function subscribeTripsCloud() {
+  if (!state.firebase.enabled || !tripsCollection()) return;
+  if (state.firebase.unsubscribeTrips) state.firebase.unsubscribeTrips();
+  state.firebase.unsubscribeTrips = tripsCollection()
+    .orderBy('updatedAt', 'desc')
+    .limit(300)
+    .onSnapshot(snapshot => {
+      state.firebase.trips = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.tripDate || b.createdAt || '').localeCompare(String(a.tripDate || a.createdAt || '')));
+      state.firebase.tripsLoaded = true;
+      renderTrips();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer viajes SAFE en Firestore', error);
+      state.firebase.tripsLoaded = false;
+      if (els.tripSavedState) els.tripSavedState.textContent = 'Modo local: no se pudo leer la base central de viajes.';
+      renderTrips();
+    });
+}
+
+async function saveTrip() {
+  const company = els.tripCompany?.value.trim() || '';
+  const unit = els.tripUnit?.value.trim() || '';
+  const driver = els.tripDriver?.value.trim() || '';
+  const client = els.tripClient?.value.trim() || '';
+  if (!company && !unit && !driver && !client) {
+    if (els.tripSavedState) els.tripSavedState.textContent = 'Cargá al menos empresa, unidad, chofer o cliente para guardar el viaje.';
+    return;
+  }
+  const session = getSession();
+  const now = new Date().toISOString();
+  const row = {
+    company,
+    unit,
+    driver,
+    phone: els.tripPhone?.value.trim() || '',
+    client,
+    address: els.tripAddress?.value.trim() || '',
+    mapsLink: els.tripMapsLink?.value.trim() || '',
+    tripDate: els.tripDate?.value || '',
+    status: els.tripStatus?.value || 'Programado',
+    notes: els.tripNotes?.value.trim() || '',
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: now,
+    updatedAt: now
+  };
+  try {
+    await upsertTrip(row);
+    ['tripCompany','tripUnit','tripDriver','tripPhone','tripClient','tripAddress','tripMapsLink','tripDate','tripNotes'].forEach(id => {
+      if (els[id]) els[id].value = '';
+    });
+    if (els.tripStatus) els.tripStatus.value = 'Programado';
+    if (els.tripSavedState) els.tripSavedState.textContent = state.firebase.enabled ? 'Viaje guardado en la base central.' : 'Viaje guardado localmente.';
+    renderTrips();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar viaje SAFE', error);
+    if (els.tripSavedState) els.tripSavedState.textContent = 'No se pudo guardar. Revisá permisos de Firebase o conexión.';
+  }
+}
+
+async function upsertTrip(row) {
+  const docId = getTripDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && tripsCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await tripsCollection().doc(docId).set(cloudPayload, { merge: true });
+    return;
+  }
+  const rows = getStoredRows(TRIPS_KEY);
+  const index = rows.findIndex(item => getTripDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(TRIPS_KEY, JSON.stringify(rows));
+}
+
+function renderTrips() {
+  if (!els.tripList) return;
+  const rows = getTripRows();
+  fillTripCompanyFilter(rows);
+  const filtered = filterTrips(rows);
+  if (els.tripCount) els.tripCount.textContent = `${filtered.length} / ${rows.length} viajes`;
+  if (!rows.length) {
+    els.tripList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin viajes cargados</h2><p>Usá esta sección para transformar hojas de ruta y mensajes dispersos en una base consultable.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    els.tripList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin viajes con ese filtro</h2><p>Probá buscar por empresa, unidad, chofer, cliente o dirección.</p></div>';
+    return;
+  }
+  els.tripList.innerHTML = filtered.map(renderTripItem).join('');
+  els.tripList.querySelectorAll('[data-copy-trip]').forEach(btn => {
+    btn.addEventListener('click', () => copyTripMessage(btn.dataset.copyTrip, btn));
+  });
+}
+
+function fillTripCompanyFilter(rows) {
+  if (!els.tripCompanyFilter) return;
+  const current = els.tripCompanyFilter.value || 'Todas las empresas';
+  const companies = ['Todas las empresas', ...Array.from(new Set(rows.map(row => row.company).filter(Boolean))).sort((a, b) => a.localeCompare(b))];
+  els.tripCompanyFilter.innerHTML = companies.map(company => `<option>${escapeHtml(company)}</option>`).join('');
+  els.tripCompanyFilter.value = companies.includes(current) ? current : 'Todas las empresas';
+}
+
+function filterTrips(rows) {
+  const query = normalize(els.tripSearch?.value || '');
+  const company = els.tripCompanyFilter?.value || 'Todas las empresas';
+  const status = els.tripStatusFilter?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const text = normalize([row.company, row.unit, row.driver, row.phone, row.client, row.address, row.mapsLink, row.notes].join(' '));
+    return (!query || text.includes(query))
+      && (company === 'Todas las empresas' || row.company === company)
+      && (status === 'Todos los estados' || row.status === status);
+  });
+}
+
+function renderTripItem(row) {
+  const id = getTripDocId(row);
+  const title = [row.company, row.unit].filter(Boolean).join(' · ') || row.client || 'Viaje sin identificar';
+  return `<article class="knowledge-item driver-item">
+    <div>
+      <p class="eyebrow">${escapeHtml(row.status || 'Programado')} · ${escapeHtml(safeDate(row.tripDate || row.createdAt))}</p>
+      <h3>${escapeHtml(title)}</h3>
+      <div class="driver-meta"><span>${escapeHtml(row.driver || 'Sin chofer')}</span><span>${escapeHtml(row.client || 'Sin cliente/destino')}</span></div>
+      ${row.address ? `<p><b>Punto:</b> ${escapeHtml(row.address)}</p>` : ''}
+      ${row.mapsLink ? `<p><a href="${escapeHtml(row.mapsLink)}" target="_blank" rel="noopener">Abrir ubicación</a></p>` : ''}
+      ${row.notes ? `<p>${escapeHtml(row.notes)}</p>` : ''}
+      <div class="learning-actions">
+        <button type="button" data-copy-trip="${escapeHtml(id)}">Copiar respuesta</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sistema')}</span>
+  </article>`;
+}
+
+async function copyTripMessage(id, button) {
+  const row = getTripRows().find(item => getTripDocId(item) === id);
+  if (!row) return;
+  try {
+    await navigator.clipboard.writeText(makeTripMessage(row));
+    flashButton(button, 'Respuesta copiada');
+  } catch (error) {
+    console.error('No se pudo copiar viaje SAFE', error);
+  }
+}
+
+function makeTripMessage(row) {
+  return [
+    'Consulta SAFE / viaje',
+    `Empresa: ${row.company || 'Sin dato'}`,
+    `Unidad: ${row.unit || 'Sin dato'}`,
+    `Chofer: ${row.driver || 'Sin dato'}`,
+    `Teléfono: ${row.phone || 'Sin dato'}`,
+    `Cliente/destino: ${row.client || 'Sin dato'}`,
+    `Dirección/punto: ${row.address || 'Sin dato'}`,
+    `Ubicación: ${row.mapsLink || 'Sin link'}`,
+    `Estado: ${row.status || 'Sin estado'}`,
+    `Observaciones: ${row.notes || 'Sin observaciones'}`
+  ].join('\n');
+}
+
+function intimationsCollection() {
+  return state.firebase.db?.collection?.('intimaciones_e911');
+}
+
+function getIntimationRows() {
+  const rows = state.firebase.intimationsLoaded ? state.firebase.intimations : getStoredRows(INTIMATIONS_KEY);
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getIntimationDocId(row) {
+  const base = [row.subscriber, row.reason, row.intimationDate, row.mailSource].filter(Boolean).join('|') || row.createdAt || JSON.stringify(row);
+  return row.id || `int_${hashString(base)}`;
+}
+
+function subscribeIntimationsCloud() {
+  if (!state.firebase.enabled || !intimationsCollection()) return;
+  if (state.firebase.unsubscribeIntimations) state.firebase.unsubscribeIntimations();
+  state.firebase.unsubscribeIntimations = intimationsCollection()
+    .orderBy('updatedAt', 'desc')
+    .limit(300)
+    .onSnapshot(snapshot => {
+      state.firebase.intimations = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.intimationDate || b.createdAt || '').localeCompare(String(a.intimationDate || a.createdAt || '')));
+      state.firebase.intimationsLoaded = true;
+      renderIntimations();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer intimaciones E-911 en Firestore', error);
+      state.firebase.intimationsLoaded = false;
+      if (els.intimationSavedState) els.intimationSavedState.textContent = 'Modo local: no se pudo leer la base central de intimaciones.';
+      renderIntimations();
+    });
+}
+
+async function saveIntimation() {
+  const subscriber = els.intimationSubscriber?.value.trim() || '';
+  const reason = els.intimationReason?.value.trim() || '';
+  if (!subscriber && !reason) {
+    if (els.intimationSavedState) els.intimationSavedState.textContent = 'Cargá al menos abonado o motivo de la intimación.';
+    return;
+  }
+  const session = getSession();
+  const now = new Date().toISOString();
+  const row = {
+    subscriber,
+    customer: els.intimationCustomer?.value.trim() || '',
+    reason,
+    cause: els.intimationCause?.value || 'Sin causa definida',
+    mailSource: els.intimationMailSource?.value.trim() || '',
+    intimationDate: els.intimationDate?.value || '',
+    status: els.intimationStatus?.value || 'Nueva',
+    owner: els.intimationOwner?.value.trim() || '',
+    notes: els.intimationNotes?.value.trim() || '',
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: now,
+    updatedAt: now
+  };
+  try {
+    await upsertIntimation(row);
+    ['intimationSubscriber','intimationCustomer','intimationReason','intimationMailSource','intimationDate','intimationOwner','intimationNotes'].forEach(id => {
+      if (els[id]) els[id].value = '';
+    });
+    if (els.intimationCause) els.intimationCause.value = 'Falso disparo';
+    if (els.intimationStatus) els.intimationStatus.value = 'Nueva';
+    if (els.intimationSavedState) els.intimationSavedState.textContent = state.firebase.enabled ? 'Intimación guardada en la base central.' : 'Intimación guardada localmente.';
+    renderIntimations();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar intimación E-911', error);
+    if (els.intimationSavedState) els.intimationSavedState.textContent = 'No se pudo guardar. Revisá permisos de Firebase o conexión.';
+  }
+}
+
+async function upsertIntimation(row) {
+  const docId = getIntimationDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && intimationsCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await intimationsCollection().doc(docId).set(cloudPayload, { merge: true });
+    return;
+  }
+  const rows = getStoredRows(INTIMATIONS_KEY);
+  const index = rows.findIndex(item => getIntimationDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(INTIMATIONS_KEY, JSON.stringify(rows));
+}
+
+function renderIntimations() {
+  if (!els.intimationList) return;
+  const rows = getIntimationRows();
+  fillIntimationCauseFilter(rows);
+  const filtered = filterIntimations(rows);
+  if (els.intimationCount) els.intimationCount.textContent = `${filtered.length} / ${rows.length} intimaciones`;
+  if (!rows.length) {
+    els.intimationList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin intimaciones registradas</h2><p>Cuando llegue una intimación E-911 por mail, cargala acá para darle seguimiento.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    els.intimationList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin intimaciones con ese filtro</h2><p>Probá buscar por abonado, causa, titular o mail.</p></div>';
+    return;
+  }
+  els.intimationList.innerHTML = filtered.map(renderIntimationItem).join('');
+  els.intimationList.querySelectorAll('[data-copy-intimation]').forEach(btn => {
+    btn.addEventListener('click', () => copyIntimationNote(btn.dataset.copyIntimation, btn));
+  });
+}
+
+function fillIntimationCauseFilter(rows) {
+  if (!els.intimationCauseFilter) return;
+  const current = els.intimationCauseFilter.value || 'Todas las causas';
+  const causes = ['Todas las causas', ...Array.from(new Set(rows.map(row => row.cause).filter(Boolean))).sort((a, b) => a.localeCompare(b))];
+  els.intimationCauseFilter.innerHTML = causes.map(cause => `<option>${escapeHtml(cause)}</option>`).join('');
+  els.intimationCauseFilter.value = causes.includes(current) ? current : 'Todas las causas';
+}
+
+function filterIntimations(rows) {
+  const query = normalize(els.intimationSearch?.value || '');
+  const cause = els.intimationCauseFilter?.value || 'Todas las causas';
+  const status = els.intimationStatusFilter?.value || 'Todos los estados';
+  return rows.filter(row => {
+    const text = normalize([row.subscriber, row.customer, row.reason, row.cause, row.mailSource, row.owner, row.notes].join(' '));
+    return (!query || text.includes(query))
+      && (cause === 'Todas las causas' || row.cause === cause)
+      && (status === 'Todos los estados' || row.status === status);
+  });
+}
+
+function renderIntimationItem(row) {
+  const id = getIntimationDocId(row);
+  return `<article class="knowledge-item driver-item">
+    <div>
+      <p class="eyebrow">${escapeHtml(row.status || 'Nueva')} · ${escapeHtml(row.cause || 'Sin causa')} · ${escapeHtml(safeDate(row.intimationDate || row.createdAt))}</p>
+      <h3>${escapeHtml(row.subscriber || 'Abonado sin identificar')}</h3>
+      <div class="driver-meta"><span>${escapeHtml(row.customer || 'Sin titular')}</span><span>${escapeHtml(row.owner || 'Sin responsable')}</span></div>
+      <p><b>Motivo:</b> ${escapeHtml(row.reason || 'Sin motivo cargado')}</p>
+      ${row.mailSource ? `<p><b>Origen:</b> ${escapeHtml(row.mailSource)}</p>` : ''}
+      ${row.notes ? `<p>${escapeHtml(row.notes)}</p>` : ''}
+      <div class="learning-actions">
+        <button type="button" data-copy-intimation="${escapeHtml(id)}">Copiar seguimiento</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sistema')}</span>
+  </article>`;
+}
+
+async function copyIntimationNote(id, button) {
+  const row = getIntimationRows().find(item => getIntimationDocId(item) === id);
+  if (!row) return;
+  try {
+    await navigator.clipboard.writeText(makeIntimationNote(row));
+    flashButton(button, 'Nota copiada');
+  } catch (error) {
+    console.error('No se pudo copiar intimación', error);
+  }
+}
+
+function makeIntimationNote(row) {
+  return [
+    `Asunto sugerido: Intimación E-911 - ${row.subscriber || 'Sin abonado'} - ${row.cause || 'Sin causa'}`,
+    '',
+    'Hola, dejo registrada una intimación E-911 para seguimiento.',
+    '',
+    `Abonado/objetivo: ${row.subscriber || 'Sin dato'}`,
+    `Titular/contacto: ${row.customer || 'Sin dato'}`,
+    `Fecha intimación: ${row.intimationDate || 'Sin dato'}`,
+    `Motivo: ${row.reason || 'Sin dato'}`,
+    `Causa probable: ${row.cause || 'Sin dato'}`,
+    `Estado: ${row.status || 'Sin estado'}`,
+    `Responsable/sector: ${row.owner || 'Sin dato'}`,
+    `Origen/mail: ${row.mailSource || 'Sin dato'}`,
+    `Notas/acciones: ${row.notes || 'Sin observaciones'}`,
+    '',
+    'Se solicita validar criterio, acción a tomar y si corresponde convertirlo en procedimiento reutilizable.'
+  ].join('\n');
+}
+
+function responsesCollection() {
+  return state.firebase.db?.collection?.('respuestas_frecuentes');
+}
+
+function getResponseRows() {
+  const rows = state.firebase.responsesLoaded ? state.firebase.responses : getStoredRows(RESPONSES_KEY);
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getResponseDocId(row) {
+  const base = [row.title, row.sector, row.channel, row.text].filter(Boolean).join('|') || row.createdAt || JSON.stringify(row);
+  return row.id || `resp_${hashString(base)}`;
+}
+
+function subscribeResponsesCloud() {
+  if (!state.firebase.enabled || !responsesCollection()) return;
+  if (state.firebase.unsubscribeResponses) state.firebase.unsubscribeResponses();
+  state.firebase.unsubscribeResponses = responsesCollection()
+    .orderBy('updatedAt', 'desc')
+    .limit(300)
+    .onSnapshot(snapshot => {
+      state.firebase.responses = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+      state.firebase.responsesLoaded = true;
+      renderResponses();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer respuestas frecuentes en Firestore', error);
+      state.firebase.responsesLoaded = false;
+      if (els.responseSavedState) els.responseSavedState.textContent = 'Modo local: no se pudo leer la base central de respuestas.';
+      renderResponses();
+    });
+}
+
+async function saveResponse() {
+  const title = els.responseTitle?.value.trim() || '';
+  const text = els.responseText?.value.trim() || '';
+  if (!title || !text) {
+    if (els.responseSavedState) els.responseSavedState.textContent = 'Cargá título y mensaje para guardar la respuesta frecuente.';
+    return;
+  }
+  const session = getSession();
+  const now = new Date().toISOString();
+  const row = {
+    title,
+    sector: els.responseSector?.value || 'Todos los sectores',
+    channel: els.responseChannel?.value || 'WhatsApp',
+    tags: els.responseTags?.value.trim() || '',
+    text,
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    shift: session.shift || 'Sin turno',
+    station: session.station || 'Sin estación',
+    createdAt: now,
+    updatedAt: now
+  };
+  try {
+    await upsertResponse(row);
+    ['responseTitle','responseTags','responseText'].forEach(id => {
+      if (els[id]) els[id].value = '';
+    });
+    if (els.responseSector) els.responseSector.value = 'Monitoreo 911';
+    if (els.responseChannel) els.responseChannel.value = 'WhatsApp';
+    if (els.responseSavedState) els.responseSavedState.textContent = state.firebase.enabled ? 'Respuesta guardada en la base central.' : 'Respuesta guardada localmente.';
+    renderResponses();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar respuesta frecuente', error);
+    if (els.responseSavedState) els.responseSavedState.textContent = 'No se pudo guardar. Revisá permisos de Firebase o conexión.';
+  }
+}
+
+async function upsertResponse(row) {
+  const docId = getResponseDocId(row);
+  const payload = { ...row, id: docId, updatedAt: new Date().toISOString() };
+  if (state.firebase.enabled && responsesCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await responsesCollection().doc(docId).set(cloudPayload, { merge: true });
+    return;
+  }
+  const rows = getStoredRows(RESPONSES_KEY);
+  const index = rows.findIndex(item => getResponseDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(RESPONSES_KEY, JSON.stringify(rows));
+}
+
+function renderResponses() {
+  if (!els.responseList) return;
+  const rows = getResponseRows();
+  const filtered = filterResponses(rows);
+  if (els.responseCount) els.responseCount.textContent = `${filtered.length} / ${rows.length} respuestas`;
+  if (!rows.length) {
+    els.responseList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin respuestas frecuentes</h2><p>Cargá mensajes repetidos para que el operador copie y pegue sin reescribir cada vez.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    els.responseList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin respuestas con ese filtro</h2><p>Probá buscar por etiqueta, canal, sector o texto.</p></div>';
+    return;
+  }
+  els.responseList.innerHTML = filtered.map(renderResponseItem).join('');
+  els.responseList.querySelectorAll('[data-copy-response]').forEach(btn => {
+    btn.addEventListener('click', () => copyResponseText(btn.dataset.copyResponse, btn));
+  });
+}
+
+function filterResponses(rows) {
+  const query = normalize(els.responseSearch?.value || '');
+  const sector = els.responseSectorFilter?.value || 'Todos los sectores';
+  const channel = els.responseChannelFilter?.value || 'Todos los canales';
+  return rows.filter(row => {
+    const text = normalize([row.title, row.sector, row.channel, row.tags, row.text].join(' '));
+    return (!query || text.includes(query))
+      && (sector === 'Todos los sectores' || row.sector === sector)
+      && (channel === 'Todos los canales' || row.channel === channel);
+  });
+}
+
+function renderResponseItem(row) {
+  const id = getResponseDocId(row);
+  return `<article class="knowledge-item response-item">
+    <div class="knowledge-main">
+      <p class="eyebrow">${escapeHtml(row.channel || 'Canal')} · ${escapeHtml(row.sector || 'Todos los sectores')} · ${escapeHtml(safeDate(row.createdAt))}</p>
+      <h3>${escapeHtml(row.title || 'Respuesta sin título')}</h3>
+      <div class="learning-tags">${String(row.tags || '').split(',').map(tag => tag.trim()).filter(Boolean).map(tag => `<span>${escapeHtml(tag)}</span>`).join('') || '<span>Sin etiquetas</span>'}</div>
+      <p class="preline">${escapeHtml(row.text || '')}</p>
+      <div class="learning-actions">
+        <button type="button" data-copy-response="${escapeHtml(id)}">Copiar mensaje</button>
+      </div>
+    </div>
+    <span>${escapeHtml(row.operator || 'Sistema')}</span>
+  </article>`;
+}
+
+async function copyResponseText(id, button) {
+  const row = getResponseRows().find(item => getResponseDocId(item) === id);
+  if (!row) return;
+  try {
+    await navigator.clipboard.writeText(row.text || '');
+    flashButton(button, 'Mensaje copiado');
+  } catch (error) {
+    console.error('No se pudo copiar respuesta frecuente', error);
+  }
+}
+
+function flashButton(button, text) {
+  if (!button) return;
+  const previous = button.textContent;
+  button.textContent = text;
+  setTimeout(() => { button.textContent = previous; }, 1400);
 }
 
 function saveDirective() {
@@ -3280,12 +3840,17 @@ function renderMetrics() {
   const learning = getLearningRows();
   const kanban = getKanbanRows();
   const suggestions = getSuggestionRows();
+  const trips = getTripRows();
+  const intimations = getIntimationRows();
+  const responses = getResponseRows();
   const session = getSession();
   const total = rows.length;
   const remote = rows.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
   const risk = rows.filter(r => r.mood === 'Riesgo de baja').length;
   const avoided = rows.filter(r => r.outcome === 'Servicio técnico evitado').length;
-  const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length + learning.filter(r => r.status !== 'Resuelto y cargado').length;
+  const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length
+    + learning.filter(r => r.status !== 'Resuelto y cargado').length
+    + intimations.filter(r => r.status !== 'Resuelta').length;
   const overdue = learning.filter(row => isLearningOverdue(row)).length;
   const resolvedLearning = learning.filter(row => isLearningResolved(row));
   const avgResolution = resolvedLearning.length
@@ -3298,30 +3863,33 @@ function renderMetrics() {
   els.mPending.textContent = pending;
   if (els.mOverdue) els.mOverdue.textContent = overdue;
   if (els.mAvgResolution) els.mAvgResolution.textContent = `${avgResolution}d`;
-  const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions);
+  const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions, trips, intimations, responses);
   renderBars(els.paretoChart, paretoEntries, true);
-  renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions);
-  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator)]), false);
-  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift), ...suggestions.map(r => r.shift)]), false);
+  renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions, trips, intimations, responses);
+  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator)]), false);
+  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift), ...suggestions.map(r => r.shift), ...trips.map(r => r.shift), ...intimations.map(r => r.shift), ...responses.map(r => r.shift)]), false);
   renderBars(els.learningChart, countEntries(learning.map(r => getLearningEventType(r))), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
-  renderOperatorSummary(rows, learning, kanban, session, suggestions);
+  renderOperatorSummary(rows, learning, kanban, session, suggestions, trips, intimations, responses);
   renderCaseRows(rows);
 }
 
-function getParetoEntries(rows, learning, kanban, suggestions = []) {
+function getParetoEntries(rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = []) {
   const mode = els.paretoMode?.value || 'cause';
   if (mode === 'learningType') return countEntries(learning.map(r => getLearningEventType(r) || r.type || 'Evento en espera'));
-  if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column)]);
-  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator)]);
-  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact)]);
+  if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column), ...trips.map(r => r.status), ...intimations.map(r => r.status)]);
+  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator)]);
+  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact), ...intimations.map(r => r.status === 'Reincidente' ? 'Alta: reincidente' : 'Media')]);
   if (mode === 'age') return countEntries(learning.map(row => getLearningAgeBucket(row)));
   if (mode === 'kanban') return countEntries(kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column));
   if (mode === 'suggestions') return countEntries(suggestions.map(r => r.type || r.targetSector || 'Sugerencia'));
-  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type)]);
+  if (mode === 'trips') return countEntries(trips.map(r => r.company || r.client || r.status || 'Viaje SAFE'));
+  if (mode === 'intimations') return countEntries(intimations.map(r => r.cause || r.status || 'Intimación E-911'));
+  if (mode === 'responses') return countEntries(responses.map(r => r.channel || r.sector || 'Respuesta frecuente'));
+  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type), ...trips.map(r => r.status), ...intimations.map(r => r.cause), ...responses.map(r => r.channel)]);
 }
 
-function renderMetricInsights(entries, rows, learning, kanban, suggestions = []) {
+function renderMetricInsights(entries, rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = []) {
   if (!els.metricInsights) return;
   if (!entries.length) {
     els.metricInsights.innerHTML = '<p>Todavía no hay datos suficientes para sugerencias.</p>';
@@ -3339,12 +3907,16 @@ function renderMetricInsights(entries, rows, learning, kanban, suggestions = [])
   const stuck = kanban.filter(row => ['en-espera', 'supervision'].includes(row.column)).length;
   const risk = rows.filter(row => row.mood === 'Riesgo de baja').length;
   const openSuggestions = suggestions.filter(row => !['Implementada', 'Descartada'].includes(row.status)).length;
+  const openIntimations = intimations.filter(row => row.status !== 'Resuelta').length;
+  const observedTrips = trips.filter(row => ['Observado', 'Pendiente de validar'].includes(row.status)).length;
   const ideas = [
     `El foco principal es "${topLabel}", con ${topPercent}% del total visible. Si se estandariza ese grupo, baja el mayor cuello de botella.`,
     openLearning ? `Hay ${openLearning} eventos en espera: conviene resolverlos por lote y convertir los repetidos en procedimiento.` : 'No hay dudas abiertas relevantes: buen momento para revisar calidad de procedimientos.',
     overdueLearning ? `Hay ${overdueLearning} eventos atrasados según prioridad. Esos deberían revisarse primero para que no se acumulen dudas de turno a turno.` : `No hay eventos atrasados. Promedio de resolución actual: ${avgResolution} días.`,
     stuck ? `El Kanban tiene ${stuck} tarjetas en espera/supervisión. Revisá si dependen de la misma persona o sector.` : 'El Kanban no muestra acumulación en espera.',
     openSuggestions ? `Hay ${openSuggestions} sugerencias abiertas. Revisarlas por impacto permite capturar mejoras que nacen del trabajo real del sector.` : 'No hay sugerencias abiertas pendientes de revisión.',
+    openIntimations ? `Hay ${openIntimations} intimaciones E-911 abiertas. Conviene priorizar reincidentes y causas repetidas para bajar reclamos.` : 'No hay intimaciones E-911 abiertas.',
+    observedTrips ? `Hay ${observedTrips} viajes SAFE observados o pendientes. Filtrarlos por empresa/unidad ayuda a detectar patrones.` : responses.length ? `Ya hay ${responses.length} respuestas frecuentes disponibles para copiar y estandarizar comunicaciones.` : 'Todavía no hay respuestas frecuentes cargadas.',
     risk ? `Hay ${risk} casos con riesgo de baja. Esa métrica pesa más que la cantidad bruta de eventos levantados.` : 'No aparecen riesgos de baja cargados en el historial actual.'
   ];
   els.metricInsights.innerHTML = `<h3>Lectura inteligente</h3><ul>${ideas.map(idea => `<li>${escapeHtml(idea)}</li>`).join('')}</ul>`;
@@ -3362,7 +3934,7 @@ function countBy(rows, key) {
   return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
 }
 
-function renderOperatorSummary(rows, learning, kanban, session, suggestions = []) {
+function renderOperatorSummary(rows, learning, kanban, session, suggestions = [], trips = [], intimations = [], responses = []) {
   if (!els.operatorSummary) return;
   if (!session.operator) {
     els.operatorSummary.innerHTML = '<p class="empty-state compact-empty">Iniciá sesión para ver tus métricas.</p>';
@@ -3372,9 +3944,12 @@ function renderOperatorSummary(rows, learning, kanban, session, suggestions = []
   const myLearning = learning.filter(r => r.operator === session.operator);
   const myKanban = kanban.filter(r => r.operator === session.operator);
   const mySuggestions = suggestions.filter(r => r.operator === session.operator);
+  const myTrips = trips.filter(r => r.operator === session.operator);
+  const myIntimations = intimations.filter(r => r.operator === session.operator);
+  const myResponses = responses.filter(r => r.operator === session.operator);
   const resolved = mine.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
   const myResolvedTasks = myKanban.filter(r => ['resuelto', 'procedimiento'].includes(r.column)).length;
-  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div><div><b>${mySuggestions.length}</b><span>sugerencias de mejora</span></div></div>`;
+  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div><div><b>${mySuggestions.length}</b><span>sugerencias de mejora</span></div><div><b>${myTrips.length}</b><span>viajes SAFE</span></div><div><b>${myIntimations.length}</b><span>intimaciones E-911</span></div><div><b>${myResponses.length}</b><span>respuestas creadas</span></div></div>`;
 }
 
 function renderBars(el, entries, pareto) {

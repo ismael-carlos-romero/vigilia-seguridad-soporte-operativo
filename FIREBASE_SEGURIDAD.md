@@ -130,6 +130,24 @@ service cloud.firestore {
       allow delete: if supervisor();
     }
 
+    match /viajes_safe/{tripId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
+    match /intimaciones_e911/{intimationId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
+    match /respuestas_frecuentes/{responseId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
     match /recursos_biblioteca/{resourceId} {
       allow read: if activeUser();
       allow create, update: if activeUser();

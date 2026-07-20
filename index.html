@@ -32,7 +32,7 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="trips">Viajes SAFE</button><button class="tab" data-tab="intimations">Intimaciones E-911</button><button class="tab" data-tab="responses">Respuestas</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
 <section id="manual" class="view">
@@ -336,6 +336,118 @@
   </section>
 </section>
 <section id="procedures" class="view">
+<section id="trips" class="view">
+  <section class="knowledge-layout trips-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">SAFE / hojas de ruta</p><h2>Carga y auditoría de viajes</h2>
+      <p class="helper-copy">Estandarizá viajes, unidades, choferes y puntos habituales para poder buscar rápido y responder siempre con el mismo criterio.</p>
+      <label class="field-label" for="tripCompany">Empresa / transportista</label>
+      <input id="tripCompany" placeholder="Ej: Mauri Transporte">
+      <label class="field-label" for="tripUnit">Unidad / dominio</label>
+      <input id="tripUnit" placeholder="Ej: AB123CD / interno 12">
+      <label class="field-label" for="tripDriver">Chofer</label>
+      <input id="tripDriver" placeholder="Ej: Juan Pérez">
+      <label class="field-label" for="tripPhone">Teléfono / WhatsApp</label>
+      <input id="tripPhone" placeholder="Ej: +54 9 11...">
+      <label class="field-label" for="tripClient">Cliente / destino</label>
+      <input id="tripClient" placeholder="Ej: Cliente, planta, receptor">
+      <label class="field-label" for="tripAddress">Dirección / punto frecuente</label>
+      <input id="tripAddress" placeholder="Ej: Ruta, domicilio, coordenada o referencia">
+      <label class="field-label" for="tripMapsLink">Link Google Maps / posición</label>
+      <input id="tripMapsLink" placeholder="https://maps.google.com/...">
+      <label class="field-label" for="tripDate">Fecha del viaje</label>
+      <input id="tripDate" type="date">
+      <label class="field-label" for="tripStatus">Estado</label>
+      <select id="tripStatus"><option>Programado</option><option>En curso</option><option>Observado</option><option>Finalizado</option><option>Pendiente de validar</option></select>
+      <label class="field-label" for="tripNotes">Observaciones / auditoría</label>
+      <textarea id="tripNotes" placeholder="Novedad, punto de control, desvío, respuesta enviada, dato que falta o criterio aplicado."></textarea>
+      <button id="saveTrip" class="primary" type="button">Guardar viaje</button>
+      <p id="tripSavedState" class="save-state">Cada viaje queda asociado al usuario, turno y estación.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Auditoría SAFE</p><h2>Viajes cargados</h2></div><span id="tripCount" class="pill">0 viajes</span></div>
+      <div class="directive-highlight">
+        <b>Uso recomendado:</b> buscá por empresa, unidad, chofer, cliente o punto. Cuando haya una respuesta habitual, copiala desde acá para mantener lenguaje uniforme.
+      </div>
+      <div class="learning-toolbar">
+        <input id="tripSearch" placeholder="Buscar empresa, unidad, chofer, destino o dirección">
+        <select id="tripCompanyFilter" aria-label="Filtrar viajes por empresa"><option>Todas las empresas</option></select>
+        <select id="tripStatusFilter" aria-label="Filtrar viajes por estado"><option>Todos los estados</option><option>Programado</option><option>En curso</option><option>Observado</option><option>Finalizado</option><option>Pendiente de validar</option></select>
+      </div>
+      <div id="tripList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="intimations" class="view">
+  <section class="knowledge-layout intimations-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Control E-911</p><h2>Intimaciones por excesivos despachos</h2>
+      <p class="helper-copy">Centralizá cada intimación que llega por mail para medir reincidencias, causa probable, responsable y estado de resolución.</p>
+      <label class="field-label" for="intimationSubscriber">Abonado / objetivo</label>
+      <input id="intimationSubscriber" placeholder="Ej: SZ-6600 - Golosinas Luján">
+      <label class="field-label" for="intimationCustomer">Titular / contacto</label>
+      <input id="intimationCustomer" placeholder="Ej: Sr. Mario / local">
+      <label class="field-label" for="intimationReason">Motivo informado</label>
+      <input id="intimationReason" placeholder="Ej: excesivos despachos por zona 30">
+      <label class="field-label" for="intimationCause">Causa probable</label>
+      <select id="intimationCause"><option>Falso disparo</option><option>Zona en falla</option><option>Error de usuario</option><option>Condición climática</option><option>Equipo / comunicación</option><option>Servicio técnico pendiente</option><option>Sin causa definida</option></select>
+      <label class="field-label" for="intimationMailSource">Origen / mail</label>
+      <input id="intimationMailSource" placeholder="Ej: asunto del mail, fecha, remitente">
+      <label class="field-label" for="intimationDate">Fecha de intimación</label>
+      <input id="intimationDate" type="date">
+      <label class="field-label" for="intimationStatus">Estado</label>
+      <select id="intimationStatus"><option>Nueva</option><option>En seguimiento</option><option>Derivada a técnica</option><option>Cliente informado</option><option>Resuelta</option><option>Reincidente</option></select>
+      <label class="field-label" for="intimationOwner">Responsable / sector</label>
+      <input id="intimationOwner" placeholder="Ej: Supervisión, Técnica, Monitoreo">
+      <label class="field-label" for="intimationNotes">Notas y acciones</label>
+      <textarea id="intimationNotes" placeholder="Qué se revisó, qué se pidió, si hay ATCL, service, nota temporal o respuesta pendiente."></textarea>
+      <button id="saveIntimation" class="primary" type="button">Guardar intimación</button>
+      <p id="intimationSavedState" class="save-state">Cada intimación queda lista para seguimiento y métricas.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Seguimiento E-911</p><h2>Intimaciones registradas</h2></div><span id="intimationCount" class="pill">0 intimaciones</span></div>
+      <div class="directive-highlight">
+        <b>Objetivo:</b> evitar que las intimaciones queden repartidas por mail o WhatsApp. Cada caso debe tener causa, estado y próximo paso.
+      </div>
+      <div class="learning-toolbar">
+        <input id="intimationSearch" placeholder="Buscar abonado, titular, causa, mail o acción">
+        <select id="intimationCauseFilter" aria-label="Filtrar intimaciones por causa"><option>Todas las causas</option></select>
+        <select id="intimationStatusFilter" aria-label="Filtrar intimaciones por estado"><option>Todos los estados</option><option>Nueva</option><option>En seguimiento</option><option>Derivada a técnica</option><option>Cliente informado</option><option>Resuelta</option><option>Reincidente</option></select>
+      </div>
+      <div id="intimationList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="responses" class="view">
+  <section class="knowledge-layout responses-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Lenguaje estándar</p><h2>Respuestas frecuentes</h2>
+      <p class="helper-copy">Creá mensajes reutilizables para WhatsApp, mail o notas internas. El operador copia, pega y mantiene una comunicación prolija.</p>
+      <label class="field-label" for="responseTitle">Título</label>
+      <input id="responseTitle" placeholder="Ej: Aviso de falla de comunicación restablecida">
+      <label class="field-label" for="responseSector">Sector</label>
+      <select id="responseSector"><option>Monitoreo 911</option><option>SAFE / Objetivos Móviles</option><option>Supervisión</option><option>Técnica</option><option>Administración</option><option>Todos los sectores</option></select>
+      <label class="field-label" for="responseChannel">Canal</label>
+      <select id="responseChannel"><option>WhatsApp</option><option>Email</option><option>Bykom / nota</option><option>Teléfono</option><option>Interno</option></select>
+      <label class="field-label" for="responseTags">Etiquetas</label>
+      <input id="responseTags" placeholder="Ej: falla comunicación, service, cliente informado">
+      <label class="field-label" for="responseText">Mensaje</label>
+      <textarea id="responseText" placeholder="Texto listo para copiar y pegar. Dejá espacios editables si corresponde: [abonado], [hora], [sector]."></textarea>
+      <button id="saveResponse" class="primary" type="button">Guardar respuesta</button>
+      <p id="responseSavedState" class="save-state">Las respuestas frecuentes quedan disponibles para todo usuario autorizado.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Plantillas operativas</p><h2>Mensajes guardados</h2></div><span id="responseCount" class="pill">0 respuestas</span></div>
+      <div class="learning-toolbar">
+        <input id="responseSearch" placeholder="Buscar título, etiqueta, sector o texto">
+        <select id="responseSectorFilter" aria-label="Filtrar respuestas por sector"><option>Todos los sectores</option><option>Monitoreo 911</option><option>SAFE / Objetivos Móviles</option><option>Supervisión</option><option>Técnica</option><option>Administración</option><option>Todos los sectores</option></select>
+        <select id="responseChannelFilter" aria-label="Filtrar respuestas por canal"><option>Todos los canales</option><option>WhatsApp</option><option>Email</option><option>Bykom / nota</option><option>Teléfono</option><option>Interno</option></select>
+      </div>
+      <div id="responseList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="procedures" class="view">
   <section class="search-band procedure-band">
     <div class="search-copy"><p class="eyebrow">Operatividad</p><h2>Procedimientos para eventos</h2><p>Buscá el evento que ingresa en Bykom y seguí una guía ordenada de verificación, acción y registro.</p></div>
     <div class="search-box procedure-search-box"><input id="procedureSearch" type="search" placeholder="Buscar robo, pánico, corte 220, GPRS, apertura, video" autocomplete="off" aria-autocomplete="list" aria-controls="procedureAutocomplete"><select id="procedureCategory"></select><div id="procedureAutocomplete" class="autocomplete-list" role="listbox"></div></div>
@@ -525,7 +637,7 @@
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div><div class="metric"><span id="mOverdue">0</span><p>eventos atrasados</p></div><div class="metric"><span id="mAvgResolution">0d</span><p>promedio resolución</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="age">Antigüedad / atraso</option><option value="kanban">Kanban</option><option value="suggestions">Sugerencias</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="age">Antigüedad / atraso</option><option value="kanban">Kanban</option><option value="suggestions">Sugerencias</option><option value="trips">Viajes SAFE</option><option value="intimations">Intimaciones E-911</option><option value="responses">Respuestas frecuentes</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>
