@@ -249,7 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
     ['kanban', renderKanban],
     ['metrics', renderMetrics]
   ].forEach(([viewId, renderer]) => safeRender(viewId, renderer));
-  activateTab(document.querySelector('.tab.active')?.dataset.tab || 'intake', { render: false });
+  activateTab(document.querySelector('.tab.active')?.dataset.tab || 'intake');
+  ensureVisibleView('intake', { render: false });
 });
 
 function setupSession() {
@@ -466,16 +467,33 @@ function setupTabs() {
 
 function activateTab(tabId, options = {}) {
   const fallbackId = document.getElementById('intake') ? 'intake' : document.querySelector('.view')?.id;
-  const targetId = document.getElementById(tabId) ? tabId : fallbackId;
-  const tab = document.querySelector(`[data-tab="${targetId}"]`);
-  const view = targetId ? document.getElementById(targetId) : null;
-  if (!tab || tab.disabled || !view) return;
+  let targetId = document.getElementById(tabId) ? tabId : fallbackId;
+  let tab = document.querySelector(`[data-tab="${targetId}"]`);
+  let view = targetId ? document.getElementById(targetId) : null;
+  if (!tab || tab.disabled || !view) {
+    targetId = fallbackId;
+    tab = document.querySelector(`[data-tab="${targetId}"]`);
+    view = targetId ? document.getElementById(targetId) : null;
+  }
+  if (!tab || !view) return;
 
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === tab));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v === view));
 
   if (options.render === false) return;
   renderActiveView(targetId);
+  ensureVisibleView(targetId, { render: false });
+}
+
+function ensureVisibleView(preferredId = 'intake', options = {}) {
+  const activeView = document.querySelector('.view.active');
+  if (activeView && window.getComputedStyle(activeView).display !== 'none') return;
+  const fallbackView = document.getElementById(preferredId) || document.getElementById('intake') || document.querySelector('.view');
+  if (!fallbackView) return;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v === fallbackView));
+  const fallbackTab = document.querySelector(`[data-tab="${fallbackView.id}"]`);
+  if (fallbackTab) document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === fallbackTab));
+  if (options.render !== false) renderActiveView(fallbackView.id);
 }
 
 function renderActiveView(tabId) {
