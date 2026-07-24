@@ -112,6 +112,8 @@
 .learning-item.learning-overdue{border-left:4px solid var(--red)}
 .atcl-item.has-alert{border-left:4px solid var(--amber)}
 .atcl-layout .directive-highlight{margin:10px 0}
+.view-error{margin-bottom:14px;border:1px solid #f2c47b;border-left:4px solid var(--amber);background:#fff8e8;color:#47310a;padding:12px 14px;border-radius:6px;display:grid;gap:4px}
+.view-error span{line-height:1.4}
 .supervision-dashboard{display:grid;gap:14px;margin-bottom:14px}
 .supervision-overview{padding:16px}
 .supervision-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}

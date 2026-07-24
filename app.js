@@ -235,18 +235,20 @@ document.addEventListener('DOMContentLoaded', () => {
   search();
   searchSafe();
   searchProcedures();
-  renderDirectives();
-  renderSupervision();
-  renderResources();
-  renderDrivers();
-  renderTrips();
-  renderIntimations();
-  renderResponses();
-  renderAtcl();
-  renderLearning();
-  renderSuggestions();
-  renderKanban();
-  renderMetrics();
+  [
+    ['supervision', renderDirectives],
+    ['supervision', renderSupervision],
+    ['resources', renderResources],
+    ['drivers', renderDrivers],
+    ['trips', renderTrips],
+    ['intimations', renderIntimations],
+    ['responses', renderResponses],
+    ['atcl', renderAtcl],
+    ['learning', renderLearning],
+    ['suggestions', renderSuggestions],
+    ['kanban', renderKanban],
+    ['metrics', renderMetrics]
+  ].forEach(([viewId, renderer]) => safeRender(viewId, renderer));
   activateTab(document.querySelector('.tab.active')?.dataset.tab || 'intake', { render: false });
 });
 
@@ -477,18 +479,48 @@ function activateTab(tabId, options = {}) {
 }
 
 function renderActiveView(tabId) {
-  if (tabId === 'kanban') renderKanban();
-  if (tabId === 'resources') renderResources();
-  if (tabId === 'drivers') renderDrivers();
-  if (tabId === 'trips') renderTrips();
-  if (tabId === 'intimations') renderIntimations();
-  if (tabId === 'responses') renderResponses();
-  if (tabId === 'atcl') renderAtcl();
-  if (tabId === 'supervision') renderSupervision();
-  if (tabId === 'learning') renderLearning();
-  if (tabId === 'suggestions') renderSuggestions();
-  if (tabId === 'metrics') renderMetrics();
-  if (tabId !== 'metrics') renderMetrics();
+  if (tabId === 'kanban') safeRender(tabId, renderKanban);
+  if (tabId === 'resources') safeRender(tabId, renderResources);
+  if (tabId === 'drivers') safeRender(tabId, renderDrivers);
+  if (tabId === 'trips') safeRender(tabId, renderTrips);
+  if (tabId === 'intimations') safeRender(tabId, renderIntimations);
+  if (tabId === 'responses') safeRender(tabId, renderResponses);
+  if (tabId === 'atcl') safeRender(tabId, renderAtcl);
+  if (tabId === 'supervision') safeRender(tabId, renderSupervision);
+  if (tabId === 'learning') safeRender(tabId, renderLearning);
+  if (tabId === 'suggestions') safeRender(tabId, renderSuggestions);
+  if (tabId === 'metrics') safeRender(tabId, renderMetrics);
+  if (tabId !== 'metrics') safeRender('metrics', renderMetrics, { silent: true });
+}
+
+function safeRender(viewId, renderer, options = {}) {
+  try {
+    renderer();
+    clearViewError(viewId);
+  } catch (error) {
+    console.error(`No se pudo renderizar ${viewId}`, error);
+    if (!options.silent) showViewError(viewId, error);
+  }
+}
+
+function clearViewError(viewId) {
+  const view = document.getElementById(viewId);
+  const alert = view?.querySelector?.('[data-view-error]');
+  if (alert) alert.remove();
+}
+
+function showViewError(viewId, error) {
+  const view = document.getElementById(viewId);
+  if (!view) return;
+  let alert = view.querySelector('[data-view-error]');
+  if (!alert) {
+    alert = document.createElement('div');
+    alert.dataset.viewError = 'true';
+    alert.className = 'view-error';
+    view.prepend(alert);
+  }
+  const detail = error?.message ? ` Detalle: ${error.message}` : '';
+  alert.innerHTML = `<b>No se pudo cargar esta sección.</b><span>Actualizá la página. Si sigue igual, revisá permisos de Firebase o datos cargados.${escapeHtml(detail)}</span>`;
 }
 
 function setupFilters() {
