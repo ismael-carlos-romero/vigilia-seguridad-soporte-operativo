@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soporte Operativo Interno de Vigilia Seguridad</title>
-  <link rel="stylesheet" href="styles.css?v=20260720-tabs-fix">
+  <link rel="stylesheet" href="styles.css?v=20260724-atcl">
 </head>
 <body class="auth-gate">
 <section id="loginOverlay" class="login-overlay">
@@ -32,7 +32,7 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="trips">Viajes SAFE</button><button class="tab" data-tab="intimations">Intimaciones E-911</button><button class="tab" data-tab="responses">Respuestas</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="atcl">Pedidos ATCL</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="trips">Viajes SAFE</button><button class="tab" data-tab="intimations">Intimaciones E-911</button><button class="tab" data-tab="responses">Respuestas</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
 <section id="manual" class="view">
@@ -89,6 +89,7 @@
         <li><b>Objetivo Fijo (911):</b> guía para fallas, teclados, paneles, apps y soporte domiciliario.</li>
         <li><b>Objetivos Móviles (SAFE):</b> guía para unidades, camiones, GPS, sin reporte y seguimiento vehicular.</li>
         <li><b>Procedimientos:</b> base operativa para eventos recibidos en Bykom.</li>
+        <li><b>Pedidos ATCL:</b> seguimiento trazable de pedidos de clientes con responsable, estado, evidencia y alertas.</li>
         <li><b>Supervisión:</b> directivas internas cargadas por responsables.</li>
         <li><b>Aprendizajes:</b> eventos en espera, dudas y casos que deben validarse.</li>
         <li><b>Sugerencias:</b> espacio para que cada usuario proponga mejoras del sistema, procesos, comunicación o capacitación.</li>
@@ -129,6 +130,11 @@
       <p class="manual-note">La planilla de base está en <b>usuarios_vigilia_firebase.csv</b>. Las contraseñas son temporales y conviene cambiarlas cuando el sistema pase a uso real.</p>
     </article>
     <article class="manual-card wide">
+      <p class="eyebrow">Trazabilidad</p>
+      <h3>Gestión de pedidos ATCL</h3>
+      <p>El sistema no reemplaza ATCL, WhatsApp ni el mail. Su función es centralizar el seguimiento: cada pedido del cliente queda registrado, asignado a un área responsable, medido por fecha y estado, y cerrado con observación o evidencia para que no dependa de pedidos verbales o memoria.</p>
+    </article>
+    <article class="manual-card wide">
       <p class="eyebrow">Mejora continua</p>
       <h3>Cómo una duda se convierte en procedimiento</h3>
       <p>Cuando un operador encuentra un evento que no puede cedular con seguridad, lo carga en Aprendizajes con abonado, falla, duda concreta y contexto. El sistema sugiere una posible solución, permite copiar una nota estandarizada para supervisión y guarda el caso. Luego, el supervisor valida el criterio correcto y esa respuesta queda asentada como procedimiento reutilizable para otros operadores.</p>
@@ -153,6 +159,51 @@
     </article>
   </section>
 </section>
+<section id="atcl" class="view">
+  <section class="knowledge-layout atcl-layout">
+    <aside class="knowledge-form">
+      <p class="eyebrow">Trazabilidad operativa</p><h2>Gestión y seguimiento de pedidos ATCL</h2>
+      <p class="helper-copy">Registrá cada pedido del cliente con responsable, estado y evidencia. La idea es que nada quede solo verbal, por WhatsApp o perdido en un mail.</p>
+      <div class="directive-highlight">
+        <b>Criterio:</b> el sistema no reemplaza ATCL; asegura que cada pedido quede centralizado, asignado, medible y verificable.
+      </div>
+      <label class="field-label" for="atclNumber">Número de ATCL</label>
+      <input id="atclNumber" placeholder="Ej: ATCL-15423">
+      <label class="field-label" for="atclSubscriber">Cliente / abonado</label>
+      <input id="atclSubscriber" placeholder="Ej: SZ-4585 - Cliente">
+      <label class="field-label" for="atclReason">Motivo del pedido</label>
+      <select id="atclReason"><option>Service técnico</option><option>Reclamo técnico</option><option>Consulta administrativa</option><option>Pedido operativo</option><option>Instalación / ampliación</option><option>Revisión de comunicación</option><option>Otro</option></select>
+      <label class="field-label" for="atclDetail">Detalle de lo solicitado</label>
+      <textarea id="atclDetail" placeholder="Qué pidió el cliente, qué se informó y qué debe ejecutar el área responsable."></textarea>
+      <label class="field-label" for="atclArea">Área responsable</label>
+      <select id="atclArea"><option>Técnica</option><option>Operativa</option><option>Administrativa</option><option>Supervisión</option><option>SAFE</option><option>Otro</option></select>
+      <label class="field-label" for="atclPriority">Prioridad</label>
+      <select id="atclPriority"><option>Media</option><option>Alta</option><option>Crítica</option><option>Baja</option></select>
+      <label class="field-label" for="atclStatus">Estado</label>
+      <select id="atclStatus"><option>Pendiente</option><option>Recibido</option><option>En proceso</option><option>Resuelto</option><option>No realizado</option></select>
+      <label class="field-label" for="atclAssignee">Responsable asignado</label>
+      <input id="atclAssignee" placeholder="Ej: Cristian, Técnica, Administración">
+      <label class="field-label" for="atclEvidence">Evidencia / link / captura</label>
+      <input id="atclEvidence" placeholder="Link Drive, captura, mensaje o referencia">
+      <label class="field-label" for="atclNotes">Observaciones</label>
+      <textarea id="atclNotes" placeholder="Seguimiento, respuesta del área, motivo si no se realizó o datos pendientes."></textarea>
+      <button id="saveAtcl" class="primary" type="button">Guardar pedido ATCL</button>
+      <p id="atclSavedState" class="save-state">Cada pedido queda asociado al operador, turno, sector y estación.</p>
+    </aside>
+    <section class="knowledge-list-panel">
+      <div class="panel-head"><div><p class="eyebrow">Seguimiento de pedidos</p><h2>Pedidos ATCL registrados</h2></div><span id="atclCount" class="pill">0 pedidos</span></div>
+      <div class="learning-toolbar">
+        <input id="atclSearch" placeholder="Buscar ATCL, abonado, cliente, responsable o detalle">
+        <select id="atclAreaFilter" aria-label="Filtrar ATCL por área"><option>Todas las áreas</option><option>Técnica</option><option>Operativa</option><option>Administrativa</option><option>Supervisión</option><option>SAFE</option><option>Otro</option></select>
+        <select id="atclStatusFilter" aria-label="Filtrar ATCL por estado"><option>Todos los estados</option><option>Pendiente</option><option>Recibido</option><option>En proceso</option><option>Resuelto</option><option>No realizado</option></select>
+        <select id="atclPriorityFilter" aria-label="Filtrar ATCL por prioridad"><option>Todas las prioridades</option><option>Crítica</option><option>Alta</option><option>Media</option><option>Baja</option></select>
+        <select id="atclAlertFilter" aria-label="Filtrar ATCL por alerta"><option>Todas las alertas</option><option>Pendiente 24h+</option><option>Técnica sin confirmar</option><option>Cerrado sin evidencia</option></select>
+      </div>
+      <div id="atclList" class="knowledge-list"></div>
+    </section>
+  </section>
+</section>
+<section id="procedures" class="view">
 <section id="call" class="view">
   <section class="sector-menu" aria-label="Acciones rápidas Objetivo Fijo 911">
     <div>
@@ -636,7 +687,7 @@
 </section>
 <section id="metrics" class="view">
   <section class="metrics-grid"><div class="metric"><span id="mTotal">0</span><p>casos registrados</p></div><div class="metric"><span id="mRemote">0%</span><p>resueltos desde estación</p></div><div class="metric"><span id="mRisk">0</span><p>riesgos de baja</p></div><div class="metric"><span id="mAvoided">0</span><p>servicios evitados</p></div><div class="metric"><span id="mPending">0</span><p>consultas pendientes</p></div><div class="metric"><span id="mOverdue">0</span><p>eventos atrasados</p></div><div class="metric"><span id="mAvgResolution">0d</span><p>promedio resolución</p></div></section>
-  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="age">Antigüedad / atraso</option><option value="kanban">Kanban</option><option value="suggestions">Sugerencias</option><option value="trips">Viajes SAFE</option><option value="intimations">Intimaciones E-911</option><option value="responses">Respuestas frecuentes</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
+  <section class="dashboard-row"><div class="chart-panel"><div class="panel-head"><h2>Pareto configurable</h2><div class="actions"><select id="paretoMode"><option value="cause">Causas / fallas</option><option value="learningType">Eventos Bykom</option><option value="status">Estados</option><option value="operator">Operadores</option><option value="priority">Criticidad</option><option value="age">Antigüedad / atraso</option><option value="kanban">Kanban</option><option value="suggestions">Sugerencias</option><option value="trips">Viajes SAFE</option><option value="intimations">Intimaciones E-911</option><option value="responses">Respuestas frecuentes</option><option value="atcl">Pedidos ATCL</option></select><button id="exportCsv">Exportar CSV</button></div></div><div id="paretoChart" class="bars"></div><div id="metricInsights" class="metric-insights"></div></div><div class="chart-panel"><h2>Eventos por operador</h2><div id="operatorChart" class="bars compact"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Eventos por turno</h2><div id="shiftChart" class="bars compact"></div></div><div class="chart-panel"><h2>Dudas / eventos en espera</h2><div id="learningChart" class="bars"></div></div></section>
   <section class="dashboard-row"><div class="chart-panel"><h2>Satisfacción</h2><div id="satisfactionChart" class="bars compact"></div></div><div class="chart-panel"><h2>Resumen del operador actual</h2><div id="operatorSummary" class="operator-summary"></div></div></section>
 </section>
@@ -693,6 +744,6 @@
     appId: "1:599270503946:web:ea6ef86946fe0286bb91f3"
   };
 </script>
-<script src="data.js?v=20260720-tabs-fix"></script><script src="app.js?v=20260720-tabs-fix"></script>
+<script src="data.js?v=20260724-atcl"></script><script src="app.js?v=20260724-atcl"></script>
 </body>
 </html>

@@ -110,6 +110,8 @@
 .learning-age-badge.overdue{background:#fff0ee!important;color:var(--red)!important}
 .learning-age-badge.resolved{background:#eef8f7!important;color:var(--teal)!important}
 .learning-item.learning-overdue{border-left:4px solid var(--red)}
+.atcl-item.has-alert{border-left:4px solid var(--amber)}
+.atcl-layout .directive-highlight{margin:10px 0}
 .supervision-dashboard{display:grid;gap:14px;margin-bottom:14px}
 .supervision-overview{padding:16px}
 .supervision-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}

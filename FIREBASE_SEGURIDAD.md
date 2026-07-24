@@ -148,6 +148,12 @@ service cloud.firestore {
       allow delete: if supervisor();
     }
 
+    match /pedidos_atcl/{atclId} {
+      allow read: if activeUser();
+      allow create, update: if activeUser();
+      allow delete: if supervisor();
+    }
+
     match /recursos_biblioteca/{resourceId} {
       allow read: if activeUser();
       allow create, update: if activeUser();

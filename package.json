@@ -1,0 +1,13 @@
+{
+  "name": "vigilia-seguridad-soporte-operativo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Herramientas administrativas para Soporte Operativo Interno de Vigilia Seguridad.",
+  "scripts": {
+    "usuarios:simular": "node scripts/alta_usuarios_firebase.js --dry-run usuarios_vigilia_firebase.csv serviceAccountKey.json",
+    "usuarios:cargar": "node scripts/alta_usuarios_firebase.js usuarios_vigilia_firebase.csv serviceAccountKey.json"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}

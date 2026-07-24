@@ -29,12 +29,14 @@ const state = {
     trips: [],
     intimations: [],
     responses: [],
+    atcls: [],
     resourcesLoaded: false,
     suggestionsLoaded: false,
     driversLoaded: false,
     tripsLoaded: false,
     intimationsLoaded: false,
     responsesLoaded: false,
+    atclsLoaded: false,
     unsubscribeLearning: null,
     unsubscribeKanban: null,
     unsubscribeResources: null,
@@ -43,6 +45,7 @@ const state = {
     unsubscribeTrips: null,
     unsubscribeIntimations: null,
     unsubscribeResponses: null,
+    unsubscribeAtcls: null,
     migratedLocal: false,
     lastCloudSave: null,
     status: 'Base central no conectada'
@@ -60,6 +63,7 @@ const DRIVERS_KEY = 'vigiliaDriversV1';
 const TRIPS_KEY = 'vigiliaTripsV1';
 const INTIMATIONS_KEY = 'vigiliaIntimationsV1';
 const RESPONSES_KEY = 'vigiliaResponsesV1';
+const ATCL_KEY = 'vigiliaAtclV1';
 const defaultDirectives = [
   {
     id: 'kike-atcl-2026-07-16',
@@ -218,7 +222,7 @@ const procedureData = [
 const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
-  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','tripCompany','tripUnit','tripDriver','tripPhone','tripClient','tripAddress','tripMapsLink','tripDate','tripStatus','tripNotes','saveTrip','tripSavedState','tripSearch','tripCompanyFilter','tripStatusFilter','tripCount','tripList','intimationSubscriber','intimationCustomer','intimationReason','intimationCause','intimationMailSource','intimationDate','intimationStatus','intimationOwner','intimationNotes','saveIntimation','intimationSavedState','intimationSearch','intimationCauseFilter','intimationStatusFilter','intimationCount','intimationList','responseTitle','responseSector','responseChannel','responseTags','responseText','saveResponse','responseSavedState','responseSearch','responseSectorFilter','responseChannelFilter','responseCount','responseList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','tripCompany','tripUnit','tripDriver','tripPhone','tripClient','tripAddress','tripMapsLink','tripDate','tripStatus','tripNotes','saveTrip','tripSavedState','tripSearch','tripCompanyFilter','tripStatusFilter','tripCount','tripList','intimationSubscriber','intimationCustomer','intimationReason','intimationCause','intimationMailSource','intimationDate','intimationStatus','intimationOwner','intimationNotes','saveIntimation','intimationSavedState','intimationSearch','intimationCauseFilter','intimationStatusFilter','intimationCount','intimationList','responseTitle','responseSector','responseChannel','responseTags','responseText','saveResponse','responseSavedState','responseSearch','responseSectorFilter','responseChannelFilter','responseCount','responseList','atclNumber','atclSubscriber','atclReason','atclDetail','atclArea','atclPriority','atclStatus','atclAssignee','atclEvidence','atclNotes','saveAtcl','atclSavedState','atclSearch','atclAreaFilter','atclStatusFilter','atclPriorityFilter','atclAlertFilter','atclCount','atclList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -238,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderTrips();
   renderIntimations();
   renderResponses();
+  renderAtcl();
   renderLearning();
   renderSuggestions();
   renderKanban();
@@ -260,6 +265,7 @@ function setupSession() {
         if (state.firebase.unsubscribeTrips) state.firebase.unsubscribeTrips();
         if (state.firebase.unsubscribeIntimations) state.firebase.unsubscribeIntimations();
         if (state.firebase.unsubscribeResponses) state.firebase.unsubscribeResponses();
+        if (state.firebase.unsubscribeAtcls) state.firebase.unsubscribeAtcls();
         state.firebase.learning = [];
         state.firebase.kanban = [];
         state.firebase.resources = [];
@@ -268,12 +274,14 @@ function setupSession() {
         state.firebase.trips = [];
         state.firebase.intimations = [];
         state.firebase.responses = [];
+        state.firebase.atcls = [];
         state.firebase.resourcesLoaded = false;
         state.firebase.suggestionsLoaded = false;
         state.firebase.driversLoaded = false;
         state.firebase.tripsLoaded = false;
         state.firebase.intimationsLoaded = false;
         state.firebase.responsesLoaded = false;
+        state.firebase.atclsLoaded = false;
         state.firebase.loaded = false;
         document.body.classList.add('auth-gate');
         els.loginOverlay.classList.remove('hidden');
@@ -307,6 +315,7 @@ function setupSession() {
       subscribeTripsCloud();
       subscribeIntimationsCloud();
       subscribeResponsesCloud();
+      subscribeAtclCloud();
       renderMetrics();
     });
   } else {
@@ -474,6 +483,7 @@ function renderActiveView(tabId) {
   if (tabId === 'trips') renderTrips();
   if (tabId === 'intimations') renderIntimations();
   if (tabId === 'responses') renderResponses();
+  if (tabId === 'atcl') renderAtcl();
   if (tabId === 'supervision') renderSupervision();
   if (tabId === 'learning') renderLearning();
   if (tabId === 'suggestions') renderSuggestions();
@@ -614,6 +624,9 @@ function bindEvents() {
   els.responseSearch?.addEventListener('input', renderResponses);
   els.responseSectorFilter?.addEventListener('change', renderResponses);
   els.responseChannelFilter?.addEventListener('change', renderResponses);
+  els.saveAtcl?.addEventListener('click', saveAtcl);
+  els.atclSearch?.addEventListener('input', renderAtcl);
+  ['atclAreaFilter','atclStatusFilter','atclPriorityFilter','atclAlertFilter'].forEach(id => els[id]?.addEventListener('change', renderAtcl));
   els.pendingButton.addEventListener('click', showPendingForm);
   els.exportCsv.addEventListener('click', exportCsv);
   els.clearCases.addEventListener('click', () => {
@@ -647,6 +660,7 @@ function setupFirebase() {
       subscribeKanbanCloud();
       subscribeResourcesCloud();
       subscribeSuggestionsCloud();
+      subscribeAtclCloud();
     }
   } catch (error) {
     console.error('Firebase no pudo iniciar', error);
@@ -2432,6 +2446,313 @@ async function copyResponseText(id, button) {
   }
 }
 
+function atclCollection() {
+  return state.firebase.db?.collection?.('pedidos_atcl');
+}
+
+function getAtclRows() {
+  const rows = state.firebase.atclsLoaded ? state.firebase.atcls : getStoredRows(ATCL_KEY);
+  return Array.isArray(rows) ? rows : [];
+}
+
+function getAtclDocId(row) {
+  if (row.id) return row.id;
+  const base = [row.atclNumber, row.subscriber, row.detail, row.createdAt].filter(Boolean).join('|') || JSON.stringify(row);
+  return `atcl_${hashString(base)}`;
+}
+
+function subscribeAtclCloud() {
+  if (!state.firebase.enabled || !atclCollection()) return;
+  if (state.firebase.unsubscribeAtcls) state.firebase.unsubscribeAtcls();
+  state.firebase.unsubscribeAtcls = atclCollection()
+    .orderBy('updatedAt', 'desc')
+    .limit(500)
+    .onSnapshot(snapshot => {
+      state.firebase.atcls = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a, b) => String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+      state.firebase.atclsLoaded = true;
+      renderAtcl();
+      renderMetrics();
+    }, error => {
+      console.error('No se pudo leer pedidos ATCL en Firestore', error);
+      state.firebase.atclsLoaded = false;
+      if (els.atclSavedState) els.atclSavedState.textContent = 'Modo local: no se pudo leer la base central de ATCL.';
+      renderAtcl();
+    });
+}
+
+async function saveAtcl() {
+  const atclNumber = els.atclNumber?.value.trim() || '';
+  const subscriber = els.atclSubscriber?.value.trim() || '';
+  const detail = els.atclDetail?.value.trim() || '';
+  if (!atclNumber || !subscriber || !detail) {
+    if (els.atclSavedState) els.atclSavedState.textContent = 'Cargá número de ATCL, cliente/abonado y detalle del pedido.';
+    return;
+  }
+  const session = getSession();
+  const now = new Date().toISOString();
+  const status = els.atclStatus?.value || 'Pendiente';
+  const row = {
+    atclNumber,
+    subscriber,
+    reason: els.atclReason?.value || 'Service técnico',
+    detail,
+    area: els.atclArea?.value || 'Técnica',
+    priority: els.atclPriority?.value || 'Media',
+    status,
+    assignee: els.atclAssignee?.value.trim() || '',
+    evidence: els.atclEvidence?.value.trim() || '',
+    notes: els.atclNotes?.value.trim() || '',
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || '',
+    operatorEmail: session.email || '',
+    role: session.role || 'operador',
+    level: Number(session.level || 1),
+    shift: session.shift || 'Sin turno',
+    sector: session.sector || 'Sin sector',
+    station: session.station || 'Sin estación',
+    createdAt: now,
+    updatedAt: now,
+    closedAt: isAtclClosed({ status }) ? now : ''
+  };
+  try {
+    await upsertAtcl(row);
+    ['atclNumber','atclSubscriber','atclDetail','atclAssignee','atclEvidence','atclNotes'].forEach(id => {
+      if (els[id]) els[id].value = '';
+    });
+    if (els.atclStatus) els.atclStatus.value = 'Pendiente';
+    if (els.atclPriority) els.atclPriority.value = 'Media';
+    if (els.atclSavedState) els.atclSavedState.textContent = state.firebase.enabled ? 'Pedido ATCL guardado en la base central.' : 'Pedido ATCL guardado localmente.';
+    renderAtcl();
+    renderMetrics();
+  } catch (error) {
+    console.error('No se pudo guardar ATCL', error);
+    if (els.atclSavedState) els.atclSavedState.textContent = 'No se pudo guardar. Revisá permisos de Firebase o conexión.';
+  }
+}
+
+async function upsertAtcl(row) {
+  const docId = getAtclDocId(row);
+  const now = new Date().toISOString();
+  const payload = {
+    ...row,
+    id: docId,
+    updatedAt: now,
+    closedAt: isAtclClosed(row) ? (row.closedAt || now) : ''
+  };
+  if (state.firebase.enabled && atclCollection()) {
+    const cloudPayload = { ...payload };
+    delete cloudPayload.id;
+    if (window.firebase?.firestore?.FieldValue) cloudPayload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+    await atclCollection().doc(docId).set(cloudPayload, { merge: true });
+  }
+  const rows = getStoredRows(ATCL_KEY);
+  const index = rows.findIndex(item => getAtclDocId(item) === docId);
+  if (index >= 0) rows[index] = payload; else rows.push(payload);
+  localStorage.setItem(ATCL_KEY, JSON.stringify(rows));
+}
+
+function renderAtcl() {
+  if (!els.atclList) return;
+  const rows = getAtclRows().slice().sort(sortAtclRows);
+  const filtered = filterAtclRows(rows);
+  if (els.atclCount) els.atclCount.textContent = `${filtered.length} / ${rows.length} pedidos`;
+  if (!rows.length) {
+    els.atclList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin pedidos ATCL cargados</h2><p>El primer pedido registrado ya queda con responsable, estado y seguimiento.</p></div>';
+    return;
+  }
+  if (!filtered.length) {
+    els.atclList.innerHTML = '<div class="empty-state compact-empty"><h2>Sin pedidos con ese filtro</h2><p>Probá ampliar área, estado, prioridad o alerta.</p></div>';
+    return;
+  }
+  els.atclList.innerHTML = filtered.map(renderAtclItem).join('');
+  els.atclList.querySelectorAll('[data-copy-atcl]').forEach(btn => {
+    btn.addEventListener('click', () => copyAtclNote(btn.dataset.copyAtcl, btn));
+  });
+  els.atclList.querySelectorAll('[data-atcl-kanban]').forEach(btn => {
+    btn.addEventListener('click', () => addAtclToKanban(btn.dataset.atclKanban));
+  });
+  els.atclList.querySelectorAll('[data-atcl-status]').forEach(btn => {
+    btn.addEventListener('click', () => markAtclStatus(btn.dataset.atclStatus, btn.dataset.status));
+  });
+}
+
+function filterAtclRows(rows) {
+  const query = normalize(els.atclSearch?.value || '');
+  const area = els.atclAreaFilter?.value || 'Todas las áreas';
+  const status = els.atclStatusFilter?.value || 'Todos los estados';
+  const priority = els.atclPriorityFilter?.value || 'Todas las prioridades';
+  const alertFilter = els.atclAlertFilter?.value || 'Todas las alertas';
+  return rows.filter(row => {
+    const text = normalize([row.atclNumber, row.subscriber, row.reason, row.detail, row.area, row.assignee, row.notes, row.evidence].join(' '));
+    return (!query || text.includes(query))
+      && (area === 'Todas las áreas' || row.area === area)
+      && (status === 'Todos los estados' || row.status === status)
+      && (priority === 'Todas las prioridades' || row.priority === priority)
+      && matchesAtclAlert(row, alertFilter);
+  });
+}
+
+function matchesAtclAlert(row, filter) {
+  if (filter === 'Todas las alertas') return true;
+  if (filter === 'Pendiente 24h+') return isAtclOverdue(row);
+  if (filter === 'Técnica sin confirmar') return isTechnicalAtclUnconfirmed(row);
+  if (filter === 'Cerrado sin evidencia') return isAtclClosedWithoutEvidence(row);
+  return true;
+}
+
+function sortAtclRows(a, b) {
+  return atclPriorityWeight(b) - atclPriorityWeight(a)
+    || Number(isAtclOverdue(b)) - Number(isAtclOverdue(a))
+    || String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''));
+}
+
+function renderAtclItem(row) {
+  const id = getAtclDocId(row);
+  const alerts = getAtclAlerts(row);
+  return `<article class="knowledge-item atcl-item ${alerts.length ? 'has-alert' : ''}">
+    <div class="knowledge-main">
+      <p class="eyebrow">${escapeHtml(row.status || 'Pendiente')} · ${escapeHtml(row.atclNumber || 'Sin ATCL')} · ${escapeHtml(row.subscriber || 'Sin abonado')} · ${escapeHtml(safeDate(row.createdAt))}</p>
+      <h3>${escapeHtml(row.reason || 'Pedido ATCL')}</h3>
+      <div class="learning-tags">
+        <span>${escapeHtml(row.area || 'Sin área')}</span>
+        <span class="priority-${normalize(row.priority || 'media')}">${escapeHtml(row.priority || 'Media')}</span>
+        <span>${escapeHtml(row.assignee || 'Sin responsable')}</span>
+        ${alerts.map(alert => `<span class="${escapeHtml(alert.className)}">${escapeHtml(alert.label)}</span>`).join('')}
+      </div>
+      <p>${escapeHtml(row.detail || '')}</p>
+      <p><b>Operador:</b> ${escapeHtml(row.operator || 'Sin operador')} · <b>Turno:</b> ${escapeHtml(row.shift || 'Sin turno')}</p>
+      ${row.notes ? `<p><b>Observaciones:</b> ${escapeHtml(row.notes)}</p>` : ''}
+      ${row.evidence ? `<p><b>Evidencia:</b> ${renderAtclEvidence(row.evidence)}</p>` : ''}
+      <p><b>Ingreso:</b> ${escapeHtml(safeDateTime(row.createdAt))} · <b>Cierre:</b> ${escapeHtml(row.closedAt ? safeDateTime(row.closedAt) : 'Sin cierre')}</p>
+      <div class="learning-actions">
+        <button type="button" data-copy-atcl="${escapeHtml(id)}">Copiar seguimiento</button>
+        <button type="button" data-atcl-kanban="${escapeHtml(id)}">Enviar a Kanban</button>
+        ${!isAtclClosed(row) ? `<button type="button" data-atcl-status="${escapeHtml(id)}" data-status="Recibido">Marcar recibido</button><button type="button" class="primary" data-atcl-status="${escapeHtml(id)}" data-status="Resuelto">Marcar resuelto</button>` : ''}
+      </div>
+    </div>
+    <span>${escapeHtml(row.area || 'Sin área')}</span>
+  </article>`;
+}
+
+function renderAtclEvidence(value) {
+  const text = String(value || '').trim();
+  if (/^https?:\/\//i.test(text)) return `<a href="${escapeHtml(text)}" target="_blank" rel="noopener">Abrir evidencia</a>`;
+  return escapeHtml(text);
+}
+
+function getAtclAlerts(row) {
+  const alerts = [];
+  if (isAtclOverdue(row)) alerts.push({ label: 'Pendiente 24h+', className: 'learning-age-badge overdue' });
+  if (isTechnicalAtclUnconfirmed(row)) alerts.push({ label: 'Técnica sin confirmar', className: 'learning-age-badge warning' });
+  if (isAtclClosedWithoutEvidence(row)) alerts.push({ label: 'Cerrado sin evidencia', className: 'learning-age-badge overdue' });
+  return alerts;
+}
+
+function isAtclClosed(row) {
+  return ['Resuelto', 'No realizado'].includes(row.status);
+}
+
+function getAtclAgeHours(row) {
+  const start = new Date(row.createdAt || row.date || row.updatedAt || Date.now()).getTime();
+  const end = row.closedAt ? new Date(row.closedAt).getTime() : Date.now();
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
+  return Math.max(0, (end - start) / 36e5);
+}
+
+function isAtclOverdue(row) {
+  return !isAtclClosed(row) && getAtclAgeHours(row) >= 24;
+}
+
+function isTechnicalAtclUnconfirmed(row) {
+  return row.area === 'Técnica' && ['Pendiente'].includes(row.status);
+}
+
+function isAtclClosedWithoutEvidence(row) {
+  return isAtclClosed(row) && !String(row.evidence || '').trim() && !String(row.notes || '').trim();
+}
+
+function atclPriorityWeight(row) {
+  return { 'Crítica': 4, 'Alta': 3, 'Media': 2, 'Baja': 1 }[row.priority] || 2;
+}
+
+function findAtclRow(id) {
+  return getAtclRows().find(row => getAtclDocId(row) === id);
+}
+
+async function markAtclStatus(id, status) {
+  const row = findAtclRow(id);
+  if (!row) return;
+  const next = {
+    ...row,
+    status,
+    closedAt: ['Resuelto', 'No realizado'].includes(status) ? (row.closedAt || new Date().toISOString()) : ''
+  };
+  await upsertAtcl(next);
+  if (els.atclSavedState) els.atclSavedState.textContent = `ATCL ${row.atclNumber || ''} actualizado a ${status}.`;
+  renderAtcl();
+  renderMetrics();
+}
+
+async function copyAtclNote(id, button) {
+  const row = findAtclRow(id);
+  if (!row) return;
+  await copyPlainText(makeAtclFollowUpNote(row));
+  flashButton(button, 'Seguimiento copiado');
+}
+
+function makeAtclFollowUpNote(row) {
+  return [
+    `Seguimiento ATCL ${row.atclNumber || 'sin número'} - ${row.subscriber || 'sin abonado'}`,
+    '',
+    `Cliente / abonado: ${row.subscriber || 'Sin dato'}`,
+    `Motivo: ${row.reason || 'Sin motivo'}`,
+    `Área responsable: ${row.area || 'Sin área'}`,
+    `Responsable asignado: ${row.assignee || 'Sin responsable'}`,
+    `Prioridad: ${row.priority || 'Media'}`,
+    `Estado actual: ${row.status || 'Pendiente'}`,
+    `Operador que registró: ${row.operator || 'Sin operador'} (${row.shift || 'Sin turno'})`,
+    `Fecha de ingreso: ${safeDateTime(row.createdAt)}`,
+    `Fecha de cierre: ${row.closedAt ? safeDateTime(row.closedAt) : 'Sin cierre'}`,
+    '',
+    `Detalle solicitado: ${row.detail || 'Sin detalle'}`,
+    `Observaciones: ${row.notes || 'Sin observaciones'}`,
+    `Evidencia: ${row.evidence || 'Sin evidencia cargada'}`,
+    '',
+    getAtclAlerts(row).length ? `Alertas: ${getAtclAlerts(row).map(alert => alert.label).join(', ')}` : 'Alertas: sin alertas automáticas.',
+    '',
+    'Se solicita confirmar recepción, ejecución o cierre del pedido para mantener trazabilidad.'
+  ].join('\n');
+}
+
+async function addAtclToKanban(id) {
+  const row = findAtclRow(id);
+  if (!row) return;
+  const session = getSession();
+  const task = {
+    title: `${row.atclNumber || 'ATCL'} · ${row.reason || 'Pedido'}`,
+    subscriber: row.subscriber || '',
+    category: `ATCL / ${row.area || 'Sin área'}`,
+    priority: row.priority || 'Media',
+    description: makeAtclFollowUpNote(row),
+    column: isAtclClosed(row) ? 'resuelto' : 'en-espera',
+    operator: session.operator || row.operator || 'Sin operador',
+    operatorUid: session.uid || row.operatorUid || '',
+    shift: session.shift || row.shift || 'Sin turno',
+    sector: session.sector || row.sector || 'Sin sector',
+    station: session.station || row.station || 'Sin estación',
+    sourceAtclId: id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    movements: []
+  };
+  await upsertKanbanTask(task);
+  if (els.atclSavedState) els.atclSavedState.textContent = 'Pedido ATCL enviado al Kanban.';
+  renderKanban();
+  renderMetrics();
+}
+
 function flashButton(button, text) {
   if (!button) return;
   const previous = button.textContent;
@@ -3859,6 +4180,7 @@ function renderMetrics() {
   const trips = getTripRows();
   const intimations = getIntimationRows();
   const responses = getResponseRows();
+  const atcls = getAtclRows();
   const session = getSession();
   const total = rows.length;
   const remote = rows.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
@@ -3866,8 +4188,9 @@ function renderMetrics() {
   const avoided = rows.filter(r => r.outcome === 'Servicio técnico evitado').length;
   const pending = rows.filter(r => r.pending || r.outcome === 'Consulta pendiente de cargar').length
     + learning.filter(r => r.status !== 'Resuelto y cargado').length
-    + intimations.filter(r => r.status !== 'Resuelta').length;
-  const overdue = learning.filter(row => isLearningOverdue(row)).length;
+    + intimations.filter(r => r.status !== 'Resuelta').length
+    + atcls.filter(row => !isAtclClosed(row)).length;
+  const overdue = learning.filter(row => isLearningOverdue(row)).length + atcls.filter(row => isAtclOverdue(row)).length;
   const resolvedLearning = learning.filter(row => isLearningResolved(row));
   const avgResolution = resolvedLearning.length
     ? Math.round(resolvedLearning.reduce((sum, row) => sum + getLearningAgeDays(row), 0) / resolvedLearning.length)
@@ -3879,33 +4202,34 @@ function renderMetrics() {
   els.mPending.textContent = pending;
   if (els.mOverdue) els.mOverdue.textContent = overdue;
   if (els.mAvgResolution) els.mAvgResolution.textContent = `${avgResolution}d`;
-  const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions, trips, intimations, responses);
+  const paretoEntries = getParetoEntries(rows, learning, kanban, suggestions, trips, intimations, responses, atcls);
   renderBars(els.paretoChart, paretoEntries, true);
-  renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions, trips, intimations, responses);
-  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator)]), false);
-  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift), ...suggestions.map(r => r.shift), ...trips.map(r => r.shift), ...intimations.map(r => r.shift), ...responses.map(r => r.shift)]), false);
+  renderMetricInsights(paretoEntries, rows, learning, kanban, suggestions, trips, intimations, responses, atcls);
+  renderBars(els.operatorChart, countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator), ...atcls.map(r => r.operator)]), false);
+  renderBars(els.shiftChart, countEntries([...rows.map(r => r.shift), ...learning.map(r => r.shift), ...kanban.map(r => r.shift), ...suggestions.map(r => r.shift), ...trips.map(r => r.shift), ...intimations.map(r => r.shift), ...responses.map(r => r.shift), ...atcls.map(r => r.shift)]), false);
   renderBars(els.learningChart, countEntries(learning.map(r => getLearningEventType(r))), true);
   renderBars(els.satisfactionChart, countBy(rows, 'mood'), false);
-  renderOperatorSummary(rows, learning, kanban, session, suggestions, trips, intimations, responses);
+  renderOperatorSummary(rows, learning, kanban, session, suggestions, trips, intimations, responses, atcls);
   renderCaseRows(rows);
 }
 
-function getParetoEntries(rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = []) {
+function getParetoEntries(rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = [], atcls = []) {
   const mode = els.paretoMode?.value || 'cause';
   if (mode === 'learningType') return countEntries(learning.map(r => getLearningEventType(r) || r.type || 'Evento en espera'));
-  if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column), ...trips.map(r => r.status), ...intimations.map(r => r.status)]);
-  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator)]);
-  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact), ...intimations.map(r => r.status === 'Reincidente' ? 'Alta: reincidente' : 'Media')]);
+  if (mode === 'status') return countEntries([...learning.map(r => r.status), ...kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column), ...trips.map(r => r.status), ...intimations.map(r => r.status), ...atcls.map(r => r.status)]);
+  if (mode === 'operator') return countEntries([...rows.map(r => r.operator), ...learning.map(r => r.operator), ...kanban.map(r => r.operator), ...suggestions.map(r => r.operator), ...trips.map(r => r.operator), ...intimations.map(r => r.operator), ...responses.map(r => r.operator), ...atcls.map(r => r.operator)]);
+  if (mode === 'priority') return countEntries([...kanban.map(r => r.priority), ...rows.map(r => r.mood === 'Riesgo de baja' ? 'Crítica: riesgo de baja' : r.priority), ...suggestions.map(r => r.impact), ...intimations.map(r => r.status === 'Reincidente' ? 'Alta: reincidente' : 'Media'), ...atcls.map(r => r.priority)]);
   if (mode === 'age') return countEntries(learning.map(row => getLearningAgeBucket(row)));
   if (mode === 'kanban') return countEntries(kanban.map(r => kanbanColumns.find(c => c.id === r.column)?.label || r.column));
   if (mode === 'suggestions') return countEntries(suggestions.map(r => r.type || r.targetSector || 'Sugerencia'));
   if (mode === 'trips') return countEntries(trips.map(r => r.company || r.client || r.status || 'Viaje SAFE'));
   if (mode === 'intimations') return countEntries(intimations.map(r => r.cause || r.status || 'Intimación E-911'));
   if (mode === 'responses') return countEntries(responses.map(r => r.channel || r.sector || 'Respuesta frecuente'));
-  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type), ...trips.map(r => r.status), ...intimations.map(r => r.cause), ...responses.map(r => r.channel)]);
+  if (mode === 'atcl') return countEntries(atcls.map(r => r.reason || r.area || r.status || 'Pedido ATCL'));
+  return countEntries([...rows.map(r => r.issue), ...learning.map(r => getLearningEventType(r) || r.resolution?.category || r.failure || r.question), ...kanban.map(r => r.category), ...suggestions.map(r => r.type), ...trips.map(r => r.status), ...intimations.map(r => r.cause), ...responses.map(r => r.channel), ...atcls.map(r => r.reason || r.status)]);
 }
 
-function renderMetricInsights(entries, rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = []) {
+function renderMetricInsights(entries, rows, learning, kanban, suggestions = [], trips = [], intimations = [], responses = [], atcls = []) {
   if (!els.metricInsights) return;
   if (!entries.length) {
     els.metricInsights.innerHTML = '<p>Todavía no hay datos suficientes para sugerencias.</p>';
@@ -3925,12 +4249,15 @@ function renderMetricInsights(entries, rows, learning, kanban, suggestions = [],
   const openSuggestions = suggestions.filter(row => !['Implementada', 'Descartada'].includes(row.status)).length;
   const openIntimations = intimations.filter(row => row.status !== 'Resuelta').length;
   const observedTrips = trips.filter(row => ['Observado', 'Pendiente de validar'].includes(row.status)).length;
+  const openAtcl = atcls.filter(row => !isAtclClosed(row)).length;
+  const overdueAtcl = atcls.filter(row => isAtclOverdue(row)).length;
   const ideas = [
     `El foco principal es "${topLabel}", con ${topPercent}% del total visible. Si se estandariza ese grupo, baja el mayor cuello de botella.`,
     openLearning ? `Hay ${openLearning} eventos en espera: conviene resolverlos por lote y convertir los repetidos en procedimiento.` : 'No hay dudas abiertas relevantes: buen momento para revisar calidad de procedimientos.',
     overdueLearning ? `Hay ${overdueLearning} eventos atrasados según prioridad. Esos deberían revisarse primero para que no se acumulen dudas de turno a turno.` : `No hay eventos atrasados. Promedio de resolución actual: ${avgResolution} días.`,
     stuck ? `El Kanban tiene ${stuck} tarjetas en espera/supervisión. Revisá si dependen de la misma persona o sector.` : 'El Kanban no muestra acumulación en espera.',
     openSuggestions ? `Hay ${openSuggestions} sugerencias abiertas. Revisarlas por impacto permite capturar mejoras que nacen del trabajo real del sector.` : 'No hay sugerencias abiertas pendientes de revisión.',
+    openAtcl ? `Hay ${openAtcl} pedidos ATCL abiertos${overdueAtcl ? ` y ${overdueAtcl} vencidos por más de 24 horas` : ''}. Conviene validar responsable, recepción y evidencia de cierre.` : 'No hay pedidos ATCL abiertos.',
     openIntimations ? `Hay ${openIntimations} intimaciones E-911 abiertas. Conviene priorizar reincidentes y causas repetidas para bajar reclamos.` : 'No hay intimaciones E-911 abiertas.',
     observedTrips ? `Hay ${observedTrips} viajes SAFE observados o pendientes. Filtrarlos por empresa/unidad ayuda a detectar patrones.` : responses.length ? `Ya hay ${responses.length} respuestas frecuentes disponibles para copiar y estandarizar comunicaciones.` : 'Todavía no hay respuestas frecuentes cargadas.',
     risk ? `Hay ${risk} casos con riesgo de baja. Esa métrica pesa más que la cantidad bruta de eventos levantados.` : 'No aparecen riesgos de baja cargados en el historial actual.'
@@ -3950,7 +4277,7 @@ function countBy(rows, key) {
   return [...map.entries()].sort((a,b) => b[1] - a[1]).slice(0, 10);
 }
 
-function renderOperatorSummary(rows, learning, kanban, session, suggestions = [], trips = [], intimations = [], responses = []) {
+function renderOperatorSummary(rows, learning, kanban, session, suggestions = [], trips = [], intimations = [], responses = [], atcls = []) {
   if (!els.operatorSummary) return;
   if (!session.operator) {
     els.operatorSummary.innerHTML = '<p class="empty-state compact-empty">Iniciá sesión para ver tus métricas.</p>';
@@ -3963,9 +4290,10 @@ function renderOperatorSummary(rows, learning, kanban, session, suggestions = []
   const myTrips = trips.filter(r => r.operator === session.operator);
   const myIntimations = intimations.filter(r => r.operator === session.operator);
   const myResponses = responses.filter(r => r.operator === session.operator);
+  const myAtcls = atcls.filter(r => r.operator === session.operator);
   const resolved = mine.filter(r => r.outcome === 'Resuelto desde estación' || r.outcome === 'Servicio técnico evitado').length;
   const myResolvedTasks = myKanban.filter(r => ['resuelto', 'procedimiento'].includes(r.column)).length;
-  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div><div><b>${mySuggestions.length}</b><span>sugerencias de mejora</span></div><div><b>${myTrips.length}</b><span>viajes SAFE</span></div><div><b>${myIntimations.length}</b><span>intimaciones E-911</span></div><div><b>${myResponses.length}</b><span>respuestas creadas</span></div></div>`;
+  els.operatorSummary.innerHTML = `<div class="summary-grid"><div><b>${mine.length}</b><span>casos cargados</span></div><div><b>${resolved}</b><span>resueltos</span></div><div><b>${myLearning.length}</b><span>dudas/eventos en espera</span></div><div><b>${myResolvedTasks}/${myKanban.length}</b><span>tarjetas Kanban resueltas</span></div><div><b>${mySuggestions.length}</b><span>sugerencias de mejora</span></div><div><b>${myTrips.length}</b><span>viajes SAFE</span></div><div><b>${myIntimations.length}</b><span>intimaciones E-911</span></div><div><b>${myResponses.length}</b><span>respuestas creadas</span></div><div><b>${myAtcls.length}</b><span>pedidos ATCL</span></div></div>`;
 }
 
 function renderBars(el, entries, pareto) {
