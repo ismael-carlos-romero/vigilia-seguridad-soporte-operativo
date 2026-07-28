@@ -24,6 +24,7 @@ const state = {
     learning: [],
     kanban: [],
     resources: [],
+    media: [],
     suggestions: [],
     drivers: [],
     trips: [],
@@ -31,6 +32,7 @@ const state = {
     responses: [],
     atcls: [],
     resourcesLoaded: false,
+    mediaLoaded: false,
     suggestionsLoaded: false,
     driversLoaded: false,
     tripsLoaded: false,
@@ -40,6 +42,7 @@ const state = {
     unsubscribeLearning: null,
     unsubscribeKanban: null,
     unsubscribeResources: null,
+    unsubscribeMedia: null,
     unsubscribeSuggestions: null,
     unsubscribeDrivers: null,
     unsubscribeTrips: null,
@@ -263,6 +266,7 @@ function setupSession() {
         if (state.firebase.unsubscribeLearning) state.firebase.unsubscribeLearning();
         if (state.firebase.unsubscribeKanban) state.firebase.unsubscribeKanban();
         if (state.firebase.unsubscribeResources) state.firebase.unsubscribeResources();
+        if (state.firebase.unsubscribeMedia) state.firebase.unsubscribeMedia();
         if (state.firebase.unsubscribeSuggestions) state.firebase.unsubscribeSuggestions();
         if (state.firebase.unsubscribeDrivers) state.firebase.unsubscribeDrivers();
         if (state.firebase.unsubscribeTrips) state.firebase.unsubscribeTrips();
@@ -272,6 +276,7 @@ function setupSession() {
         state.firebase.learning = [];
         state.firebase.kanban = [];
         state.firebase.resources = [];
+        state.firebase.media = [];
         state.firebase.suggestions = [];
         state.firebase.drivers = [];
         state.firebase.trips = [];
@@ -279,6 +284,7 @@ function setupSession() {
         state.firebase.responses = [];
         state.firebase.atcls = [];
         state.firebase.resourcesLoaded = false;
+        state.firebase.mediaLoaded = false;
         state.firebase.suggestionsLoaded = false;
         state.firebase.driversLoaded = false;
         state.firebase.tripsLoaded = false;
@@ -313,6 +319,7 @@ function setupSession() {
       subscribeLearningCloud();
       subscribeKanbanCloud();
       subscribeResourcesCloud();
+      subscribeMediaCloud();
       subscribeSuggestionsCloud();
       subscribeDriversCloud();
       subscribeTripsCloud();
@@ -709,6 +716,7 @@ function setupFirebase() {
       subscribeLearningCloud();
       subscribeKanbanCloud();
       subscribeResourcesCloud();
+      subscribeMediaCloud();
       subscribeSuggestionsCloud();
       subscribeAtclCloud();
     }
@@ -3840,29 +3848,224 @@ async function copySafeNote() {
 
 function mediaPanel(scope, id) {
   const key = `${scope}:${id}`;
-  const media = getMedia()[key] || {};
-  const image = media.image || '';
-  const video = media.video || '';
-  return `<div class="media-panel step"><b>Imagen y video de respaldo</b><div class="media-grid"><div>${image ? `<img class="media-preview" src="${escapeHtml(image)}" alt="Imagen de respaldo">` : '<div class="media-placeholder">Sin imagen cargada</div>'}</div><div class="media-fields"><label class="field-label">URL de imagen<input id="mediaImage" value="${escapeHtml(image)}" placeholder="Pegar link de imagen o ruta pública"></label><label class="field-label">Link de video explicativo<input id="mediaVideo" value="${escapeHtml(video)}" placeholder="Pegar link de YouTube, Drive, etc."></label>${video ? `<a class="video-link" href="${escapeHtml(video)}" target="_blank" rel="noopener">Abrir video explicativo</a>` : ''}<button id="saveMedia" type="button">Guardar respaldo</button></div></div></div>`;
+  const media = getMedia()[key] || { items: [] };
+  const items = media.items || [];
+  const canEdit = currentLevel() >= 8;
+  const saved = items.length
+    ? `<div class="media-library">${items.map(renderMediaItem).join('')}</div>`
+    : '<div class="media-placeholder media-placeholder-wide">Sin material cargado</div>';
+  const form = canEdit
+    ? `<div class="media-fields">
+        <div class="field-row">
+          <label class="field-label">Tipo<select id="mediaKind"><option>Imagen</option><option>Video</option><option>Manual</option><option>Link</option></select></label>
+          <label class="field-label">Orden<input id="mediaOrder" type="number" min="1" step="1" placeholder="1"></label>
+        </div>
+        <label class="field-label">Archivo desde PC o celular<input id="mediaFile" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.mp4,.mov,.webm,application/pdf,image/*,video/*"></label>
+        <label class="field-label">O pegar enlace público<input id="mediaUrl" placeholder="YouTube, Drive, imagen pública o manual"></label>
+        <div class="field-row">
+          <label class="field-label">Manual / referencia<input id="mediaManual" placeholder="Ej: Manual Alonso"></label>
+          <label class="field-label">Página / indicador<input id="mediaPage" placeholder="Ej: p. 20-21 · LED Z1"></label>
+        </div>
+        <label class="field-label">Descripción<textarea id="mediaDescription" placeholder="Qué muestra esta imagen/video y cuándo usarlo"></textarea></label>
+        <button id="saveMedia" type="button">Guardar respaldo visual</button>
+        <p class="helper-copy">Los respaldos quedan asociados a esta consulta. Si subís archivo y Firebase Storage está habilitado, se podrá abrir desde cualquier PC.</p>
+      </div>`
+    : '<p class="helper-copy">Solo usuarios autorizados pueden agregar, reemplazar o eliminar material de respaldo.</p>';
+  return `<div class="media-panel step"><b>Respaldo visual y material asociado</b>${saved}${form}</div>`;
 }
 
 function wireMediaPanel(scope, id) {
   const button = document.getElementById('saveMedia');
-  if (!button) return;
-  button.addEventListener('click', () => {
-    const rows = getMedia();
-    rows[`${scope}:${id}`] = {
-      image: document.getElementById('mediaImage').value.trim(),
-      video: document.getElementById('mediaVideo').value.trim()
-    };
-    localStorage.setItem(MEDIA_KEY, JSON.stringify(rows));
-    if (scope === 'safe') renderSafeDetail(); else renderDetail();
+  if (button) button.addEventListener('click', () => saveMedia(scope, id));
+  document.querySelectorAll('[data-media-delete]').forEach(btn => {
+    btn.addEventListener('click', () => deleteMediaItem(scope, id, btn.dataset.mediaDelete));
   });
 }
 
 function getMedia() {
+  let local = {};
+  try { local = JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}'); }
+  catch { local = {}; }
+  const buckets = {};
+  Object.entries(local).forEach(([key, value]) => {
+    const items = normalizeMediaItems(value).map(item => ({ ...item, source: item.source || 'local' }));
+    if (items.length) buckets[key] = { items };
+  });
+  if (state.firebase.mediaLoaded) {
+    state.firebase.media.forEach(row => {
+      if (!row.key) return;
+      if (!buckets[row.key]) buckets[row.key] = { items: [] };
+      buckets[row.key].items.push({ ...row, source: 'cloud' });
+    });
+  }
+  Object.values(buckets).forEach(bucket => {
+    bucket.items.sort((a, b) => Number(a.order || 99) - Number(b.order || 99) || String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  });
+  return buckets;
+}
+
+function normalizeMediaItems(value) {
+  if (!value) return [];
+  if (Array.isArray(value.items)) return value.items;
+  const items = [];
+  if (value.image) items.push({ id: `local_img_${hashString(value.image)}`, kind: 'Imagen', url: value.image, description: 'Imagen de respaldo' });
+  if (value.video) items.push({ id: `local_vid_${hashString(value.video)}`, kind: 'Video', url: value.video, description: 'Video explicativo' });
+  return items;
+}
+
+function renderMediaItem(item) {
+  const url = item.fileUrl || item.url || item.fileDataUrl || '';
+  const isImage = isImageMedia(item);
+  const canEdit = currentLevel() >= 8;
+  const unavailable = !url;
+  const preview = isImage && url
+    ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><img class="media-thumb" src="${escapeHtml(url)}" alt="${escapeHtml(item.description || item.kind || 'Respaldo visual')}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'media-placeholder',textContent:'Material no disponible'}))"></a>`
+    : `<div class="media-placeholder">${unavailable ? 'Material no disponible' : escapeHtml(item.kind || 'Recurso')}</div>`;
+  const linkLabel = isImage ? 'Ver imagen completa' : item.kind === 'Manual' ? 'Abrir manual completo' : item.kind === 'Video' ? 'Abrir video explicativo' : 'Abrir recurso';
+  return `<article class="media-item">
+    ${preview}
+    <div>
+      <p class="eyebrow">${escapeHtml(item.kind || 'Recurso')}${item.manualPage ? ` · ${escapeHtml(item.manualPage)}` : ''}</p>
+      <h4>${escapeHtml(item.description || item.fileName || item.url || 'Respaldo sin descripción')}</h4>
+      ${item.manualName ? `<p><b>Manual:</b> ${escapeHtml(item.manualName)}</p>` : ''}
+      ${item.fileName ? `<p><b>Archivo:</b> ${escapeHtml(item.fileName)}${item.fileSizeLabel ? ` · ${escapeHtml(item.fileSizeLabel)}` : ''}</p>` : ''}
+      ${url ? `<a class="video-link" href="${escapeHtml(url)}" target="_blank" rel="noopener">${linkLabel}</a>` : '<span class="resource-mode metadata-only">Material no disponible</span>'}
+      <p class="media-audit">${escapeHtml(item.operator || 'Sin usuario')} · ${formatDate(item.createdAt || item.updatedAt || new Date().toISOString())}</p>
+      ${canEdit ? `<button type="button" data-media-delete="${escapeHtml(item.id || '')}">Eliminar respaldo</button>` : ''}
+    </div>
+  </article>`;
+}
+
+function isImageMedia(item) {
+  const type = (item.fileType || '').toLowerCase();
+  const url = String(item.fileUrl || item.url || item.fileDataUrl || '').toLowerCase();
+  return (item.kind || '').toLowerCase() === 'imagen' || type.startsWith('image/') || /\.(png|jpe?g|webp|gif)(\?|#|$)/i.test(url);
+}
+
+function mediaCollection() {
+  return state.firebase.db?.collection('respaldos_procedimientos');
+}
+
+function getMediaDocId(row) {
+  if (row.id) return row.id;
+  const base = [row.key, row.createdAt, row.url, row.fileName, row.description].join('|');
+  return `med_${hashString(base)}`;
+}
+
+function subscribeMediaCloud() {
+  if (!state.firebase.db) return;
+  if (state.firebase.unsubscribeMedia) state.firebase.unsubscribeMedia();
+  state.firebase.unsubscribeMedia = state.firebase.db.collection('respaldos_procedimientos')
+    .onSnapshot(snapshot => {
+      state.firebase.media = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      state.firebase.mediaLoaded = true;
+      if (state.selected) renderDetail();
+      if (state.selectedSafe) renderSafeDetail();
+      if (state.selectedProcedure) renderProcedureDetail();
+    }, error => {
+      console.error('No se pudieron leer respaldos visuales en Firestore', error);
+      state.firebase.mediaLoaded = false;
+    });
+}
+
+async function saveMedia(scope, id) {
+  const file = document.getElementById('mediaFile')?.files?.[0] || null;
+  const url = document.getElementById('mediaUrl')?.value.trim() || '';
+  if (!file && !url) {
+    alert('Subí un archivo o pegá un enlace para guardar el respaldo.');
+    return;
+  }
+  const session = getSession();
+  const key = `${scope}:${id}`;
+  const now = new Date().toISOString();
+  let record = {
+    key,
+    scope,
+    itemId: id,
+    kind: document.getElementById('mediaKind')?.value || inferResourceTypeFromFile(file),
+    url,
+    description: document.getElementById('mediaDescription')?.value.trim() || '',
+    manualName: document.getElementById('mediaManual')?.value.trim() || '',
+    manualPage: document.getElementById('mediaPage')?.value.trim() || '',
+    order: Number(document.getElementById('mediaOrder')?.value || 99),
+    createdAt: now,
+    updatedAt: now,
+    operator: session.operator || 'Sin operador',
+    operatorUid: session.uid || state.firebase.currentUser?.uid || '',
+    operatorEmail: session.email || state.firebase.currentUser?.email || ''
+  };
+  if (file) record = { ...record, ...(await buildProcedureMediaFilePayload(file, key)) };
+  const savedCloud = await saveMediaToCloud(record).catch(error => {
+    console.error('No se pudo guardar respaldo visual en Firestore', error);
+    return false;
+  });
+  if (!savedCloud) saveMediaLocal(record);
+  if (scope === 'safe') renderSafeDetail();
+  else if (scope === 'procedure') renderProcedureDetail();
+  else renderDetail();
+}
+
+async function buildProcedureMediaFilePayload(file, key) {
+  const base = {
+    fileName: file.name,
+    fileType: file.type || 'application/octet-stream',
+    fileSize: file.size,
+    fileSizeLabel: formatBytes(file.size)
+  };
+  if (state.firebase.storage && state.firebase.currentUser) {
+    try {
+      const path = `respaldos-procedimientos/${safeStorageName(key)}/${Date.now()}_${safeStorageName(file.name)}`;
+      const snapshot = await state.firebase.storage.ref().child(path).put(file);
+      const fileUrl = await snapshot.ref.getDownloadURL();
+      return { ...base, fileMode: 'firebase-storage', fileUrl, storagePath: path };
+    } catch (error) {
+      console.error('No se pudo subir respaldo visual a Storage', error);
+    }
+  }
+  if (file.size <= 2.5 * 1024 * 1024 && file.type.startsWith('image/')) {
+    return { ...base, fileMode: 'local-embedded', fileDataUrl: await readFileAsDataUrl(file) };
+  }
+  return { ...base, fileMode: 'metadata-only', fileWarning: 'Archivo registrado sin URL. Habilitá Firebase Storage o pegá un link público para abrirlo desde otra PC.' };
+}
+
+async function saveMediaToCloud(row) {
+  const collection = mediaCollection();
+  if (!collection) return false;
+  const payload = { ...row, updatedAt: new Date().toISOString() };
+  delete payload.fileDataUrl;
+  if (window.firebase?.firestore?.FieldValue) payload.savedAt = window.firebase.firestore.FieldValue.serverTimestamp();
+  await collection.doc(getMediaDocId(row)).set(payload, { merge: true });
+  return true;
+}
+
+function saveMediaLocal(row) {
+  const rows = getMediaLocalRaw();
+  const key = row.key;
+  const items = normalizeMediaItems(rows[key]);
+  items.push({ ...row, id: getMediaDocId(row), source: 'local' });
+  rows[key] = { items };
+  localStorage.setItem(MEDIA_KEY, JSON.stringify(rows));
+}
+
+function getMediaLocalRaw() {
   try { return JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}'); }
   catch { return {}; }
+}
+
+async function deleteMediaItem(scope, id, mediaId) {
+  if (!mediaId || !confirm('¿Eliminar este respaldo visual?')) return;
+  const key = `${scope}:${id}`;
+  const local = getMediaLocalRaw();
+  if (local[key]) {
+    local[key] = { items: normalizeMediaItems(local[key]).filter(item => item.id !== mediaId) };
+    localStorage.setItem(MEDIA_KEY, JSON.stringify(local));
+  }
+  if (mediaCollection()) {
+    await mediaCollection().doc(mediaId).delete().catch(error => console.error('No se pudo eliminar respaldo visual', error));
+  }
+  if (scope === 'safe') renderSafeDetail();
+  else if (scope === 'procedure') renderProcedureDetail();
+  else renderDetail();
 }
 
 function renderFailureGuide() {
@@ -4030,7 +4233,8 @@ function renderProcedureDetail() {
   const item = state.selectedProcedure;
   if (!item) return;
   const priorityClass = item.priority === 'Crítica' ? 'danger' : item.priority === 'Alta' ? 'warning' : '';
-  els.procedureDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">${escapeHtml(item.category)} · ${escapeHtml(item.code)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Chequeos del operador', procedureChecks(item.checks))}${procedureBlock('Acción recomendada', escapeHtml(item.action))}${procedureBlock('Oportunidad de automatización', escapeHtml(item.automation))}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota operativa sugerida</h2><textarea id="procedureNote">${escapeHtml(makeProcedureNote(item))}</textarea><div class="actions"><button class="primary" id="copyProcedureNote">Copiar nota</button><button id="procedurePending">Registrar duda operativa</button></div></div>`;
+  els.procedureDetail.innerHTML = `<div class="detail-title"><div><p class="eyebrow">${escapeHtml(item.category)} · ${escapeHtml(item.code)}</p><h2>${escapeHtml(item.event)}</h2><p>${escapeHtml(item.trigger)}</p></div><span class="decision ${priorityClass}">${escapeHtml(item.priority)}</span></div>${procedureBlock('Chequeos del operador', procedureChecks(item.checks))}${procedureBlock('Acción recomendada', escapeHtml(item.action))}${procedureBlock('Oportunidad de automatización', escapeHtml(item.automation))}${mediaPanel('procedure', item.id)}<div class="close-box"><p class="eyebrow">Registro</p><h2>Nota operativa sugerida</h2><textarea id="procedureNote">${escapeHtml(makeProcedureNote(item))}</textarea><div class="actions"><button class="primary" id="copyProcedureNote">Copiar nota</button><button id="procedurePending">Registrar duda operativa</button></div></div>`;
+  wireMediaPanel('procedure', item.id);
   document.getElementById('copyProcedureNote').addEventListener('click', copyProcedureNote);
   document.getElementById('procedurePending').addEventListener('click', () => {
     goToTab('learning');

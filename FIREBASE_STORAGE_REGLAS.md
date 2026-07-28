@@ -14,6 +14,11 @@ service firebase.storage {
       allow read: if request.auth != null;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
+
+    match /respaldos-procedimientos/{caseKey}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
   }
 }
 ```

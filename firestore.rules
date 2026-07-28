@@ -113,6 +113,13 @@ service cloud.firestore {
       allow delete: if supervisor();
     }
 
+    match /respaldos_procedimientos/{mediaId} {
+      allow read: if activeUser();
+      allow create: if activeUser() && request.resource.data.operatorUid == request.auth.uid;
+      allow update: if activeUser() && (resource.data.operatorUid == request.auth.uid || supervisor());
+      allow delete: if supervisor();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
