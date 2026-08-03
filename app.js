@@ -1534,11 +1534,32 @@ function resourceHref(row) {
   return row?.fileUrl || row?.fileDataUrl || row?.link || '';
 }
 
+function equipmentFromSearch() {
+  const query = normalize(els.searchInput?.value || '');
+  if (!query) return null;
+  if (/(kpd[ -]?800|kpd[ -]?860|pc[ -]?800|pc[ -]?860|a2k4|a2k8|alonso)/.test(query)) {
+    return {
+      panel: 'A2k4-A2k8 / Alonso',
+      keyboard: /kpd[ -]?800/.test(query) ? 'Alonso KPD-800' : /kpd[ -]?860/.test(query) ? 'Alonso KPD-860 / KPD-860RF' : 'No identificado'
+    };
+  }
+  if (/garnet/.test(query)) return { panel: 'Garnet', keyboard: 'No identificado' };
+  if (/networx|caddx|nx[ -]?[468]/.test(query)) return { panel: 'NetworX', keyboard: 'NetworX LED' };
+  if (/paradox|k636|k32/.test(query)) return { panel: 'Paradox', keyboard: /k636|k32/.test(query) ? 'Paradox K636 / K32' : 'No identificado' };
+  if (/dsc/.test(query)) return { panel: 'DSC', keyboard: 'DSC LED / LCD' };
+  return null;
+}
+
 function renderEquipmentCard() {
   if (!els.equipmentCard) return;
-  const panel = els.alarmPanel?.value || 'No identificado';
-  const keyboard = els.keyboardModel?.value || 'No identificado';
+  const detected = equipmentFromSearch();
+  const selectedPanel = els.alarmPanel?.value || 'No identificado';
+  const selectedKeyboard = els.keyboardModel?.value || 'No identificado';
+  const panel = selectedPanel !== 'No identificado' ? selectedPanel : detected?.panel || 'No identificado';
+  const keyboard = selectedKeyboard !== 'No identificado' ? selectedKeyboard : detected?.keyboard || 'No identificado';
   const identified = panel !== 'No identificado' || keyboard !== 'No identificado';
+  els.equipmentCard.classList.toggle('hidden', !identified);
+  if (!identified) return;
   const resources = getResourceRows().filter(row => {
     if (row.sector !== 'Objetivo Fijo 911') return false;
     const panelMatch = row.equipmentPanel === panel || row.equipmentPanel === 'No aplica';
@@ -1548,16 +1569,17 @@ function renderEquipmentCard() {
   }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
   const cover = resources.find(row => row.equipmentRole === 'Carátula / imagen descriptiva' || String(row.fileType || '').startsWith('image/'));
   const manual = resources.find(row => row.equipmentRole === 'Manual PDF del equipo' || row.type === 'Manual PDF' || String(row.fileType || '').includes('pdf'));
-  const coverHref = resourceHref(cover);
+  const builtInCover = panel === 'A2k4-A2k8 / Alonso' ? 'recursos/equipos/alonso-pc-800-860-portada.png' : '';
+  const coverHref = resourceHref(cover) || builtInCover;
   const manualHref = resourceHref(manual);
   els.equipmentTitle.textContent = identified ? `${panel} · ${keyboard}` : 'Modelo no identificado';
-  els.equipmentMatch.textContent = cover && manual ? 'Ficha completa' : resources.length ? 'Ficha parcial' : 'Sin ficha';
+  els.equipmentMatch.textContent = coverHref && manual ? 'Ficha completa' : coverHref || resources.length ? 'Referencia visual' : 'Sin ficha';
   els.equipmentCover.innerHTML = coverHref
     ? `<img src="${escapeHtml(coverHref)}" alt="Carátula descriptiva de ${escapeHtml(panel)} y ${escapeHtml(keyboard)}">`
     : '<span>Sin carátula cargada para esta combinación.</span>';
-  els.equipmentSummary.textContent = resources.length
-    ? `${cover ? 'Carátula disponible.' : 'Falta cargar la carátula.'} ${manual ? 'Manual PDF disponible como respaldo.' : 'Falta cargar el manual PDF.'}`
-    : 'Esta combinación todavía no tiene carátula ni manual asociados.';
+  els.equipmentSummary.textContent = coverHref
+    ? `Compará esta imagen con la descripción del cliente. Panel: ${panel}. Teclado: ${keyboard}. ${manual ? 'El manual PDF está disponible como respaldo.' : 'El manual PDF todavía no fue asociado.'}`
+    : 'Esta combinación todavía no tiene una imagen descriptiva asociada.';
   els.equipmentManual.href = manualHref || '#';
   els.equipmentManual.classList.toggle('disabled', !manualHref);
   els.equipmentManual.setAttribute('aria-disabled', manualHref ? 'false' : 'true');
@@ -4336,6 +4358,7 @@ function search() {
   const q = normalize(els.searchInput.value).trim();
   const system = els.systemFilter.value;
   const terms = q.split(/\s+/).filter(Boolean);
+  renderEquipmentCard();
   let results = data.cases.filter(item => system === 'Todos los sistemas' || item.system === system);
   const selectedPanel = els.alarmPanel?.value || 'No identificado';
   const panelTerms = {
