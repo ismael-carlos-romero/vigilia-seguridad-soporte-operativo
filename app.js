@@ -1550,9 +1550,20 @@ function equipmentFromSearch() {
   return null;
 }
 
+function equipmentFromSystemFilter() {
+  const system = normalize(els.systemFilter?.value || '');
+  if (!system || system === 'todos los sistemas') return null;
+  if (/a2k4|a2k8|alonso/.test(system)) return { panel: 'A2k4-A2k8 / Alonso', keyboard: 'No identificado' };
+  if (/garnet/.test(system)) return { panel: 'Garnet', keyboard: 'No identificado' };
+  if (/networx|caddx/.test(system)) return { panel: 'NetworX', keyboard: 'NetworX LED' };
+  if (/paradox/.test(system)) return { panel: 'Paradox', keyboard: 'No identificado' };
+  if (/dsc/.test(system)) return { panel: 'DSC', keyboard: 'DSC LED / LCD' };
+  return null;
+}
+
 function renderEquipmentCard() {
   if (!els.equipmentCard) return;
-  const detected = equipmentFromSearch();
+  const detected = equipmentFromSearch() || equipmentFromSystemFilter();
   const selectedPanel = els.alarmPanel?.value || 'No identificado';
   const selectedKeyboard = els.keyboardModel?.value || 'No identificado';
   const panel = selectedPanel !== 'No identificado' ? selectedPanel : detected?.panel || 'No identificado';
