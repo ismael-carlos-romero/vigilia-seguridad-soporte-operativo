@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soporte Operativo Interno de Vigilia Seguridad</title>
-  <link rel="stylesheet" href="styles.css?v=20260728-media-support">
+  <link rel="stylesheet" href="styles.css?v=20260803-equipment-library">
 </head>
 <body class="auth-gate">
 <section id="loginOverlay" class="login-overlay">
@@ -241,6 +241,12 @@
         <div id="failureGuideResult" class="guide-result">Primero confirmar panel en Bykom o preguntar marca/modelo al cliente.</div>
         <button id="useFailureGuide" type="button">Buscar esta falla</button>
       </div>
+      <div class="equipment-card" id="equipmentCard">
+        <div class="equipment-card-head"><div><p class="eyebrow">Ficha del equipo</p><h3 id="equipmentTitle">Modelo no identificado</h3></div><span id="equipmentMatch" class="pill">Sin ficha</span></div>
+        <div id="equipmentCover" class="equipment-cover"><span>La carátula del manual aparecerá acá al identificar panel y teclado.</span></div>
+        <p id="equipmentSummary" class="equipment-summary">Seleccioná la central y el teclado para ver la referencia visual y el manual correcto.</p>
+        <div class="equipment-actions"><a id="equipmentManual" class="button-link disabled" href="#" target="_blank" rel="noreferrer" aria-disabled="true">Abrir manual PDF</a><button id="loadEquipmentResource" type="button">Cargar carátula o manual</button></div>
+      </div>
       <div class="identifier"><h3>Si no sabe el modelo</h3><ul><li>Primero mirar Bykom: panel y teclado cargados.</li><li>Preguntar si el teclado tiene tecla FALLO, TBL, STAY, AWAY, BYP/EXC o una casita.</li><li>En Alonso: KPD-800 usa combinaciones como *1 o *8; KPD-860/KPD-860RF usa tecla de menú/casita.</li><li>Si hay duda, pedir foto del teclado por WhatsApp y registrar “Otro / confirmar foto”.</li></ul></div>
       <div class="pending-box"><p class="eyebrow">Mejora continua</p><h3>¿No aparece la consulta?</h3><p>Registrala como pendiente para validarla con manual y cargarla después.</p><button id="pendingButton" class="primary" type="button">Registrar pendiente</button></div>
     </aside>
@@ -322,6 +328,15 @@
       <input id="resourceTitle" placeholder="Ej: Usuario DMSS, manual A2K4, video falla comunicación">
       <label class="field-label" for="resourceSystem">App, sistema o referencia</label>
       <input id="resourceSystem" placeholder="Ej: DMSS, Hik-Connect, Bykom, Drive, WhatsApp">
+      <div id="resourceEquipmentFields" class="resource-equipment-fields">
+        <p class="eyebrow">Asociar a ficha de alarma</p>
+        <label class="field-label" for="resourcePanel">Central / panel</label>
+        <select id="resourcePanel"><option>No aplica</option><option>A2k4-A2k8 / Alonso</option><option>Garnet</option><option>DSC</option><option>Paradox</option><option>NetworX</option><option>Otro / validar con Bykom</option></select>
+        <label class="field-label" for="resourceKeyboard">Modelo de teclado</label>
+        <select id="resourceKeyboard"><option>No aplica</option><option>Alonso KPD-800</option><option>Alonso KPD-860 / KPD-860RF</option><option>Teclado LED clásico</option><option>Teclado LCD</option><option>Paradox K636 / K32</option><option>DSC LED / LCD</option><option>NetworX LED</option><option>Otro / confirmar foto</option></select>
+        <label class="field-label" for="resourceRole">Uso en la ficha</label>
+        <select id="resourceRole"><option>Detectar según archivo</option><option>Carátula / imagen descriptiva</option><option>Manual PDF del equipo</option><option>Material complementario</option></select>
+      </div>
       <label class="field-label" for="resourceUser">Usuario / cuenta / ubicación</label>
       <input id="resourceUser" placeholder="Ej: usuario app, mail, carpeta Drive o responsable">
       <label class="field-label" for="resourceSecret">Password / dato sensible</label>
@@ -743,7 +758,7 @@
     appId: "1:599270503946:web:ea6ef86946fe0286bb91f3"
   };
 </script>
-<script src="data.js?v=20260728-media-support"></script><script src="app.js?v=20260728-media-support"></script>
+<script src="data.js?v=20260803-equipment-library"></script><script src="app.js?v=20260803-equipment-library"></script>
 </body>
 </html>
 

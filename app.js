@@ -226,6 +226,7 @@ const els = {};
 
 document.addEventListener('DOMContentLoaded', () => {
   ['loginOverlay','loginForm','loginEmail','loginPassword','loginOperator','loginShift','loginSector','loginStation','loginStatus','sessionBadge','searchInput','systemFilter','results','resultCount','detailPanel','quickSearches','bycomChecked','panelStatus','keyboardModel','alarmPanel','failureCode','failureGuideResult','useFailureGuide','intakeOperator','intakeCaller','intakeAccount','intakeValidated','intakeQuery','intakeAutocomplete','intakeQuick','intakeResult','scriptOperatorName','safeSearch','safeCategory','safeQuick','safeList','safeDetail','safeCount','resourceType','resourceSector','resourceTitle','resourceSystem','resourceUser','resourceSecret','resourceLink','resourceFile','resourceDropzone','resourceFileStatus','resourceNotes','saveResource','resourceFilter','resourceCount','resourceList','driverCarrier','driverName','driverPhone','driverPlate','driverRoute','driverMailSource','driverRouteDate','driverStatus','driverNotes','saveDriver','driverSavedState','driverSearch','driverCarrierFilter','driverStatusFilter','driverCount','driverList','tripCompany','tripUnit','tripDriver','tripPhone','tripClient','tripAddress','tripMapsLink','tripDate','tripStatus','tripNotes','saveTrip','tripSavedState','tripSearch','tripCompanyFilter','tripStatusFilter','tripCount','tripList','intimationSubscriber','intimationCustomer','intimationReason','intimationCause','intimationMailSource','intimationDate','intimationStatus','intimationOwner','intimationNotes','saveIntimation','intimationSavedState','intimationSearch','intimationCauseFilter','intimationStatusFilter','intimationCount','intimationList','responseTitle','responseSector','responseChannel','responseTags','responseText','saveResponse','responseSavedState','responseSearch','responseSectorFilter','responseChannelFilter','responseCount','responseList','atclNumber','atclSubscriber','atclReason','atclDetail','atclArea','atclPriority','atclStatus','atclAssignee','atclEvidence','atclNotes','saveAtcl','atclSavedState','atclSearch','atclAreaFilter','atclStatusFilter','atclPriorityFilter','atclAlertFilter','atclCount','atclList','directiveTitle','directiveSource','directiveSector','directiveText','saveDirective','directiveCount','directiveList','supervisionOperatorFilter','supervisionStatusFilter','supervisionStats','supervisionInsights','supervisionPendingCount','supervisionPendingList','supervisionReviewCount','supervisionDoneCount','supervisionDoneList','learningType','learningCategory','learningEventType','learningPriority','learningOperator','learningSubscriber','learningFailure','learningQuestion','learningContext','learningStatus','learningSuggestion','learningEditState','cancelLearningEdit','learningSearch','learningFilterCategory','learningFilterEventType','learningFilterPriority','learningFilterStatus','learningAgeFilter','learningSort','saveLearning','exportLearning','importLearning','learningSavedState','learningCount','learningList','suggestionOperator','suggestionSector','suggestionType','suggestionImpact','suggestionTitle','suggestionDescription','suggestionBenefit','suggestionStatus','saveSuggestion','suggestionSavedState','suggestionFilterSector','suggestionFilterStatus','suggestionFilterImpact','suggestionCount','suggestionList','learningDialog','learningResolveForm','learningDialogTitle','learningDialogContext','resolutionStatus','resolutionCategory','resolutionCause','resolutionProcedure','resolutionBykom','resolutionRoute','resolutionKeywords','saveLearningResolution','copyLearningResolution','closeLearningDialog','learningResolveState','kanbanTitle','kanbanSubscriber','kanbanCategory','kanbanPriority','kanbanDescription','saveKanbanTask','kanbanSavedState','kanbanCount','kanbanStats','kanbanBoard','mTotal','mRemote','mRisk','mAvoided','mPending','mOverdue','mAvgResolution','paretoMode','paretoChart','metricInsights','operatorChart','shiftChart','learningChart','operatorSummary','satisfactionChart','caseRows','exportCsv','clearCases','savedDialog','closeDialog','pendingButton','procedureSearch','procedureCategory','procedureQuick','procedureList','procedureDetail','procedureCount','procedureAutocomplete'].forEach(id => els[id] = document.getElementById(id));
+  ['equipmentCard','equipmentTitle','equipmentMatch','equipmentCover','equipmentSummary','equipmentManual','loadEquipmentResource','resourceEquipmentFields','resourcePanel','resourceKeyboard','resourceRole'].forEach(id => els[id] = document.getElementById(id));
   setupFirebase();
   setupSession();
   setupTabs();
@@ -235,6 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupSafe();
   setupProcedures();
   bindEvents();
+  renderEquipmentCard();
   search();
   searchSafe();
   searchProcedures();
@@ -593,7 +595,9 @@ function setupProcedures() {
 function bindEvents() {
   els.searchInput.addEventListener('input', search);
   els.systemFilter.addEventListener('change', search);
-  els.alarmPanel.addEventListener('change', renderFailureGuide);
+  els.alarmPanel.addEventListener('change', () => { renderFailureGuide(); renderEquipmentCard(); search(); });
+  els.keyboardModel.addEventListener('change', () => { renderEquipmentCard(); search(); });
+  els.loadEquipmentResource?.addEventListener('click', prefillEquipmentResource);
   els.failureCode.addEventListener('input', renderFailureGuide);
   els.useFailureGuide.addEventListener('click', applyFailureGuideSearch);
   els.intakeOperator.addEventListener('input', updateIntakeScript);
@@ -1511,6 +1515,55 @@ function prefillResourceFromSector(info, action) {
   els.resourceNotes.focus();
 }
 
+function prefillEquipmentResource() {
+  const panel = els.alarmPanel?.value || 'No identificado';
+  const keyboard = els.keyboardModel?.value || 'No identificado';
+  goToTab('resources');
+  els.resourceType.value = 'Manual PDF';
+  els.resourceSector.value = 'Objetivo Fijo 911';
+  els.resourceTitle.value = `Ficha ${panel} - ${keyboard}`;
+  els.resourceSystem.value = panel === 'No identificado' ? keyboard : panel;
+  els.resourcePanel.value = panel === 'No identificado' ? 'No aplica' : panel;
+  els.resourceKeyboard.value = keyboard === 'No identificado' ? 'No aplica' : keyboard;
+  els.resourceRole.value = 'Detectar según archivo';
+  els.resourceNotes.value = 'Respaldo visual y documental para identificar el equipo antes de indicar un procedimiento.';
+  els.resourceDropzone?.focus();
+}
+
+function resourceHref(row) {
+  return row?.fileUrl || row?.fileDataUrl || row?.link || '';
+}
+
+function renderEquipmentCard() {
+  if (!els.equipmentCard) return;
+  const panel = els.alarmPanel?.value || 'No identificado';
+  const keyboard = els.keyboardModel?.value || 'No identificado';
+  const identified = panel !== 'No identificado' || keyboard !== 'No identificado';
+  const resources = getResourceRows().filter(row => {
+    if (row.sector !== 'Objetivo Fijo 911') return false;
+    const panelMatch = row.equipmentPanel === panel || row.equipmentPanel === 'No aplica';
+    const keyboardMatch = row.equipmentKeyboard === keyboard || row.equipmentKeyboard === 'No aplica';
+    const hasEquipmentTag = row.equipmentPanel && row.equipmentPanel !== 'No aplica' || row.equipmentKeyboard && row.equipmentKeyboard !== 'No aplica';
+    return hasEquipmentTag && panelMatch && keyboardMatch;
+  }).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  const cover = resources.find(row => row.equipmentRole === 'Carátula / imagen descriptiva' || String(row.fileType || '').startsWith('image/'));
+  const manual = resources.find(row => row.equipmentRole === 'Manual PDF del equipo' || row.type === 'Manual PDF' || String(row.fileType || '').includes('pdf'));
+  const coverHref = resourceHref(cover);
+  const manualHref = resourceHref(manual);
+  els.equipmentTitle.textContent = identified ? `${panel} · ${keyboard}` : 'Modelo no identificado';
+  els.equipmentMatch.textContent = cover && manual ? 'Ficha completa' : resources.length ? 'Ficha parcial' : 'Sin ficha';
+  els.equipmentCover.innerHTML = coverHref
+    ? `<img src="${escapeHtml(coverHref)}" alt="Carátula descriptiva de ${escapeHtml(panel)} y ${escapeHtml(keyboard)}">`
+    : '<span>Sin carátula cargada para esta combinación.</span>';
+  els.equipmentSummary.textContent = resources.length
+    ? `${cover ? 'Carátula disponible.' : 'Falta cargar la carátula.'} ${manual ? 'Manual PDF disponible como respaldo.' : 'Falta cargar el manual PDF.'}`
+    : 'Esta combinación todavía no tiene carátula ni manual asociados.';
+  els.equipmentManual.href = manualHref || '#';
+  els.equipmentManual.classList.toggle('disabled', !manualHref);
+  els.equipmentManual.setAttribute('aria-disabled', manualHref ? 'false' : 'true');
+  els.equipmentManual.onclick = manualHref ? null : event => event.preventDefault();
+}
+
 function resourceCollection() {
   return state.firebase.db?.collection('recursos_biblioteca');
 }
@@ -1545,10 +1598,12 @@ function subscribeResourcesCloud() {
       state.firebase.resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       state.firebase.resourcesLoaded = true;
       renderResources();
+      renderEquipmentCard();
     }, error => {
       console.error('No se pudieron leer recursos en Firestore', error);
       state.firebase.resourcesLoaded = false;
       renderResources();
+      renderEquipmentCard();
     });
 }
 
@@ -1584,6 +1639,10 @@ function handleResourceFiles(files) {
     els.resourceType.value = 'Manual PDF';
   }
   if (els.resourceTitle && !els.resourceTitle.value.trim()) els.resourceTitle.value = file.name.replace(/\.[^.]+$/, '');
+  if (els.resourceRole?.value === 'Detectar según archivo') {
+    if (file.type.startsWith('image/')) els.resourceRole.value = 'Carátula / imagen descriptiva';
+    if (file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf')) els.resourceRole.value = 'Manual PDF del equipo';
+  }
   renderResourceFileStatus();
 }
 
@@ -1678,6 +1737,9 @@ async function saveResource() {
       sector,
       title,
       system: els.resourceSystem.value.trim(),
+      equipmentPanel: els.resourcePanel?.value || 'No aplica',
+      equipmentKeyboard: els.resourceKeyboard?.value || 'No aplica',
+      equipmentRole: els.resourceRole?.value || 'Detectar según archivo',
       user: els.resourceUser.value.trim(),
       secret: els.resourceSecret.value,
       link: els.resourceLink.value.trim(),
@@ -1701,6 +1763,9 @@ async function saveResource() {
     }
     els.resourceTitle.value = '';
     els.resourceSystem.value = '';
+    if (els.resourcePanel) els.resourcePanel.value = 'No aplica';
+    if (els.resourceKeyboard) els.resourceKeyboard.value = 'No aplica';
+    if (els.resourceRole) els.resourceRole.value = 'Detectar según archivo';
     els.resourceUser.value = '';
     els.resourceSecret.value = '';
     els.resourceLink.value = '';
@@ -1709,6 +1774,7 @@ async function saveResource() {
     state.selectedResourceFile = null;
     renderResourceFileStatus('Recurso guardado en biblioteca.');
     renderResources();
+    renderEquipmentCard();
   } catch (error) {
     console.error('No se pudo preparar el recurso', error);
     renderResourceFileStatus('No se pudo preparar ese archivo. Probá con un link de Drive o un archivo más liviano.');
@@ -4271,6 +4337,17 @@ function search() {
   const system = els.systemFilter.value;
   const terms = q.split(/\s+/).filter(Boolean);
   let results = data.cases.filter(item => system === 'Todos los sistemas' || item.system === system);
+  const selectedPanel = els.alarmPanel?.value || 'No identificado';
+  const panelTerms = {
+    'A2k4-A2k8 / Alonso': ['a2k4', 'a2k8', 'alonso'],
+    'Garnet': ['garnet'],
+    'DSC': ['dsc'],
+    'Paradox': ['paradox'],
+    'NetworX': ['networx']
+  }[selectedPanel];
+  if (system === 'Todos los sistemas' && panelTerms) {
+    results = results.filter(item => panelTerms.some(term => normalize(`${item.system} ${item.searchText}`).includes(term)));
+  }
   if (terms.length) {
     results = results.map(item => {
       let score = 0;
