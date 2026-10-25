@@ -506,6 +506,7 @@ function ensureVisibleView(preferredId = 'intake', options = {}) {
 }
 
 function renderActiveView(tabId) {
+  if (tabId === 'novedades') safeRender(tabId, renderNovedades);
   if (tabId === 'kanban') safeRender(tabId, renderKanban);
   if (tabId === 'resources') safeRender(tabId, renderResources);
   if (tabId === 'drivers') safeRender(tabId, renderDrivers);
@@ -1607,6 +1608,10 @@ function getResourceDocId(row) {
 }
 
 function getResourceRows() {
+  return getAllResourceRows().filter(row => row.recordKind !== 'novedad');
+}
+
+function getAllResourceRows() {
   const localRows = getStoredRows(RESOURCES_KEY);
   if (!state.firebase.resourcesLoaded) return localRows;
   const rowsById = new Map(localRows.map(row => [getResourceDocId(row), row]));
@@ -1631,11 +1636,13 @@ function subscribeResourcesCloud() {
       state.firebase.resources = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       state.firebase.resourcesLoaded = true;
       renderResources();
+      renderNovedades();
       renderEquipmentCard();
     }, error => {
       console.error('No se pudieron leer recursos en Firestore', error);
       state.firebase.resourcesLoaded = false;
       renderResources();
+      renderNovedades();
       renderEquipmentCard();
     });
 }

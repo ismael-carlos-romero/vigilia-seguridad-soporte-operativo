@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soporte Operativo Interno de Vigilia Seguridad</title>
-  <link rel="stylesheet" href="styles.css?v=20260803-large-equipment-visual-2">
+  <link rel="stylesheet" href="styles.css?v=20261025-novedades-1">
 </head>
 <body class="auth-gate">
 <section id="loginOverlay" class="login-overlay">
@@ -32,9 +32,37 @@
 <header class="topbar">
   <div><p class="eyebrow">Central de Monitoreo</p><h1>Soporte Operativo Interno de Vigilia Seguridad</h1></div>
   <div id="sessionBadge" class="session-badge">Sin sesión</div>
-  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="atcl">Pedidos ATCL</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="trips">Viajes SAFE</button><button class="tab" data-tab="intimations">Intimaciones E-911</button><button class="tab" data-tab="responses">Respuestas</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
+  <nav class="tabs"><button class="tab" data-tab="manual">Manual</button><button class="tab active" data-tab="intake">Ingreso</button><button class="tab" data-tab="call">Objetivo Fijo (911)</button><button class="tab" data-tab="safe">Objetivos Móviles (SAFE)</button><button class="tab" data-tab="procedures">Procedimientos</button><button class="tab" data-tab="atcl">Pedidos ATCL</button><button class="tab" data-tab="novedades">Novedades</button><button class="tab" data-tab="resources">Recursos</button><button class="tab" data-tab="drivers">Choferes</button><button class="tab" data-tab="trips">Viajes SAFE</button><button class="tab" data-tab="intimations">Intimaciones E-911</button><button class="tab" data-tab="responses">Respuestas</button><button class="tab" data-tab="supervision">Supervisión</button><button class="tab" data-tab="learning">Aprendizajes</button><button class="tab" data-tab="suggestions">Sugerencias</button><button class="tab" data-tab="kanban">Kanban</button><button class="tab" data-tab="metrics">Métricas</button><button class="tab" data-tab="cases">Casos</button></nav>
 </header>
 <main>
+<section id="novedades" class="view">
+  <div class="inbox-heading"><div><p class="eyebrow">Bandeja de entrada del conocimiento</p><h2>Novedades y material pendiente</h2><p>Cargá primero, clasificá después. Conservá el texto original, su fuente y el seguimiento.</p></div><a href="https://docs.google.com/spreadsheets/d/10cYfg__d5DolzqmAzmjoJS_nxp__SftzDSu0huHoyp0/edit#gid=936873826" target="_blank" rel="noopener">Abrir planilla de origen ↗</a></div>
+  <p class="inbox-notice">Material pendiente de revisión. Esta bandeja no modifica los procedimientos vigentes.</p>
+  <div class="inbox-layout">
+    <form id="inboxForm" class="inbox-card">
+      <h3 id="inboxFormHeading">Cargar novedad</h3>
+      <label class="field-label" for="inboxTitle">Título *</label><input id="inboxTitle" required maxlength="180" placeholder="Ej: Nueva directiva recibida por WhatsApp">
+      <label class="field-label" for="inboxText">Contenido original</label><textarea id="inboxText" rows="7" maxlength="60000" placeholder="Pegá el mensaje, una fila de la planilla o tus notas, sin tener que ordenarlo todavía."></textarea>
+      <label class="field-label" for="inboxLink">Enlace al material</label><input id="inboxLink" type="url" placeholder="https://…">
+      <p class="helper-copy">Completá contenido o enlace. Podés referenciar una planilla, un documento, una imagen o un video en Drive.</p>
+      <label class="field-label" for="inboxSource">Fuente / quién lo envió</label><input id="inboxSource" maxlength="300" placeholder="Ej: Kike · WhatsApp · 25/10/26">
+      <div class="inbox-fields"><div><label class="field-label" for="inboxSector">Sector sugerido</label><select id="inboxSector"><option>Sin clasificar</option><option>Monitoreo 911</option><option>SAFE</option><option>Servicio técnico</option><option>Supervisión</option><option>Administración</option><option>Todos los sectores</option></select></div><div><label class="field-label" for="inboxStatus">Estado</label><select id="inboxStatus"><option>Pendiente de clasificar</option><option>En revisión</option><option>Listo para integrar</option><option>Integrado</option><option>Archivado</option></select></div></div>
+      <label class="field-label" for="inboxDestination">Destino / sección prevista</label><select id="inboxDestination"><option>Por definir</option><option>Procedimientos</option><option>Supervisión</option><option>Recursos</option><option>Objetivo Fijo (911)</option><option>Objetivos Móviles (SAFE)</option><option>Respuestas</option><option>Aprendizajes</option><option>Otro</option></select>
+      <label class="field-label" for="inboxNotes">Notas de revisión / dónde se integró</label><textarea id="inboxNotes" rows="3" maxlength="10000" placeholder="Comentarios para clasificar después. Si ya se integró, indicá dónde."></textarea>
+      <div class="actions"><button id="inboxSave" class="primary" type="submit">Guardar novedad</button><button id="inboxCancel" type="button">Limpiar formulario</button></div>
+      <p id="inboxSaveState" role="status" class="save-state">Las novedades se guardan en la base central del portal.</p>
+    </form>
+    <div class="inbox-card inbox-register">
+      <div class="panel-head"><h3>Registro de novedades</h3><span id="inboxCount" class="pill">0 registros</span></div>
+      <div id="inboxStats" class="inbox-stats"></div>
+      <label class="field-label" for="inboxSearch">Buscar en título, texto, fuente y notas</label><input id="inboxSearch" type="search" placeholder="Buscar material…">
+      <div class="inbox-fields"><div><label class="field-label" for="inboxFilter">Filtrar por estado</label><select id="inboxFilter"><option>Todos los estados</option><option>Pendiente de clasificar</option><option>En revisión</option><option>Listo para integrar</option><option>Integrado</option><option>Archivado</option></select></div><div><label class="field-label" for="inboxSectorFilter">Filtrar por sector</label><select id="inboxSectorFilter"><option>Todos los sectores</option><option>Sin clasificar</option><option>Monitoreo 911</option><option>SAFE</option><option>Servicio técnico</option><option>Supervisión</option><option>Administración</option></select></div></div>
+      <p id="inboxConnection" role="status" class="helper-copy"></p>
+      <div class="inbox-table-wrap"><table class="inbox-table"><thead><tr><th>Fecha / carga</th><th>Novedad / fuente</th><th>Sector</th><th>Estado / destino</th><th>Acción</th></tr></thead><tbody id="inboxRows"></tbody></table></div>
+      <button id="inboxExport" type="button">Exportar vista a CSV</button>
+    </div>
+  </div>
+</section>
 <section id="manual" class="view">
   <section class="manual-hero">
     <p class="eyebrow">Manual de uso</p>
@@ -90,6 +118,7 @@
         <li><b>Objetivos Móviles (SAFE):</b> guía para unidades, camiones, GPS, sin reporte y seguimiento vehicular.</li>
         <li><b>Procedimientos:</b> base operativa para eventos recibidos en Bykom.</li>
         <li><b>Pedidos ATCL:</b> seguimiento trazable de pedidos de clientes con responsable, estado, evidencia y alertas.</li>
+        <li><b>Novedades:</b> carga temporal de mensajes, enlaces y material nuevo, con estados y clasificación posterior.</li>
         <li><b>Supervisión:</b> directivas internas cargadas por responsables.</li>
         <li><b>Aprendizajes:</b> eventos en espera, dudas y casos que deben validarse.</li>
         <li><b>Sugerencias:</b> espacio para que cada usuario proponga mejoras del sistema, procesos, comunicación o capacitación.</li>
@@ -759,7 +788,9 @@
     appId: "1:599270503946:web:ea6ef86946fe0286bb91f3"
   };
 </script>
-<script src="data.js?v=20260803-large-equipment-visual-2"></script><script src="app.js?v=20260803-large-equipment-visual-2"></script>
+<script src="data.js?v=20260803-large-equipment-visual-2"></script><script src="app.js?v=20261025-novedades-1"></script>
+<script src="novedades.js?v=20261025-novedades-1"></script>
 </body>
 </html>
+
 

@@ -1,0 +1,26 @@
+const { readFileSync } = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const context = vm.createContext({ URL, document: { addEventListener() {} } });
+vm.runInContext(readFileSync(__dirname + '/novedades.js', 'utf8'), context);
+const evaluate = code => vm.runInContext(code, context);
+evaluate(`var session = { uid: 'test', operator: 'Operador', active: true };
+var fields = {title:' Nueva directiva ',notes:'Texto original',link:'',source:'Kike',sector:'Sin clasificar',status:'Pendiente de clasificar',destination:'Por definir',reviewNotes:''};`);
+assert.equal(evaluate("inboxPayload(null, fields, session, '2026-10-25T20:00:00Z', 'new').recordKind"), 'novedad');
+assert.equal(evaluate("inboxPayload(null, fields, session, '2026-10-25T20:00:00Z', 'new').title"), 'Nueva directiva');
+assert.throws(() => evaluate("inboxPayload(null, {...fields,notes:'',link:''},session,'now','new')"), /contenido o enlace/);
+assert.throws(() => evaluate("inboxPayload(null, {...fields,link:'javascript:alert(1)'},session,'now','new')"), /https/);
+assert.equal(evaluate("inboxUrl('data:text/html,test')"), '');
+assert.throws(() => evaluate("inboxPayload(null, {...fields,status:'Integrado'},session,'now','new')"), /sección de destino/);
+assert.equal(evaluate("inboxPayload({date:'old',operator:'Autor',operatorUid:'author'}, {...fields,status:'Integrado',destination:'Recursos',reviewNotes:'Ficha 42'},session,'now','same').operatorUid"), 'author');
+assert.equal(evaluate("inboxPayload({date:'old',operator:'Autor',operatorUid:'author'},fields,session,'now','same').date"), 'old');
+assert.match(evaluate("inboxCsv([{title:'=HYPERLINK(1)'}])"), /'=HYPERLINK/);
+// Auth isolation and separation from the approved resource library.
+evaluate(`var state = {firebase: {currentUser:null,resourcesLoaded:true,resources:[{id:'a',recordKind:'novedad',date:'now'}]}}; function getSession(){ return session; }`);
+assert.equal(evaluate('inboxRows().length'), 0);
+evaluate('state.firebase.currentUser = {uid:"test"}');
+assert.equal(evaluate('inboxRows().length'), 1);
+const app = readFileSync(__dirname + '/app.js', 'utf8');
+assert.match(app, /return getAllResourceRows\(\)\.filter\(row => row\.recordKind !== 'novedad'\)/);
+assert.match(readFileSync(__dirname + '/novedades.js', 'utf8'), /snapshot\.data\(\)\.updatedAt !== original\.updatedAt/);
+console.log('Novedades: validation, URL safety, CSV, author preservation, auth isolation and library separation passed.');
