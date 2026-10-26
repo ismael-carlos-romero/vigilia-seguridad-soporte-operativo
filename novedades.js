@@ -1,6 +1,6 @@
 // Novedades share the existing authenticated resource store, isolated by recordKind.
 // They are never returned by getResourceRows(), nor used as approved procedures.
-const inboxState = { editing: null, saving: false };
+const inboxState = { editing: null, saving: false, view: 'sheet' };
 const inboxStatuses = ['Pendiente de clasificar', 'En revisión', 'Listo para integrar', 'Integrado', 'Archivado'];
 const inboxEl = id => document.getElementById(id);
 
@@ -41,16 +41,20 @@ function renderNovedades() {
   inboxEl('inboxCount').textContent = `${rows.length} de ${all.length} registros`;
   inboxEl('inboxStats').innerHTML = inboxStatuses.slice(0, 4).map(status =>
     `<div><b>${all.filter(row => row.status === status).length}</b><span>${escapeHtml(status)}</span></div>`).join('');
+  const sheet = inboxState.view === 'sheet';
+  inboxEl('inboxTableHead').innerHTML = '<tr>' + (sheet ? ['Título','Contenido','Sector','Estado / destino','Fuente','Notas','Fecha / carga','Acción'] : ['Fecha / carga','Novedad / fuente','Sector','Estado / destino','Acción']).map(label => '<th scope="col">' + label + '</th>').join('') + '</tr>';
   inboxEl('inboxRows').innerHTML = rows.length ? rows.map(row => {
     const href = inboxUrl(row.link);
     const date = new Date(row.date);
+    if (sheet) return inboxSheetRow(row, date);
     return `<tr><td>${Number.isNaN(date.getTime()) ? 'Sin fecha' : date.toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}<small>${escapeHtml(row.operator || '')}</small></td>
       <td><strong>${escapeHtml(row.title)}</strong><small>${escapeHtml(row.source || 'Sin fuente indicada')}</small><details><summary>Ver contenido</summary><p class="inbox-original">${escapeHtml(row.notes || 'Material referenciado por enlace.')}</p>${row.reviewNotes ? `<p class="inbox-original"><b>Revisión:</b> ${escapeHtml(row.reviewNotes)}</p>` : ''}${href ? `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Abrir material ↗</a>` : ''}</details></td>
       <td>${escapeHtml(row.sector)}</td><td><span class="pill">${escapeHtml(row.status)}</span><small>${escapeHtml(row.destination || 'Por definir')}</small></td>
       <td><button type="button" data-inbox-edit="${escapeHtml(row.id)}">Revisar / editar</button></td></tr>`;
-  }).join('') : `<tr><td colspan="5">${all.length ? 'No hay novedades con estos filtros.' : connected ? 'Todavía no hay novedades. Cargá el primer material desde el formulario.' : 'Conectando con la base central…'}</td></tr>`;
+  }).join('') : `<tr><td colspan="${sheet ? 8 : 5}">${all.length ? 'No hay novedades con estos filtros.' : connected ? 'Todavía no hay novedades. Cargá el primer material desde el formulario.' : 'Conectando con la base central…'}</td></tr>`;
   inboxEl('inboxRows').querySelectorAll('[data-inbox-edit]').forEach(button =>
     button.addEventListener('click', () => editInboxRow(button.dataset.inboxEdit)));
+  inboxEl('inboxRows').querySelectorAll('[data-inbox-detail]').forEach(button => button.addEventListener('click', () => inboxOpenDetail(button.dataset.inboxDetail)));
 }
 
 function resetInboxForm() {
@@ -71,7 +75,10 @@ function editInboxRow(id) {
   inboxEl('inboxSave').textContent = 'Guardar cambios';
   inboxEl('inboxCancel').textContent = 'Cancelar edición';
   inboxEl('inboxSaveState').textContent = 'Editar el estado no publica el contenido en otra sección.';
-  inboxEl('inboxTitle').focus();
+  inboxEl('novedades').classList.remove('inbox-expanded');
+  if (inboxEl('inboxExpand')) { inboxEl('inboxExpand').textContent = 'Ampliar tabla'; inboxEl('inboxExpand').setAttribute('aria-expanded','false'); }
+  inboxEl('inboxForm').scrollIntoView({block:'start',behavior:'smooth'});
+  inboxEl('inboxTitle').focus({preventScroll:true});
 }
 
 function inboxPayload(original, fields, session, now, id) {
@@ -175,10 +182,10 @@ function inboxQueryMatches(row, query) {
 document.addEventListener('DOMContentLoaded', () => {
   const form = inboxEl('inboxForm');
   if (!form) return;
-  const panel = document.createElement('section');
-  panel.className = 'card';
-  panel.innerHTML = '<h3>Importar bitácora clasificada</h3><p>Importá un archivo JSON clasificado. Conserva el texto original, sector, palabras clave y fuente. Se guarda en la base autenticada como material en revisión.</p><label for="inboxImportFile">Archivo clasificado (.json)</label><input id="inboxImportFile" type="file" accept=".json,application/json"><p id="inboxImportPreview" role="status"></p><button id="inboxImportCommit" type="button" disabled>Guardar registros en la base central</button><p id="inboxImportProgress" role="status"></p>';
-  form.parentNode.insertBefore(panel, form);
+  const panel = document.createElement('details');
+  panel.className = 'inbox-card inbox-import';
+  panel.innerHTML = '<summary>Importar bitácora clasificada</summary><p>Importá un archivo JSON clasificado. Conserva el texto original, sector, palabras clave y fuente. Se guarda en la base autenticada como material en revisión.</p><label for="inboxImportFile">Archivo clasificado (.json)</label><input id="inboxImportFile" type="file" accept=".json,application/json"><p id="inboxImportPreview" role="status"></p><button id="inboxImportCommit" type="button" disabled>Guardar registros en la base central</button><p id="inboxImportProgress" role="status"></p>';
+  inboxEl('inboxSidebar').appendChild(panel);
   const fileInput = inboxEl('inboxImportFile'), commit = inboxEl('inboxImportCommit');
   let pending = [];
   let busy = false;
@@ -248,4 +255,34 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   inboxEl('inboxSearch').placeholder='🔎 Ej.: seguimiento, temperatura, patente o plataforma';
   inboxEl('inboxSearch').setAttribute('aria-description','Busca todas las palabras indicadas, separadas por espacios o comas, sin distinguir acentos.');
+});
+
+
+function inboxSheetRow(row, date) {
+  const cell = text => '<div class="inbox-cell-preview">' + escapeHtml(text || '—') + '</div>';
+  return '<tr><td><strong>' + cell(row.title) + '</strong></td><td>' + cell(row.notes) + '</td><td>' + escapeHtml(row.sector) + '</td><td><span class="pill">' + escapeHtml(row.status) + '</span><small>' + escapeHtml(row.destination || 'Por definir') + '</small></td><td>' + cell(row.source) + '</td><td>' + cell(row.reviewNotes) + '</td><td>' + (Number.isNaN(date.getTime()) ? 'Sin fecha' : date.toLocaleDateString('es-AR',{timeZone:'America/Argentina/Buenos_Aires'})) + '<small>' + escapeHtml(row.operator || '') + '</small></td><td><button type="button" data-inbox-detail="' + escapeHtml(row.id) + '">Ver ficha</button><button type="button" data-inbox-edit="' + escapeHtml(row.id) + '">Editar</button></td></tr>';
+}
+function inboxOpenDetail(id) {
+  const row = inboxRows().find(item => item.id === id);
+  if (!row) return;
+  const href = inboxUrl(row.link);
+  inboxEl('inboxDetailBody').innerHTML = '<h2>' + escapeHtml(row.title) + '</h2><p>' + escapeHtml(row.sector) + ' · ' + escapeHtml(row.status) + '</p><h3>Contenido original</h3><p class="inbox-detail-text">' + escapeHtml(row.notes || 'Sin contenido de texto.') + '</p><h3>Fuente</h3><p>' + escapeHtml(row.source || 'Sin fuente indicada') + '</p><h3>Notas de revisión</h3><p class="inbox-detail-text">' + escapeHtml(row.reviewNotes || 'Sin notas') + '</p>' + (href ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener noreferrer">Abrir material ↗</a>' : '');
+  inboxEl('inboxDetail').showModal();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const setView = view => {
+    inboxState.view = view;
+    inboxEl('inboxSheetView').setAttribute('aria-pressed', String(view === 'sheet'));
+    inboxEl('inboxSummaryView').setAttribute('aria-pressed', String(view === 'summary'));
+    inboxEl('novedades').classList.toggle('inbox-sheet', view === 'sheet');
+    renderNovedades();
+  };
+  inboxEl('inboxSheetView').addEventListener('click', () => setView('sheet'));
+  inboxEl('inboxSummaryView').addEventListener('click', () => setView('summary'));
+  inboxEl('inboxExpand').addEventListener('click', () => {
+    const expanded = inboxEl('novedades').classList.toggle('inbox-expanded');
+    inboxEl('inboxExpand').textContent = expanded ? 'Mostrar formulario' : 'Ampliar tabla';
+    inboxEl('inboxExpand').setAttribute('aria-expanded', String(expanded));
+  });
+  setView('sheet');
 });
