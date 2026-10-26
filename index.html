@@ -39,7 +39,7 @@
   <div class="inbox-heading"><div><p class="eyebrow">Bandeja de entrada del conocimiento</p><h2>Novedades y material pendiente</h2><p>Cargá primero, clasificá después. Conservá el texto original, su fuente y el seguimiento.</p></div><a href="https://docs.google.com/spreadsheets/d/10cYfg__d5DolzqmAzmjoJS_nxp__SftzDSu0huHoyp0/edit#gid=936873826" target="_blank" rel="noopener">Abrir planilla de origen ↗</a></div>
   <p class="inbox-notice">Material pendiente de revisión. Esta bandeja no modifica los procedimientos vigentes.</p>
   <div class="inbox-layout">
-    <form id="inboxForm" class="inbox-card">
+    <aside id="inboxSidebar" class="inbox-sidebar"><form id="inboxForm" class="inbox-card">
       <h3 id="inboxFormHeading">Cargar novedad</h3>
       <label class="field-label" for="inboxTitle">Título *</label><input id="inboxTitle" required maxlength="180" placeholder="Ej: Nueva directiva recibida por WhatsApp">
       <label class="field-label" for="inboxText">Contenido original</label><textarea id="inboxText" rows="7" maxlength="60000" placeholder="Pegá el mensaje, una fila de la planilla o tus notas, sin tener que ordenarlo todavía."></textarea>
@@ -51,15 +51,15 @@
       <label class="field-label" for="inboxNotes">Notas de revisión / dónde se integró</label><textarea id="inboxNotes" rows="3" maxlength="10000" placeholder="Comentarios para clasificar después. Si ya se integró, indicá dónde."></textarea>
       <div class="actions"><button id="inboxSave" class="primary" type="submit">Guardar novedad</button><button id="inboxCancel" type="button">Limpiar formulario</button></div>
       <p id="inboxSaveState" role="status" class="save-state">Las novedades se guardan en la base central del portal.</p>
-    </form>
+    </form></aside>
     <div class="inbox-card inbox-register">
-      <div class="panel-head"><h3>Registro de novedades</h3><span id="inboxCount" class="pill">0 registros</span></div>
+      <div class="panel-head"><h3>Registro de novedades</h3><span id="inboxCount" class="pill">0 registros</span></div><div class="inbox-view-tools"><div role="group" aria-label="Vista de novedades"><button id="inboxSheetView" type="button" aria-pressed="true">Vista planilla</button><button id="inboxSummaryView" type="button" aria-pressed="false">Vista resumida</button></div><button id="inboxExpand" type="button" aria-expanded="false">Ampliar tabla</button></div>
       <div id="inboxStats" class="inbox-stats"></div>
       <label class="field-label" for="inboxSearch">Buscar en título, texto, fuente y notas</label><input id="inboxSearch" type="search" placeholder="Buscar material…">
       <div class="inbox-fields"><div><label class="field-label" for="inboxFilter">Filtrar por estado</label><select id="inboxFilter"><option>Todos los estados</option><option>Pendiente de clasificar</option><option>En revisión</option><option>Listo para integrar</option><option>Integrado</option><option>Archivado</option></select></div><div><label class="field-label" for="inboxSectorFilter">Filtrar por sector</label><select id="inboxSectorFilter"><option>Todos los sectores</option><option>Sin clasificar</option><option>Monitoreo 911</option><option>SAFE</option><option>Servicio técnico</option><option>Supervisión</option><option>Administración</option></select></div></div>
       <p id="inboxConnection" role="status" class="helper-copy"></p>
-      <div class="inbox-table-wrap"><table class="inbox-table"><thead><tr><th>Fecha / carga</th><th>Novedad / fuente</th><th>Sector</th><th>Estado / destino</th><th>Acción</th></tr></thead><tbody id="inboxRows"></tbody></table></div>
-      <button id="inboxExport" type="button">Exportar vista a CSV</button>
+      <div class="inbox-table-wrap" tabindex="0" role="region" aria-label="Planilla de novedades; desplazamiento horizontal y vertical"><table class="inbox-table"><thead id="inboxTableHead"><tr><th scope="col">Título</th><th scope="col">Contenido</th><th scope="col">Sector</th><th scope="col">Estado / destino</th><th scope="col">Fuente</th><th scope="col">Notas</th><th scope="col">Fecha / carga</th><th scope="col">Acción</th></tr></thead><tbody id="inboxRows"></tbody></table></div>
+      <button id="inboxExport" type="button">Exportar vista a CSV</button><dialog id="inboxDetail" class="inbox-detail"><form method="dialog"><button aria-label="Cerrar ficha">Cerrar ✕</button></form><div id="inboxDetailBody"></div></dialog>
     </div>
   </div>
 </section>
