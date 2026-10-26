@@ -77,6 +77,7 @@ function editInboxRow(id) {
   inboxEl('inboxSaveState').textContent = 'Editar el estado no publica el contenido en otra sección.';
   inboxEl('novedades').classList.remove('inbox-expanded');
   if (inboxEl('inboxExpand')) { inboxEl('inboxExpand').textContent = 'Ampliar tabla'; inboxEl('inboxExpand').setAttribute('aria-expanded','false'); }
+  if (inboxEl('inboxManual')) inboxEl('inboxManual').open = true;
   inboxEl('inboxForm').scrollIntoView({block:'start',behavior:'smooth'});
   inboxEl('inboxTitle').focus({preventScroll:true});
 }
@@ -285,4 +286,126 @@ document.addEventListener('DOMContentLoaded', () => {
     inboxEl('inboxExpand').setAttribute('aria-expanded', String(expanded));
   });
   setView('sheet');
+});
+
+const inboxQuickState = { saving: false };
+function inboxClassifyMessage(text, source = '') {
+  const original = text.replace(/\r\n?/g, '\n').trim();
+  if (!original || !/[\p{L}\p{N}]/u.test(original)) throw new Error('Pegá un mensaje con contenido.');
+  if (original.length > 60000) throw new Error('El mensaje supera 60.000 caracteres. Dividilo en novedades más pequeñas.');
+  const n = normalize(original);
+  const safe = /\bsafe\b|\b(?:c0a|c0c|apv|acv|aps|acs|opd|opc)\b|cabina|carga verificable|\bchofer(?:es)?\b|\bpatente(?:s)?\b|desenganche|\bvehiculo(?:s)?\b|\bcamion(?:es)?\b|\bgps\b|\bavl\b|temperatur|seguimiento vehicular|objetivos? moviles?/.test(n);
+  const fixed = /\b(?:e-?911|911)\b|objetivos? fijos?|\bdomicili|\btamper\b|\bpanel\b|bateria.*sensor|\balarmas? fijas?\b|\bsensores? de alarma\b/.test(n);
+  // A comparison with fixed-alarm codes does not make a vehicle instruction cross-sector.
+  const fixedComparison = /(?:reservad[oa]s?|son|para).*alarmas fijas/.test(n) && /cabina|\bc0a\b|\bc0c\b/.test(n);
+  const both = safe && fixed && !fixedComparison;
+  let sector = both ? 'Todos los sectores' : safe ? 'SAFE' : fixed ? 'Monitoreo 911' : 'Sin clasificar';
+  const tags = [];
+  const topics = [
+    [/temperatur/, 'Temperatura'],
+    [/\b(?:c0a|c0c|apv|acv|aps|acs|opd|opc)\b|puertas|cabina/, 'Puertas y códigos'],
+    [/panico|asalto|emboscada/, 'Pánico y asalto'],
+    [/sin reporte|no reporta|falta de (?:testeo|comunicacion)|comunicacion|gprs/, 'Comunicación y reportes'],
+    [/\bvideo|tutorial|capacitacion/, 'Capacitación'],
+    [/\bservice\b|servicio tecnico|mantenimiento|reparacion/, 'Servicio técnico'],
+    [/contrase|\blogin\b|credencial|\busuario\b|\bacceso\b/, 'Accesos'],
+    [/\batcl\b|factur|cobranza|presupuesto|baja del servicio/, 'ATCL'],
+    [/certificad|asignacion/, 'Certificados y asignación'],
+    [/bateria|220v|corte de luz/, 'Energía y batería'],
+    [/seguimiento/, 'Seguimiento'],
+    [/horario|\b\d{1,2}:\d{2}\b|\bcada \d+/, 'Horarios']
+  ];
+  topics.forEach(([pattern,label]) => { if (pattern.test(n)) tags.push(label); });
+  if (sector === 'Sin clasificar' && tags.includes('Servicio técnico')) sector = 'Servicio técnico';
+  const platform = /softguard/.test(n) ? 'SoftGuard' : /\bbykom\b/.test(n) ? 'Bykom' : '';
+  const lines = original.split('\n').map(line => line.trim()).filter(Boolean);
+  const exportedHeader = /^\[?(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})(?:,\s*|\s+)\d{1,2}:\d{2}(?::\d{2})?(?:\s*[ap]\.?\s*m\.?)?\]?\s*(?:[-–]\s*)?([^:\n]{1,70}):\s*(.*)$/i;
+  let author = '', headerDate = '';
+  const cleaned = lines.map(line => {
+    const match = line.match(exportedHeader);
+    if (match) {
+      if (!author) { author = match[2].trim(); headerDate = match[1]; }
+      return match[3];
+    }
+    return line;
+  });
+  const greeting = /^(?:hola|buen(?:os dias|as tardes|as noches| dia)|estimad[oa]s?|saludos|atte)[\s,.!:]*$/i;
+  const mainLine = cleaned.find(line => line && !greeting.test(normalize(line)) && !/^https?:\/\//i.test(line)) || '';
+  const excerpt = mainLine.replace(/^[*#_>\-\s]+/, '').replace(/\s+/g,' ').slice(0,110);
+  const title = [platform, tags[0], excerpt].filter(Boolean).join(' — ').slice(0,180) || 'Material compartido por WhatsApp';
+  const links = (original.match(/https?:\/\/[^\s<>"']+/gi) || []).map(link => inboxUrl(link.replace(/[.,;!?)\]}]+$/g,''))).filter(Boolean);
+  let destination = 'Por definir';
+  if (tags.includes('Accesos') || tags.includes('Capacitación') || links.length) destination = 'Recursos';
+  else if (tags.includes('ATCL')) destination = 'Otro';
+  else if (tags.length || sector !== 'Sin clasificar') destination = 'Procedimientos';
+  const sourceText = source.trim() || (author ? 'WhatsApp · ' + author + (headerDate ? ' · ' + headerDate : '') : 'WhatsApp · autor y fecha no indicados');
+  const review = [
+    'Clasificación automática por palabras clave; pendiente de validación.',
+    'Palabras clave: ' + ([platform, ...tags].filter(Boolean).join(', ') || 'sin identificar') + '.',
+    sector === 'Sin clasificar' ? 'Sector sin determinar: revisar manualmente.' : 'Sector propuesto: ' + sector + '.',
+    links.length ? 'Enlaces detectados: ' + links.join(' · ') : '',
+    /\bc0a\b|\bc0c\b/.test(n) ? 'Se conservan los códigos C0A / C0C tal como fueron enviados; el carácter central es cero.' : '',
+    'Confirmar vigencia antes de integrarlo como procedimiento.'
+  ].filter(Boolean).join('\n');
+  return {title, notes:original, link:links[0] || '', source:sourceText.slice(0,300), sector, status:'En revisión', destination, reviewNotes:review};
+}
+function inboxQuickPreview() {
+  const preview = inboxEl('inboxQuickPreview');
+  try {
+    if (!inboxEl('inboxQuickText').value.trim()) { preview.textContent='El título, sector y destino se completan según el texto.'; return; }
+    const fields = inboxClassifyMessage(inboxEl('inboxQuickText').value, inboxEl('inboxQuickSource').value);
+    preview.textContent = fields.title + '\n' + fields.sector + ' · En revisión · ' + fields.destination;
+  } catch(error) { preview.textContent = error.message; }
+}
+async function saveInboxQuick(event) {
+  event.preventDefault();
+  if (inboxQuickState.saving) return;
+  const message = inboxEl('inboxQuickStatus');
+  const session = getSession();
+  const user = state.firebase.currentUser;
+  if (!user || !session.active || !state.firebase.resourcesLoaded) {
+    message.textContent='Esperá la conexión de la base central antes de cargar.'; return;
+  }
+  let fields;
+  try { fields = inboxClassifyMessage(inboxEl('inboxQuickText').value, inboxEl('inboxQuickSource').value); }
+  catch(error) { message.textContent=error.message; return; }
+  inboxQuickState.saving=true;
+  ['inboxQuickSave','inboxQuickText','inboxQuickSource'].forEach(id => inboxEl(id).disabled=true);
+  message.textContent='Clasificando y guardando en la base central…';
+  try {
+    // Deterministic key keeps retries and concurrent submissions idempotent.
+    const bytes = new TextEncoder().encode(fields.notes);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    const id = 'wa-' + Array.from(new Uint8Array(digest),b => b.toString(16).padStart(2,'0')).join('');
+    if (state.firebase.currentUser?.uid !== user.uid || !getSession().active) throw new Error('La sesión cambió. Volvé a ingresar antes de guardar.');
+    const existing = inboxRows().find(row => row.notes?.replace(/\r\n?/g,'\n').trim() === fields.notes);
+    const ref = resourceCollection().doc(existing?.id || id);
+    const payload = inboxPayload(null,fields,session,new Date().toISOString(),ref.id);
+    const created = await state.firebase.db.runTransaction(async tx => {
+      const snapshot = await tx.get(ref);
+      if (snapshot.exists) return false;
+      tx.set(ref,payload);
+      return true;
+    });
+    inboxEl('inboxSearch').value='';
+    inboxEl('inboxSectorFilter').value='Todos los sectores';
+    inboxEl('inboxFilter').value='Todos los estados';
+    if (created) {
+      inboxEl('inboxQuickText').value='';
+      inboxQuickPreview();
+      message.textContent='Novedad cargada: ' + fields.title + '. Sector: ' + fields.sector + '. Estado: En revisión. Podés corregirla desde Editar.';
+    } else {
+      message.textContent='Este mensaje ya está cargado. Se conservó la ficha existente sin duplicarla ni sobrescribirla.';
+    }
+    renderNovedades();
+  } catch(error) {
+    message.textContent='No se pudo guardar. El mensaje permanece para reintentar. ' + (error.code === 'permission-denied' ? 'Revisá los permisos de la base central.' : error.message || '');
+  } finally {
+    inboxQuickState.saving=false;
+    ['inboxQuickSave','inboxQuickText','inboxQuickSource'].forEach(id => inboxEl(id).disabled=false);
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  inboxEl('inboxQuickForm').addEventListener('submit',saveInboxQuick);
+  ['inboxQuickText','inboxQuickSource'].forEach(id => inboxEl(id).addEventListener('input',inboxQuickPreview));
 });
