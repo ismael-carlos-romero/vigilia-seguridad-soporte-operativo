@@ -211,3 +211,12 @@
 .inbox-detail-text{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6}
 @media(max-width:900px){#novedades .inbox-layout{grid-template-columns:1fr}#novedades .inbox-register{grid-column:1;grid-row:1}#novedades .inbox-sidebar{grid-row:2}#novedades .inbox-stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){#novedades .inbox-register>.inbox-fields{grid-template-columns:1fr}}
+
+/* Captura rápida de mensajes, con la tabla siempre en el área principal. */
+.inbox-quick h3{margin:0 0 8px}
+.inbox-quick-preview{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.5;background:#edf6f5;border-left:3px solid var(--teal);padding:9px;margin:10px 0;color:#244940}
+#inboxQuickSave{width:100%;white-space:normal}
+#inboxQuickSave:disabled{opacity:.6;cursor:wait}
+.inbox-manual{min-width:0;border:1px solid var(--line);background:var(--surface)}
+.inbox-manual>summary{padding:12px 14px;cursor:pointer;font-size:13px;font-weight:700;color:var(--blue)}
+#novedades .inbox-manual>.inbox-card{border:0;border-top:1px solid var(--line);box-shadow:none}
