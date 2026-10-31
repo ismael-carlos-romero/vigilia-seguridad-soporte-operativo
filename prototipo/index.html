@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual Antimonos · Vigilia Seguridad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font:"Atkinson Hyperlegible","Segoe UI Variable","Segoe UI",system-ui,sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,Consolas,monospace;
+  --bg:#0d1520;--bg2:#111c2a;--card:#172637;--card2:#1e3147;--line:#2b4259;
+  --tx:#eaf1f8;--mu:#97abc0;--pri:#8ab4ff;--on-pri:#0b1a30;
+  --ok:#5fd7a4;--warn:#f5b942;--bad:#ff8080;--key:#263d57;--key-edge:#0a121c;
+  --r:16px;
+}
+:root[data-theme=light]{
+  --bg:#f2f5f9;--bg2:#e8edf4;--card:#ffffff;--card2:#eff3f8;--line:#cfd9e5;
+  --tx:#14202e;--mu:#506378;--pri:#1f5fd1;--on-pri:#ffffff;
+  --ok:#0f7a55;--warn:#8f5b00;--bad:#b92b2b;--key:#f7f9fc;--key-edge:#b8c5d6;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+@media(max-width:1100px){.brand small{display:none}}
+html{color-scheme:dark}
+:root[data-theme=light]{color-scheme:light}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 18px/1.5 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--pri);outline-offset:2px;border-radius:8px}
+.wrap{max-width:940px;margin:0 auto;padding:0 16px}
+
+/* barra superior */
+.top{background:var(--bg2);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:56px;flex-wrap:wrap;padding-top:8px;padding-bottom:8px}
+.brand{display:flex;align-items:baseline;gap:10px;margin-right:auto;font-weight:700;font-size:18px}
+.brand small{font-weight:400;color:var(--mu);font-size:14px}
+.tool{background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 12px;font-size:15px;color:var(--mu)}
+.tool[aria-pressed=true],.tool.on{background:var(--card2);color:var(--tx);border-color:var(--pri)}
+.badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:var(--warn);color:#201400;font-size:13px;font-weight:700;margin-left:6px}
+
+/* consulta */
+.ask{padding:34px 0 8px}
+.ask h1{margin:0 0 14px;font-size:clamp(24px,4vw,34px);line-height:1.15;letter-spacing:-.01em}
+.search{display:flex;gap:10px}
+.search input{flex:1;min-width:0;height:64px;padding:0 20px;font-size:clamp(20px,3vw,26px);background:var(--card);border:2px solid var(--line);border-radius:var(--r)}
+.search input::placeholder{color:var(--mu)}
+.search input:focus{border-color:var(--pri);outline:none;box-shadow:0 0 0 4px color-mix(in srgb,var(--pri) 25%,transparent)}
+.btn{border:0;border-radius:12px;padding:0 22px;min-height:48px;font-weight:700;background:var(--pri);color:var(--on-pri)}
+.search .btn{height:64px;border-radius:var(--r);padding:0 28px;font-size:20px}
+.btn.ghost{background:var(--card2);color:var(--tx);border:1px solid var(--line)}
+.btn.ok{background:var(--ok);color:#06231a}
+.btn.bad{background:transparent;color:var(--bad);border:2px solid var(--bad)}
+.btn.sm{min-height:38px;padding:0 14px;font-size:16px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:3px;margin-top:12px}
+.seg button{background:transparent;border:0;padding:8px 16px;border-radius:9px;color:var(--mu);font-size:16px}
+.seg button[aria-pressed=true]{background:var(--card2);color:var(--tx);font-weight:700;box-shadow:inset 0 0 0 1px var(--pri)}
+.hint{color:var(--mu);font-size:15px;margin:10px 0 0}
+.hint kbd{font-size:13px;min-width:0;padding:0 6px;border-bottom-width:2px}
+
+/* sugerencias */
+.sug{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.sug button{width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.sug button:hover,.sug button:focus-visible{border-color:var(--pri)}
+.sug b{font-weight:700}
+
+/* bloques */
+.sec{margin:30px 0 0}
+.sec>h2{font-size:17px;margin:0 0 10px;color:var(--mu);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 18px;font-size:17px}
+.chip:hover{border-color:var(--pri)}
+.tag{display:inline-block;border-radius:8px;padding:2px 10px;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--card2);color:var(--mu)}
+.tag.ok{color:var(--ok);border-color:var(--ok);background:transparent}
+.tag.warn{color:var(--warn);border-color:var(--warn);background:transparent}
+.tag.bad{color:var(--bad);border-color:var(--bad);background:transparent}
+.tag.pri{color:var(--pri);border-color:var(--pri);background:transparent}
+
+/* avisos y novedades: el ámbar significa "novedad de supervisión" */
+.note{background:color-mix(in srgb,var(--warn) 11%,var(--card));border:1px solid color-mix(in srgb,var(--warn) 55%,var(--line));border-left:6px solid var(--warn);border-radius:12px;padding:14px 16px;display:grid;gap:6px}
+.note h3{margin:0;font-size:18px}
+.note p{margin:0}
+.note .meta{color:var(--mu);font-size:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.notes{display:grid;gap:10px}
+.empty{color:var(--mu);padding:14px 16px;border:1px dashed var(--line);border-radius:12px}
+
+/* recorrido */
+.crumbs{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:26px 0 16px;font-size:15px;color:var(--mu)}
+.crumbs button{background:transparent;border:0;color:var(--pri);padding:4px 6px;text-decoration:underline;text-underline-offset:3px}
+.crumbs span.cur{color:var(--tx);font-weight:700;padding:4px 6px}
+.step{animation:in .18s ease-out}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.step{animation:none}}
+.q{font-size:clamp(22px,3.4vw,28px);line-height:1.2;margin:0 0 6px;font-weight:700}
+.sub{color:var(--mu);margin:0 0 16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.pick{background:var(--card);border:2px solid var(--line);border-radius:var(--r);padding:18px;text-align:left;display:grid;gap:4px;min-height:92px}
+.pick:hover,.pick:focus-visible{border-color:var(--pri)}
+.pick b{font-size:21px}
+.pick span{color:var(--mu);font-size:15px}
+.pick.dash{border-style:dashed;background:transparent}
+.help{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.help ol{margin:8px 0 0;padding-left:22px;display:grid;gap:6px}
+
+/* guía */
+.gh{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+.gh h2{margin:0;font-size:clamp(24px,3.6vw,32px);line-height:1.15}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;margin-top:14px}
+.card h3{margin:0 0 8px;font-size:15px;color:var(--mu);font-weight:700}
+.say{font-size:22px;line-height:1.3}
+.say::before{content:"“";color:var(--pri)}.say::after{content:"”";color:var(--pri)}
+.cmd{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:20px}
+kbd{display:inline-block;min-width:2em;padding:2px 10px 0;margin:0 2px;text-align:center;font:700 .95em/1.6 var(--mono);color:var(--tx);background:var(--key);border:1px solid var(--key-edge);border-bottom-width:4px;border-radius:8px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.steps li{display:grid;grid-template-columns:44px 1fr;gap:14px;align-items:start;background:var(--card2);border:2px solid transparent;border-radius:14px;padding:14px 16px;cursor:pointer;font-size:20px;line-height:1.4}
+.steps li .n{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--bg);border:2px solid var(--line)}
+.steps li.next{border-color:var(--pri)}
+.steps li.next .n{background:var(--pri);color:var(--on-pri);border-color:var(--pri)}
+.steps li.done{opacity:.6}
+.steps li.done .n{background:var(--ok);border-color:var(--ok);color:#06231a}
+.steps li.done .t{text-decoration:line-through;text-decoration-thickness:1px}
+.after{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.vid{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center}
+.vid .play{width:72px;height:54px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);display:grid;place-items:center;color:var(--mu)}
+.warnbar{background:color-mix(in srgb,var(--bad) 12%,var(--card));border:1px solid var(--bad);border-radius:12px;padding:12px 16px;margin-top:14px}
+.src{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mu);font-size:15px}
+details summary{cursor:pointer;color:var(--mu);font-size:16px}
+details p{margin:8px 0 0}
+.foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;align-items:center}
+.foot .grow{flex:1}
+.link{background:none;border:0;color:var(--mu);text-decoration:underline;text-underline-offset:3px;font-size:15px}
+
+/* gestión */
+.two{display:grid;gap:14px;grid-template-columns:1fr}
+@media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
+.form{display:grid;gap:10px}
+.form label{display:grid;gap:4px;font-size:15px;color:var(--mu)}
+.form input,.form select,.form textarea{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:17px;color:var(--tx)}
+.form textarea{min-height:96px;resize:vertical}
+.list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.list li{display:flex;gap:10px;justify-content:space-between;align-items:center;background:var(--card2);border-radius:10px;padding:10px 12px}
+.list li small{color:var(--mu)}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:12px 20px;border-radius:12px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .15s;max-width:90vw;z-index:9}
+#toast.show{opacity:1}
+.demo{font-size:12px;font-weight:700;border-radius:6px;padding:1px 7px;background:var(--card2);color:var(--mu);border:1px solid var(--line)}
+footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">Manual Antimonos <small>Vigilia Seguridad · Central de Monitoreo</small></div>
+  <button class="tool" id="bAvisos" data-act="home" title="Ir al inicio">Inicio</button>
+  <button class="tool" id="bGestion" data-act="manage" hidden>Gestión</button>
+  <span class="seg" style="margin:0" role="group" aria-label="Rol de la demo">
+    <button data-role="op" aria-pressed="true">Operador</button>
+    <button data-role="sup" aria-pressed="false">Supervisor</button>
+  </span>
+  <button class="tool" id="bTheme" aria-label="Cambiar tema claro u oscuro">Tema</button>
+</div></header>
+
+<main class="wrap">
+  <section class="ask" aria-label="Consulta">
+    <h1>¿Qué consulta el cliente?</h1>
+    <form class="search" id="form" role="search" autocomplete="off">
+      <input id="q" type="search" placeholder="Ej.: cambiar clave, anular zona, falla de comunicación" aria-label="Consulta del cliente" enterkeyhint="search">
+      <button class="btn" type="submit">Buscar</button>
+    </form>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Sector">
+        <button data-sector="fijo" aria-pressed="true">Objetivo Fijo 911</button>
+        <button data-sector="safe" aria-pressed="false">Objetivos Móviles SAFE</button>
+      </div>
+      <p class="hint" style="margin:12px 0 0">Tecla <kbd>/</kbd> para escribir · <kbd>Esc</kbd> para empezar de nuevo</p>
+    </div>
+    <ul class="sug" id="sug" aria-live="polite"></ul>
+  </section>
+  <div id="view"></div>
+  <footer>Prototipo. Las guías salen de “Manual Antimonos+Soluciones.xlsm”. Los avisos y novedades marcados “Ejemplo” son de muestra.</footer>
+</main>
+<div id="toast" role="status"></div>
+
+<script src="../data.js"></script>
+<script>
+(function(){
+"use strict";
+const DATA = window.VIGILIA_DATA, CASES = DATA.cases;
+
+/* ---------- almacenamiento (en producción: Firestore) ---------- */
+const KEY="vg_proto_v1";
+let mem=null;
+function load(){ if(mem) return mem; try{ mem=JSON.parse(localStorage.getItem(KEY)||"null"); }catch(e){} return mem||(mem={}); }
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify(mem)); }catch(e){} }
+const S = ()=>{ const s=load(); s.avisos=s.avisos||null; s.links=s.links||null; s.read=s.read||{}; s.miss=s.miss||{}; s.fb=s.fb||[]; s.log=s.log||[]; s.theme=s.theme||"dark"; return s; };
+const day=86400000;
+function seed(){
+  const s=S(); if(s.avisos) return;
+  const now=Date.now();
+  const dsc=CASES.find(c=>c.system==="DSC"&&/Agregar o cambiar/.test(c.issue));
+  s.avisos=[{id:"a-demo",demo:true,title:"Así se ve un aviso vigente",body:"Es una novedad transversal: texto corto, quién la dio y hasta cuándo rige. Se publica desde Gestión y cada operador confirma con “Leído”.",source:"Supervisión",date:now,exp:now+14*day,archived:false}];
+  s.links=[{id:"n-demo",demo:true,caseId:dsc&&dsc.id,title:"Así se ve una novedad pegada a una guía",body:"Cuando una directiva cambia cómo se hace esto, aparece acá, justo donde el operador la necesita, y no se pierde en el grupo de WhatsApp.",source:"Supervisión",date:now}];
+  save();
+}
+
+/* ---------- utilidades ---------- */
+const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=(s,r=document)=>r.querySelector(s);
+const norm=t=>String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const fmt=d=>new Date(d).toLocaleDateString("es-AR",{day:"2-digit",month:"2-digit"});
+function toast(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toast.h); toast.h=setTimeout(()=>t.classList.remove("show"),2200); }
+const rich=t=>esc(t).replace(/\[([^\]\[]{1,6})\]/g,(m,k)=>/^manual/i.test(k)?"":`<kbd>${k}</kbd>`);
+const noRef=t=>String(t||"").replace(/\s*\[Manual p\.?[^\]]*\]/gi,"").trim();
+
+/* ---------- búsqueda ---------- */
+const STOP=new Set("el la los las de del al en y a un una unos unas que como para por se me mi su lo le con sin es son esta este quiere quiero necesita necesito puede puedo cliente abonado dice tiene hay no si ya muy mas".split(" "));
+const GENERIC=new Set(["cambiar","ver","problema","falla","usuario"]);
+const GROUPS=[
+ ["clave","codigo","contrasena","password","pin"],
+ ["cambiar","modificar","agregar","crear","fijar","actualizar"],
+ ["borrar","eliminar","quitar"],
+ ["anular","inhibir","excluir","omitir","puentear","bypass","exclusion","omision"],
+ ["bateria","pila"],["hora","fecha","reloj","calendario"],["memoria","historial","registro"],
+ ["falla","fallo","averia","problema","error","desperfecto"],["comunicacion","comunicador"],
+ ["sabotaje","tamper","antiviolacion"],["armar","armado","activar","conectar"],["desarmar","desarmado","desactivar","desconectar"],
+ ["chime","chivato","avisador","anunciador","timbre"],["camara","video","grabacion","dvr"],
+ ["app","aplicacion","celular"],["energia","alimentacion","luz","corriente","220v"],["zona","sensor"],["teclado","keypad"]
+];
+const GM={}; GROUPS.forEach(g=>g.forEach(w=>GM[w]=g[0]));
+const stem=w=>{ w=norm(w).replace(/[^a-z0-9]/g,""); if(w.length>4) w=w.replace(/(es|s)$/,""); return GM[w]||w; };
+const toks=t=>norm(t).split(/[^a-z0-9]+/).filter(w=>w&&!STOP.has(w)).map(stem);
+const SYSALIAS={"A2k4-A2k8":"alonso a2k4 a2k8 kpd","Bykom / Carga operativa":"bykom","Web Vigilia / Bykom Cliente":"web","FULL CONTROL DX":"fullcontrol full control","Hik-Connect":"hik hikconnect","Paradox Esprit 728-738":"esprit","Visonic PowerMaxExpress":"visonic powermax","HogarSeguro":"hogar seguro","DSC PowerSeries Neo":"neo powerseries"};
+const sysTokens=sys=>new Set(toks(sys+" "+(SYSALIAS[sys]||"")));
+const IDX=CASES.map(c=>({
+  c, issue:new Set(toks(c.issue)), code:new Set(toks(noRef(c.code))), sys:sysTokens(c.system),
+  rest:new Set(toks([c.question,c.action,c.backup,c.causes,c.commandHint].join(" ")))
+}));
+function search(q){
+  const qt=[...new Set(toks(q))]; if(!qt.length) return {list:[],sys:null};
+  const sysHit=new Set(); qt.forEach(t=>CASES.forEach(c=>{ if(sysTokens(c.system).has(t) && t.length>2) sysHit.add(c.system); }));
+  const wsum=qt.reduce((a,t)=>a+(GENERIC.has(t)?.4:1),0);
+  const out=[];
+  IDX.forEach(ix=>{
+    let tot=0, strong=false;
+    qt.forEach(t=>{
+      const w=GENERIC.has(t)?.4:1; let s=0;
+      if(ix.issue.has(t)) s=4; else if(t.length>=5&&[...ix.issue].some(x=>x.startsWith(t))) s=2.5;
+      else if(ix.sys.has(t)) s=5; else if(ix.code.has(t)) s=2; else if(ix.rest.has(t)) s=1;
+      if(s&&!GENERIC.has(t)) strong=true; tot+=w*s;
+    });
+    if(!strong) return;
+    let sc=tot/wsum; if(ix.c.confidence==="ALTA") sc+=.05;
+    if(sc>=.8) out.push({c:ix.c,score:sc});
+  });
+  out.sort((a,b)=>b.score-a.score);
+  return {list:out,sys:sysHit.size?sysHit:null};
+}
+const SAFE_RX=/\b(safe|movil|moviles|chofer|conductor|unidad|vehiculo|viaje|gps|patente|camion|remis|flota)\b/;
+
+/* ---------- estado de pantalla ---------- */
+const st={role:"op",sector:"fijo",q:"",mode:"home",cluster:[],sys:null,caseId:null,done:new Set(),help:false,res:null};
+const view=$("#view"), sugEl=$("#sug"), qEl=$("#q");
+const byId=id=>CASES.find(c=>c.id===id);
+const tone=d=>({"Resolver desde estación":"ok","Técnico prioritario":"bad","Consulta a supervisor":"pri"}[d]||"warn");
+const AFTER={"Resolver desde estación":"Se resuelve desde la estación.","Técnico si persiste":"Si la falla sigue, dejar asentado para técnico.","Esperar y verificar":"Esperar unos minutos y verificar que se normalice.","Validar antes de operar":"Validar antes de operar sobre el panel.","Técnico prioritario":"Derivar a técnico con prioridad.","Pendiente de verificar":"Procedimiento pendiente de verificar. Consultar a supervisión.","Consulta a supervisor":"Consultar a supervisión antes de actuar."};
+
+function activeAvisos(){ const s=S(),n=Date.now(); return s.avisos.filter(a=>!a.archived&&(!a.exp||a.exp>=n)); }
+function unreadAvisos(){ const s=S(); return activeAvisos().filter(a=>!s.read[a.id]); }
+function updateChrome(){
+  const u=unreadAvisos().length;
+  $("#bAvisos").innerHTML="Inicio"+(u?`<span class="badge" title="Avisos sin leer">${u}</span>`:"");
+  $("#bGestion").hidden=st.role!=="sup";
+  document.querySelectorAll("[data-role]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.role===st.role));
+  document.querySelectorAll("[data-sector]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sector===st.sector));
+}
+
+/* ---------- vistas ---------- */
+function crumbs(){
+  const p=[`<button data-act="home">Inicio</button>`];
+  if(st.mode==="home"||st.mode==="manage") return "";
+  p.push(`<button data-act="results">“${esc(st.q)}”</button>`);
+  const sys=st.sys;
+  if(st.mode==="panel"){ p.push(`<span class="cur">Panel</span>`); }
+  else{
+    const multi=new Set(st.cluster.map(r=>r.c.system)).size>1;
+    if(multi) p.push(`<button data-act="panel">Panel</button>`);
+    if(sys) p.push(st.mode==="guide"&&byCluster(sys).length>1?`<button data-act="variants">${esc(sys)}</button>`:`<span class="cur">${esc(sys)}</span>`);
+    if(st.mode==="guide") p.push(`<span class="cur">Guía</span>`);
+  }
+  return `<nav class="crumbs" aria-label="Recorrido">${p.join('<span aria-hidden="true">›</span>')}</nav>`;
+}
+const byCluster=sys=>st.cluster.filter(r=>r.c.system===sys);
+
+function renderHome(){
+  const unread=unreadAvisos().slice(0,3);
+  const freq=["cambiar clave","anular zona","falla de comunicación","batería baja","ver memoria de alarmas","cambiar hora y fecha"];
+  view.innerHTML=`<div class="step">
+   <section class="sec" aria-label="Avisos vigentes"><h2>Avisos vigentes</h2>
+    ${unread.length?`<div class="notes">${unread.map(a=>`<article class="note">
+       <h3>${esc(a.title)} ${a.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${esc(a.body)}</p>
+       <div class="meta"><span>${esc(a.source)} · ${fmt(a.date)}</span>${a.exp?`<span>Rige hasta ${fmt(a.exp)}</span>`:""}
+       <button class="btn sm" data-act="read" data-id="${a.id}" style="margin-left:auto">Leído</button></div></article>`).join("")}</div>`
+     :`<p class="empty">No tenés avisos sin leer.</p>`}
+   </section>
+   <section class="sec"><h2>Lo que más se consulta</h2><div class="chips">${freq.map(f=>`<button class="chip" data-act="ask" data-q="${esc(f)}">${esc(f)}</button>`).join("")}</div></section>
+  </div>`;
+}
+
+function renderSafe(){
+  view.innerHTML=`<div class="step"><section class="sec"><p class="q">Objetivos Móviles SAFE</p>
+   <p class="sub">Todavía no hay guías cargadas para este sector. Cuando existan, esta pantalla va a guiar igual que en Objetivo Fijo.</p>
+   <div class="row"><button class="btn" data-act="miss" >Avisar al supervisor</button><button class="btn ghost" data-act="sector-fijo">Buscar en Objetivo Fijo 911</button></div></section></div>`;
+}
+
+function renderEmpty(){
+  view.innerHTML=`<div class="step">${crumbs()}<p class="q">No encontré una guía para “${esc(st.q)}”</p>
+   <p class="sub">Probá con otras palabras o con el nombre del panel. Esta búsqueda quedó registrada para que supervisión cargue la respuesta.</p>
+   <div class="chips"><button class="chip" data-act="miss">Avisar al supervisor</button></div></div>`;
+}
+
+function renderPanel(){
+  const m=new Map(); st.cluster.forEach(r=>{ const e=m.get(r.c.system)||{n:0,sc:0}; e.n++; e.sc=Math.max(e.sc,r.score); m.set(r.c.system,e); });
+  const list=[...m.entries()].sort((a,b)=>b[1].sc-a[1].sc);
+  view.innerHTML=`<div class="step">${crumbs()}
+   <p class="q">¿Qué panel tiene el cliente?</p><p class="sub">Lo ves en Bykom, o te lo dice el cliente.</p>
+   <div class="grid">
+    ${list.map(([s,e])=>`<button class="pick" data-act="sys" data-sys="${esc(s)}"><b>${esc(s)}</b><span>${e.n} ${e.n>1?"guías":"guía"}</span></button>`).join("")}
+    <button class="pick dash" data-act="helpToggle" aria-expanded="${st.help}"><b>No sé / no figura</b><span>Cómo identificarlo</span></button>
+   </div>
+   ${st.help?`<div class="help"><b>Para identificar el panel</b><ol>
+     <li>Buscá la cuenta en Bykom y mirá el panel cargado.</li>
+     <li>Si no está o es dudoso, pedile marca y modelo. Figura en la etiqueta del teclado o del gabinete.</li>
+     <li>Si no puede leerlo, pedile una foto del teclado y consultá a supervisión.</li></ol>
+     <div class="foot"><button class="btn ghost sm" data-act="open" data-id="bycom-carga-operativa-panel-no-cargado">Qué hacer con un panel no cargado</button></div></div>`:""}
+  </div>`;
+}
+
+function renderVariants(){
+  const rs=byCluster(st.sys);
+  view.innerHTML=`<div class="step">${crumbs()}<p class="q">¿Qué necesita hacer?</p><p class="sub">${esc(st.sys)}</p>
+   <div class="grid">${rs.map(r=>`<button class="pick" data-act="open" data-id="${r.c.id}"><b>${esc(r.c.issue)}</b><span>${esc(r.c.decision)}</span></button>`).join("")}</div></div>`;
+}
+
+function renderGuide(){
+  const c=byId(st.caseId); if(!c){ renderHome(); return; }
+  const s=S();
+  const steps=noRef(c.action).split(/\s*(?=\b\d{1,2}\)\s)/).map(x=>x.replace(/^\d{1,2}\)\s*/,"").trim()).filter(Boolean);
+  const nextI=steps.findIndex((_,i)=>!st.done.has(i));
+  const links=s.links.filter(l=>l.caseId===c.id);
+  const verified=c.confidence==="ALTA"||c.confidence==="OPERATIVO";
+  const cmd=noRef(c.code);
+  view.innerHTML=`<div class="step">${crumbs()}
+   <div class="gh"><h2>${esc(c.issue)}</h2><span class="tag ${tone(c.decision)}">${esc(c.decision)}</span></div>
+   <div class="src"><span>${esc(c.system)}</span>${c.manualPage&&c.manualPage!=="-"?`<span>· ${/^[\d]/.test(c.manualPage)?"Manual oficial p. ":""}${esc(c.manualPage)}</span>`:""}<span>· Confianza ${esc(c.confidence.toLowerCase())}</span></div>
+   ${verified?"":`<div class="warnbar"><b>Sin confirmar.</b> Validá con supervisión antes de indicar estos pasos al cliente.</div>`}
+   ${links.map(l=>`<article class="note" style="margin-top:14px"><h3>${esc(l.title)} ${l.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${esc(l.body)}</p><div class="meta"><span>${esc(l.source)} · ${fmt(l.date)}</span></div></article>`).join("")}
+   ${c.question?`<section class="card"><h3>Preguntale al cliente</h3><p class="say" style="margin:0">${esc(c.question)}</p></section>`:""}
+   ${cmd&&/\[[^\]]{1,6}\]/.test(cmd)?`<section class="card"><h3>Secuencia en el teclado</h3><div class="cmd">${rich(cmd)}</div></section>`:""}
+   <section class="card"><h3>Paso a paso <span style="font-weight:400">· tocá cada paso al hacerlo</span></h3>
+    <ol class="steps">${steps.map((t,i)=>`<li class="${st.done.has(i)?"done":i===nextI?"next":""}" data-act="step" data-i="${i}" tabindex="0" role="checkbox" aria-checked="${st.done.has(i)}"><span class="n">${st.done.has(i)?"✓":i+1}</span><span class="t">${rich(t)}</span></li>`).join("")}</ol>
+    <p class="after"><span class="tag ${tone(c.decision)}">Después</span><span>${esc(AFTER[c.decision]||c.decision)}</span></p>
+   </section>
+   ${c.video?`<section class="card"><div class="vid"><div class="play" aria-hidden="true">▶</div><div><b>Video de referencia</b><br><span style="color:var(--mu)">${esc(c.video.replace(/^Video:\s*/i,""))}${/pendiente/i.test(c.video)?"":" · pendiente de subir"}</span></div></div></section>`:""}
+   ${(c.backup||c.causes||c.commandHint)?`<section class="card"><details><summary>Respaldo y contexto</summary>
+     ${c.causes?`<p>${esc(c.causes)}</p>`:""}${c.backup?`<p>${esc(c.backup)}</p>`:""}${c.commandHint?`<p style="color:var(--mu)">Para el operador: ${esc(c.commandHint)}</p>`:""}</details></section>`:""}
+   <div class="foot">
+     <button class="btn ok" data-act="resolved">Resuelto</button>
+     <button class="btn bad" data-act="escalate">No se resolvió: copiar nota para supervisión</button>
+     <span class="grow"></span>
+     <button class="link" data-act="fb">Esta guía tiene un error o le falta algo</button>
+   </div></div>`;
+}
+
+function renderManage(){
+  const s=S(); const act=activeAvisos();
+  const groups={}; CASES.forEach(c=>(groups[c.system]=groups[c.system]||[]).push(c));
+  const miss=Object.entries(s.miss).sort((a,b)=>b[1].n-a[1].n);
+  view.innerHTML=`<div class="step"><section class="sec"><p class="q">Gestión</p>
+   <p class="sub">Acá la supervisión convierte lo que llega por WhatsApp en algo que el operador encuentra cuando lo necesita.</p>
+   <div class="two">
+    <form class="card form" id="pub" style="margin:0"><h3>Publicar una novedad</h3>
+      <label>Título<input name="title" required maxlength="80" placeholder="Qué cambia, en pocas palabras"></label>
+      <label>Texto (pegá el mensaje del grupo)<textarea name="body" required maxlength="500"></textarea></label>
+      <label>Quién lo indica<select name="source"><option>Supervisión</option><option>Gerencia</option><option>Manual oficial</option></select></label>
+      <label>Dónde aparece<select name="kind"><option value="aviso">Aviso vigente en el inicio</option><option value="guide">Pegado a una guía</option></select></label>
+      <label id="gl" hidden>Guía<select name="case">${Object.entries(groups).map(([sy,cs])=>`<optgroup label="${esc(sy)}">${cs.map(c=>`<option value="${c.id}">${esc(c.issue)}</option>`).join("")}</optgroup>`).join("")}</select></label>
+      <label id="dl">Rige por<select name="days"><option value="7">7 días</option><option value="15" selected>15 días</option><option value="30">30 días</option></select></label>
+      <button class="btn" type="submit">Publicar</button></form>
+    <div style="display:grid;gap:14px;align-content:start">
+     <section class="card" style="margin:0"><h3>Avisos vigentes (${act.length} de 3)</h3>
+       ${act.length?`<ul class="list">${act.map(a=>`<li><span>${esc(a.title)}<br><small>${s.read[a.id]?"Leído por vos (demo)":"Sin leer"} · hasta ${a.exp?fmt(a.exp):"sin fecha"}</small></span><button class="btn ghost sm" data-act="archive" data-id="${a.id}">Archivar</button></li>`).join("")}</ul>`:`<p class="empty" style="margin:0">Sin avisos vigentes.</p>`}
+     </section>
+     <section class="card" style="margin:0"><h3>Novedades pegadas a guías</h3>
+       ${s.links.length?`<ul class="list">${s.links.map(l=>{const c=byId(l.caseId);return `<li><span>${esc(l.title)}<br><small>${c?esc(c.system+" · "+c.issue):"Guía no encontrada"}</small></span><button class="btn ghost sm" data-act="unlink" data-id="${l.id}">Quitar</button></li>`}).join("")}</ul>`:`<p class="empty" style="margin:0">Todavía no hay.</p>`}
+     </section>
+     <section class="card" style="margin:0"><h3>Búsquedas sin respuesta</h3>
+       ${miss.length?`<ul class="list">${miss.slice(0,8).map(([q,m])=>`<li><span>“${esc(q)}”<br><small>${m.n} ${m.n>1?"veces":"vez"}${m.sent?" · avisado":""}</small></span></li>`).join("")}</ul>`:`<p class="empty" style="margin:0">Nada por ahora.</p>`}
+     </section>
+     <section class="card" style="margin:0"><h3>Correcciones pedidas</h3>
+       ${s.fb.length?`<ul class="list">${s.fb.slice(-6).reverse().map(f=>{const c=byId(f.id);return `<li><span>${esc(f.text)}<br><small>${c?esc(c.system+" · "+c.issue):""}</small></span></li>`}).join("")}</ul>`:`<p class="empty" style="margin:0">Nada por ahora.</p>`}
+     </section>
+    </div></div></section></div>`;
+}
+
+/* ---------- navegación ---------- */
+function show(){
+  updateChrome();
+  ({home:renderHome,manage:renderManage,safe:renderSafe,empty:renderEmpty,panel:renderPanel,variants:renderVariants,guide:renderGuide})[st.mode]();
+  sugEl.innerHTML="";
+}
+function go(mode){ st.mode=mode; show(); }
+function ask(q){
+  st.q=q.trim(); qEl.value=st.q; if(!st.q){ go("home"); return; }
+  log("buscar",st.q);
+  if(SAFE_RX.test(norm(st.q))&&!st.sectorLocked) st.sector="safe";
+  if(st.sector==="safe"){ go("safe"); return; }
+  const r=search(st.q);
+  let list=r.list; if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  if(!list.length){ const m=S().miss[norm(st.q)]||(S().miss[norm(st.q)]={n:0}); m.n++; save(); go("empty"); return; }
+  const best=list[0].score; st.cluster=list.filter(x=>x.score>=best*.65).slice(0,40);
+  const syss=[...new Set(st.cluster.map(x=>x.c.system))];
+  if(st.cluster.length===1){ openCase(st.cluster[0].c.id); return; }
+  if(syss.length===1){ st.sys=syss[0]; go("variants"); return; }
+  st.sys=null; go("panel");
+}
+function openCase(id){ const c=byId(id); st.caseId=id; st.sys=c.system; st.done=new Set();
+  if(!st.cluster.some(r=>r.c.id===id)) st.cluster=[{c,score:1}]; log("guia",c.system+" · "+c.issue); go("guide"); scrollTo({top:0}); }
+function log(t,x){ const s=S(); s.log.push({t,x,at:Date.now()}); if(s.log.length>200) s.log.shift(); save(); }
+
+function suggest(){
+  const q=qEl.value.trim(); if(q.length<2){ sugEl.innerHTML=""; return; }
+  if(SAFE_RX.test(norm(q))){ sugEl.innerHTML=""; return; }
+  const r=search(q); let list=r.list; if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  sugEl.innerHTML=list.slice(0,4).map(x=>`<li><button type="button" data-act="open" data-id="${x.c.id}"><span><b>${esc(x.c.issue)}</b></span><span class="tag">${esc(x.c.system)}</span></button></li>`).join("");
+}
+
+function copy(t){
+  const old=()=>{ const a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand("copy")}catch(e){} a.remove(); };
+  if(navigator.clipboard&&window.isSecureContext) return navigator.clipboard.writeText(t).catch(old);
+  old(); return Promise.resolve();
+}
+
+/* ---------- eventos ---------- */
+document.addEventListener("click",e=>{
+  const rb=e.target.closest("[data-role]"); if(rb){ st.role=rb.dataset.role; if(st.role==="op"&&st.mode==="manage") st.mode="home"; show(); return; }
+  const sb=e.target.closest("[data-sector]"); if(sb){ st.sector=sb.dataset.sector; st.sectorLocked=true; if(st.q) ask(st.q); else show(); return; }
+  const b=e.target.closest("[data-act]"); if(!b) return;
+  const a=b.dataset.act, id=b.dataset.id, s=S();
+  if(a==="home"){ st.q=""; qEl.value=""; go("home"); }
+  else if(a==="manage") go("manage");
+  else if(a==="ask") ask(b.dataset.q);
+  else if(a==="results") ask(st.q);
+  else if(a==="panel") go("panel");
+  else if(a==="variants") go("variants");
+  else if(a==="sys"){ st.sys=b.dataset.sys; const rs=byCluster(st.sys); if(rs.length===1) openCase(rs[0].c.id); else go("variants"); }
+  else if(a==="helpToggle"){ st.help=!st.help; renderPanel(); }
+  else if(a==="open") openCase(id);
+  else if(a==="read"){ s.read[id]=true; save(); toast("Aviso confirmado"); show(); }
+  else if(a==="step"){ const i=+b.dataset.i; st.done.has(i)?st.done.delete(i):st.done.add(i); renderGuide(); const li=document.querySelector(`[data-i="${i}"]`); if(li) li.focus({preventScroll:true}); }
+  else if(a==="resolved"){ log("resuelto",byId(st.caseId).issue); toast("Registrado como resuelto"); st.q=""; qEl.value=""; go("home"); scrollTo({top:0}); }
+  else if(a==="escalate"){
+    const c=byId(st.caseId), n=[...st.done].sort((x,y)=>x-y).map(i=>i+1);
+    const t=`CONSULTA A SUPERVISIÓN\nConsulta del cliente: “${st.q}”\nPanel: ${c.system}\nGuía: ${c.issue}${c.manualPage&&c.manualPage!=="-"?` (Manual p. ${c.manualPage})`:""}\nPasos realizados: ${n.length?n.join(", "):"ninguno"}\nResultado: no se resolvió\nFecha y hora: ${new Date().toLocaleString("es-AR")}`;
+    copy(t).then(()=>{ log("escalado",c.issue); toast("Nota copiada. Pegala en el chat o en Bykom."); });
+  }
+  else if(a==="fb"){ const t=prompt("¿Qué está mal o qué falta en esta guía?"); if(t&&t.trim()){ s.fb.push({id:st.caseId,text:t.trim(),at:Date.now()}); save(); toast("Gracias. Le llega a supervisión."); } }
+  else if(a==="miss"){ const k=norm(st.q)||"(sin texto)"; const m=s.miss[k]||(s.miss[k]={n:1}); m.sent=true; save(); toast("Supervisor avisado"); }
+  else if(a==="sector-fijo"){ st.sector="fijo"; st.sectorLocked=true; ask(st.q); }
+  else if(a==="archive"){ const x=s.avisos.find(v=>v.id===id); if(x) x.archived=true; save(); show(); }
+  else if(a==="unlink"){ s.links=s.links.filter(v=>v.id!==id); save(); show(); }
+});
+document.addEventListener("keydown",e=>{
+  const li=e.target.closest&&e.target.closest("[data-act=step]");
+  if(li&&(e.key==="Enter"||e.key===" ")){ e.preventDefault(); li.click(); return; }
+  const typing=/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if(e.key==="/"&&!typing){ e.preventDefault(); qEl.focus(); qEl.select(); }
+  if(e.key==="Escape"){ st.q=""; qEl.value=""; sugEl.innerHTML=""; go("home"); qEl.focus(); }
+});
+$("#form").addEventListener("submit",e=>{ e.preventDefault(); st.sectorLocked=false; ask(qEl.value); });
+qEl.addEventListener("input",suggest);
+view.addEventListener("change",e=>{ if(e.target.name==="kind"){ const g=e.target.value==="guide"; $("#gl").hidden=!g; $("#dl").hidden=g; } });
+view.addEventListener("submit",e=>{
+  if(e.target.id!=="pub") return; e.preventDefault();
+  const f=new FormData(e.target), s=S(), now=Date.now();
+  if(f.get("kind")==="aviso"){
+    if(activeAvisos().length>=3){ toast("Ya hay 3 avisos vigentes. Archivá uno para publicar otro."); return; }
+    s.avisos.push({id:"a"+now,title:f.get("title"),body:f.get("body"),source:f.get("source"),date:now,exp:now+(+f.get("days"))*day,archived:false});
+  } else s.links.push({id:"n"+now,caseId:f.get("case"),title:f.get("title"),body:f.get("body"),source:f.get("source"),date:now});
+  save(); toast("Publicado"); renderManage();
+});
+
+/* ---------- tema ---------- */
+function theme(t){ document.documentElement.dataset.theme=t; S().theme=t; save(); $("#bTheme").textContent=t==="dark"?"Tema claro":"Tema oscuro"; }
+$("#bTheme").addEventListener("click",()=>theme(S().theme==="dark"?"light":"dark"));
+
+seed(); theme(S().theme); show();
+window.__vg={ask,search,st};
+})();
+</script>
+</body>
+</html>
