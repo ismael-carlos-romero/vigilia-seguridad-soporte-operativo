@@ -68,7 +68,8 @@ const TILES=[
  ["atcl","Pedidos ATCL","Seguimiento de pedidos de clientes"],
  ["recu","Recursos","Manuales, videos y links de apoyo"],
  ["metr","Métricas","Consultas, resueltas y pendientes"],
- ["nov","Novedades","Historial de avisos y directivas"]];
+ ["nov","Novedades","Historial de avisos y directivas"],
+ ["acc","Accesos","Usuarios y claves de las plataformas (solo empleados)"]];
 const TITLE=Object.fromEntries(TILES.map(t=>[t[0],t[1]]));
 const crumb=(m)=>`<div class="crumbs"><button data-act="home">Inicio</button><span>›</span><button data-act="mas">Más</button><span>›</span><span class="cur">${TITLE[m]}</span></div>`;
 const arr=(s,k)=>s[k]||(s[k]=[]);
@@ -107,7 +108,7 @@ V.resp=(v,c)=>{
  const i=v.querySelector("#rq"); i.addEventListener("input",()=>{ st2.rq=i.value; const p=i.selectionStart; V.resp(v,c); const n=v.querySelector("#rq"); n.focus(); n.setSelectionRange(p,p); }); };
 
 V.learn=(v,c)=>{
- const s=c.S(), L=arr(s,"learn").slice().reverse(), sup=c.st.role==="sup";
+ const s=c.S(), L=arr(s,"learn").slice().reverse(), sup=c.st.role!=="op";
  v.innerHTML=`<div class="step">${crumb("learn")}<p class="q">Aprendizajes</p>
  <p class="sub">Casos que no pudiste resolver. Supervisión responde y, si sirve para todos, lo convierte en procedimiento. Lo que escalás desde una guía aparece acá solo.</p>
  <form class="card form" data-vform="learn"><h3>Registrar un caso sin resolver</h3>
@@ -124,7 +125,7 @@ V.learn=(v,c)=>{
   </article>`).join("")||`<div class="empty">Todavía no hay casos cargados.</div>`}</div></div>`; };
 
 V.sugg=(v,c)=>{
- const s=c.S(), L=arr(s,"sugg").slice().sort((a,b)=>b.v-a.v||b.at-a.at), sup=c.st.role==="sup";
+ const s=c.S(), L=arr(s,"sugg").slice().sort((a,b)=>b.v-a.v||b.at-a.at), sup=c.st.role!=="op";
  v.innerHTML=`<div class="step">${crumb("sugg")}<p class="q">Sugerencias</p><p class="sub">Contá qué mejorarías del sistema o de cómo trabajamos. Los demás pueden sumar su apoyo.</p>
  <form class="card form" data-vform="sugg"><h3>Nueva sugerencia</h3>${field("Qué proponés",`<textarea name="text" required maxlength="400"></textarea>`)}<button class="btn" type="submit">Enviar</button></form>
  <div class="stack" style="margin-top:16px">${L.map(x=>`<article class="item"><p style="white-space:pre-line">${c.esc(x.text)}</p><div class="meta"><span>${when(x.at)}</span>${x.ok?`<span class="tag ok">Aceptada</span>`:""}</div>
@@ -178,10 +179,23 @@ V.nov=(v,c)=>{
  <section class="sec"><h2>Directivas</h2><div class="notes">${DIRS.map(d=>`<article class="note"><h3>${c.esc(d.title)}</h3><p>${c.esc(d.text)}</p><div class="meta"><span>${c.esc(d.source)} · ${c.esc(d.sector)}</span></div></article>`).join("")}</div></section>
  <section class="sec" style="margin-top:20px"><h2>Avisos</h2><div class="notes">${s.avisos.slice().reverse().map(a=>`<article class="note"><h3>${c.esc(a.title)} ${a.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${c.esc(a.body)}</p><div class="meta"><span>${c.esc(a.source)} · ${c.fmt(a.date)}</span><span class="tag">${a.archived?"Archivado":a.exp&&a.exp<now?"Vencido":"Vigente"}</span></div></article>`).join("")}</div></section></div>`; };
 
+V.acc=(v,c)=>{
+ const s=c.S(), A=arr(s,"acc"), adm=c.st.role==="adm", sup=c.st.role!=="op";
+ if(!s.accSeed){ s.accSeed=1; A.push({id:"demo",demo:1,plat:"Plataforma de ejemplo",user:"operador.demo",pass:"clave-de-ejemplo",note:"Dato de muestra. Las claves reales se cargan con sesión iniciada."}); c.save(); }
+ v.innerHTML=`<div class="step">${crumb("acc")}<p class="q">Accesos</p>
+ <p class="sub">Copiá el usuario o la clave y pegalos en la plataforma. La clave no se muestra en pantalla.</p>
+ <div class="warnbar"><b>Solo empleados.</b> En producción esta pantalla pide sesión y cada copia queda registrada. Acá es una muestra: no cargues claves reales todavía.</div>
+ <div class="stack" style="margin-top:14px">${A.map(x=>`<article class="item"><h3>${c.esc(x.plat)} ${x.demo?'<span class="demo">Ejemplo</span>':""}</h3><div class="meta"><span>Usuario: <b>${c.esc(x.user)}</b></span></div>${x.note?`<p>${c.esc(x.note)}</p>`:""}
+  <div class="acts"><button class="btn sm" data-act="acopy" data-id="${x.id}" data-w="user">Copiar usuario</button><button class="btn sm" data-act="acopy" data-id="${x.id}" data-w="pass">Copiar clave</button>${adm?`<button class="link" data-act="adel" data-id="${x.id}">Quitar</button>`:""}</div></article>`).join("")}</div>
+ ${sup?`<form class="card form" data-vform="acc" style="margin-top:18px"><h3>Agregar acceso</h3>${field("Plataforma",`<input name="plat" required maxlength="60">`)}${field("Usuario",`<input name="user" required maxlength="60" autocomplete="off">`)}${field("Clave",`<input name="pass" type="password" required maxlength="80" autocomplete="new-password">`)}${field("Nota",`<input name="note" maxlength="120" placeholder="Para qué se usa">`)}<button class="btn" type="submit">Guardar</button></form>`:""}
+ ${adm?`<section class="card"><h3>Registro de copias</h3>${arr(s,"accLog").slice(-10).reverse().map(l=>`<div class="brow" style="grid-template-columns:110px 1fr"><span>${when(l.at)}</span><span>${c.esc(l.who)} copió ${l.w==="pass"?"la clave":"el usuario"} de ${c.esc(l.plat)}</span></div>`).join("")||`<div class="empty">Sin copias todavía.</div>`}</section>`:""}</div>`; };
+
 /* ---------- acciones ---------- */
 V.act=(a,b,c)=>{
  const s=c.S(), id=b.dataset.id, find=k=>arr(s,k).find(x=>x.id===id);
  if(a!=="act"&&typeof V[a]==="function"&&a!=="submit"){ c.go(a); scrollTo({top:0}); return true; }
+ if(a==="acopy"){ const x=find("acc"); if(x){ c.copy(x[b.dataset.w]).then(()=>{ arr(s,"accLog").push({who:c.st.role==="adm"?"Administrador":c.st.role==="sup"?"Supervisor":"Operador",plat:x.plat,w:b.dataset.w,at:Date.now()}); c.save(); c.toast(b.dataset.w==="pass"?"Clave copiada":"Usuario copiado"); }); } return true; }
+ if(a==="adel"){ s.acc=arr(s,"acc").filter(x=>x.id!==id); c.save(); V.acc(c.view,c); return true; }
  if(a==="rsec"){ st2.rs=b.dataset.v; V.resp(c.view,c); return true; }
  if(a==="rcopy"){ const t=document.getElementById("t-"+id); c.copy(t.value).then(()=>{ c.log("mensaje",(RESP.concat(arr(s,"resp")).find(r=>r.id===id)||{}).title); c.toast("Mensaje copiado. Pegalo en WhatsApp."); }); return true; }
  if(a==="svote"){ const x=find("sugg"); if(x){ x.v++; c.save(); V.sugg(c.view,c); } return true; }
@@ -193,12 +207,13 @@ V.act=(a,b,c)=>{
 };
 V.submit=(f,c,sub)=>{
  const d=new FormData(f,sub||undefined), s=c.S(), now=Date.now(), id="x"+now, k=f.dataset.vform, g=n=>String(d.get(n)||"").trim();
- if(k==="resp") arr(s,"resp").push({id:"u"+now,title:g("title"),sector:g("sector"),channel:g("channel"),tags:"",text:g("text"),by:c.st.role==="sup"?"supervisión":"operador"});
+ if(k==="resp") arr(s,"resp").push({id:"u"+now,title:g("title"),sector:g("sector"),channel:g("channel"),tags:"",text:g("text"),by:c.st.role==="op"?"operador":"supervisión"});
  else if(k==="learn") arr(s,"learn").push({id,q:g("q"),text:g("text"),sector:g("sector"),st:"Pendiente",at:now});
  else if(k==="lans"){ const x=arr(s,"learn").find(y=>y.id===f.dataset.id); if(x){ x.ans=g("ans"); x.st=d.get("to")||"Respondido"; } }
  else if(k==="sugg") arr(s,"sugg").push({id,text:g("text"),v:0,at:now});
  else if(k==="kanban") arr(s,"kanban").push({id,title:g("title"),text:g("text"),c:"por"});
  else if(k==="atcl") arr(s,"atcl").push({id,n:g("n"),cli:g("cli"),mot:g("mot"),area:g("area"),text:g("text"),st:"Pendiente",at:now});
+ else if(k==="acc") arr(s,"acc").push({id,plat:g("plat"),user:g("user"),pass:g("pass"),note:g("note")});
  else if(k==="recu") arr(s,"recu").push({id,title:g("title"),tipo:g("tipo"),url:g("url"),at:now});
  else return false;
  c.save(); c.toast("Guardado"); c.go(c.st.mode); return true;

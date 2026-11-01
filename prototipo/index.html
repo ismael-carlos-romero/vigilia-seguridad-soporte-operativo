@@ -167,6 +167,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
   <span class="seg" style="margin:0" role="group" aria-label="Rol de la demo">
     <button data-role="op" aria-pressed="true">Operador</button>
     <button data-role="sup" aria-pressed="false">Supervisor</button>
+    <button data-role="adm" aria-pressed="false">Administrador</button>
   </span>
   <button class="tool" id="bTheme" aria-label="Cambiar tema claro u oscuro">Tema</button>
 </div></header>
@@ -292,7 +293,7 @@ function unreadAvisos(){ const s=S(); return activeAvisos().filter(a=>!s.read[a.
 function updateChrome(){
   const u=unreadAvisos().length;
   $("#bAvisos").innerHTML="Inicio"+(u?`<span class="badge" title="Avisos sin leer">${u}</span>`:"");
-  $("#bGestion").hidden=st.role!=="sup";
+  $("#bGestion").hidden=st.role==="op";
   document.querySelectorAll("[data-role]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.role===st.role));
   document.querySelectorAll("[data-sector]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sector===st.sector));
 }
