@@ -196,6 +196,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 <script src="../data.js"></script>
 <script src="fallas.js"></script>
 <script src="guias-borrador.js"></script>
+<script src="soluciones.js"></script>
 <script src="modulos.js"></script>
 <script>
 (function(){
@@ -411,6 +412,16 @@ function diagPath(f){ /* recorre el árbol según lo elegido */
   for(let l=0;node;l++){ const i=st.dp[l]; out.push({node,i,opt:i==null?null:node.options[i]}); node=i==null?null:node.options[i].sub; }
   return out;
 }
+function solHtml(f,final){
+  const sol=window.VIGILIA_SOL&&window.VIGILIA_SOL(f.system,final.label); if(!sol) return "";
+  return `<section class="card" style="border-color:var(--ok)"><h3>${esc(sol.title)}</h3>
+    <ol style="margin:0;padding-left:26px;display:grid;gap:10px;font-size:20px;line-height:1.5">${sol.steps.map(t=>`<li>${rich(t)}</li>`).join("")}</ol>
+    ${sol.check?`<p style="margin:12px 0 0">${rich(sol.check)}</p>`:""}
+    ${sol.note?`<p class="hint" style="margin:10px 0 0">${esc(sol.note)}</p>`:""}
+    <p class="after" style="margin-top:14px"><span class="tag warn">Si no se resuelve</span><span>${esc(sol.service)}</span></p>
+    <div class="src" style="margin-top:12px">${sol.srcs.map(x=>`<span>${esc(x.name)}, ${esc(x.label)}</span><a class="btn ghost sm" style="display:inline-flex;align-items:center;text-decoration:none" href="${esc(pdfUrl(x))}" target="_blank" rel="noopener">Ver en el manual</a>`).join("")}
+      ${sol.proc?`<button class="btn ghost sm" data-act="open" data-id="${sol.proc}">Procedimiento de la central</button>`:""}</div></section>`;
+}
 function renderDiag(c){
   const f=c.f, s=S(), links=s.links.filter(l=>l.caseId===c.id), path=diagPath(f);
   const last=path[path.length-1], final=last.opt&&!last.opt.sub?last.opt:null;
@@ -430,6 +441,7 @@ function renderDiag(c){
       ${final.note?`<p style="margin:6px 0 0">${esc(final.note)}</p>`:""}
       ${final.action?`<p class="after" style="margin-top:12px"><span class="tag warn">Según el manual</span><span>${esc(final.action)}</span></p>`:""}
       <p class="src" style="margin:12px 0 0">${esc(f.manual.name)} · ${esc(f.manual.label)}</p></section>
+      ${solHtml(f,final)}
       ${pr?`<article class="note" style="margin-top:14px"><h3>Qué hacer en la central <span class="demo">Borrador</span></h3><p><b>${esc(final.proc)} · ${esc(pr.t)}.</b> ${esc(pr.s)}</p><div class="meta"><span>Hoja Manual_Operativo · falta validación de supervisión</span></div></article>`:""}`;
   }
   view.innerHTML=`<div class="step">${crumbs()}
