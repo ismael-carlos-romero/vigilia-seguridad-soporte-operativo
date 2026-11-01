@@ -68,7 +68,8 @@ const TILES=[
  ["atcl","Pedidos ATCL","Seguimiento de pedidos de clientes"],
  ["recu","Recursos","Manuales, videos y links de apoyo"],
  ["metr","Métricas","Consultas, resueltas y pendientes"],
- ["nov","Novedades","Historial de avisos y directivas"],
+ ["inbox","Novedades y material pendiente","Pegá lo que manda supervisión por WhatsApp y cargalo como proceso nuevo"],
+ ["nov","Avisos y directivas","Historial de avisos y directivas"],
  ["acc","Accesos","Usuarios y claves de las plataformas (solo empleados)"]];
 const TITLE=Object.fromEntries(TILES.map(t=>[t[0],t[1]]));
 const crumb=(m)=>`<div class="crumbs"><button data-act="home">Inicio</button><span>›</span><button data-act="mas">Más</button><span>›</span><span class="cur">${TITLE[m]}</span></div>`;
@@ -175,7 +176,7 @@ V.metr=(v,c)=>{
 
 V.nov=(v,c)=>{
  const s=c.S(), now=Date.now();
- v.innerHTML=`<div class="step">${crumb("nov")}<p class="q">Novedades</p><p class="sub">Historial de lo que indicó supervisión.</p>
+ v.innerHTML=`<div class="step">${crumb("nov")}<p class="q">Avisos y directivas</p><p class="sub">Historial de lo que indicó supervisión.</p>
  <section class="sec"><h2>Directivas</h2><div class="notes">${DIRS.map(d=>`<article class="note"><h3>${c.esc(d.title)}</h3><p>${c.esc(d.text)}</p><div class="meta"><span>${c.esc(d.source)} · ${c.esc(d.sector)}</span></div></article>`).join("")}</div></section>
  <section class="sec" style="margin-top:20px"><h2>Avisos</h2><div class="notes">${s.avisos.slice().reverse().map(a=>`<article class="note"><h3>${c.esc(a.title)} ${a.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${c.esc(a.body)}</p><div class="meta"><span>${c.esc(a.source)} · ${c.fmt(a.date)}</span><span class="tag">${a.archived?"Archivado":a.exp&&a.exp<now?"Vencido":"Vigente"}</span></div></article>`).join("")}</div></section></div>`; };
 
@@ -232,10 +233,118 @@ V.valid=(v,c)=>{
  <div class="chips" style="margin-bottom:14px">${secs.map(x=>`<button class="chip" data-act="vsec" data-v="${x}" style="${f===x?"border-color:var(--pri)":""}">${x}</button>`).join("")}</div>
  <div class="cols">${SL.map(([k,l,t])=>`<section class="col"><h3>${l} (${by[k].length})</h3><div style="display:grid;gap:8px;max-height:70vh;overflow:auto">${by[k].map(x=>`<article class="kc"><b>${c.esc(x.issue)}</b><p>${c.esc(x.system)} · ${x.sector==="safe"?"SAFE":"911"}</p><div class="acts"><button class="btn ghost sm" data-act="open" data-id="${x.id}">Abrir</button>${k!=="validado"?`<button class="btn ok sm" data-act="vok" data-id="${x.id}">Validar</button>`:`<button class="link" data-act="vback" data-id="${x.id}">Volver a revisión</button>`}</div></article>`).join("")||`<div class="empty">Nada por acá.</div>`}</div></section>`).join("")}</div></div>`; };
 
+
+/* ---------- novedades y material pendiente (bandeja de entrada) ---------- */
+const IST=["Pendiente de clasificar","En revisión","Listo para integrar","Integrado","Archivado"];
+const ISEC=["SAFE / Objetivos Móviles","Monitoreo 911","Todos los sectores","Sin clasificar"];
+const nz=t=>String(t||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+function inbClassify(raw,srcIn){
+ let text=String(raw||"").replace(/\r/g,"").trim(), author="", date="";
+ const m=text.match(/^\[?(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2})(?::\d{2})?\]?\s*(?:-\s*)?([^:\n]{1,40}):\s*([\s\S]*)$/);
+ if(m){ date=m[1]+" "+m[2]; author=m[3].trim(); text=m[4].trim(); }
+ const notes=[];
+ const cred=/((?:contrase[ñn]a|clave|password|pass|pwd|usuario|user)\s*[:=]\s*)(\S+)/gi;
+ if(cred.test(text)){ text=text.replace(cred,"$1[oculto]"); notes.push("Se ocultaron usuario/clave que venían en el mensaje. Las claves no se guardan acá."); }
+ const n=nz(text);
+ const safe=/\b(safe|c0a|c0c|apv|acv|aps|acs|opd|opc|cabina|chofer|patente|desenganche|vehiculo|camion|gps|avl|temperatur|geocerca|remolque|combustible|unidad(es)?)\b/.test(n);
+ const fijo=/\b(911|e-?911|domicilio|tamper|panel|alarmas? fijas?|hogar|comercio|sensor|teclado|zona)\b/.test(n);
+ const sector=safe&&fijo?"Todos los sectores":safe?"SAFE / Objetivos Móviles":fijo?"Monitoreo 911":"Sin clasificar";
+ const TAGS=[["Temperatura",/temperatur|frio|camara frigor/],["Puertas y códigos",/puerta|codigo|c0a|c0c|apv|acv|aps|acs/],["Pánico y asalto",/panico|asalto|robo|coaccion/],["Comunicación y reportes",/report|mensaje|whatsapp|llamar|comunica|mail|correo/],["Capacitación",/capacita|curso|video|tutorial|manual/],["Servicio técnico",/service|tecnico|instalad|reparaci/],["Accesos",/acceso|usuario|login|plataforma|ingres/],["ATCL",/atcl/],["Certificados y asignación",/certificad|asignaci/],["Energía y batería",/bateria|energia|corte de luz|fuente/],["Seguimiento",/seguimiento|monitore|rastreo|recorrido/],["Horarios",/horari|turno|guardia|feriado/]];
+ const tags=TAGS.filter(t=>t[1].test(n)).map(t=>t[0]);
+ const plat=/softguard/.test(n)?"SoftGuard":/bykom/.test(n)?"Bykom":"";
+ const links=(text.match(/https?:\/\/[^\s)]+/g)||[]);
+ const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const first=lines.find(l=>!/^(hola|buen[oa]s?|que tal|saludos|estimados?)[\s,.!]*(dias?|tardes?|noches?|a todos|todos|equipo|chicos)?[\s,.!]*$/i.test(l))||lines[0]||"Novedad sin título";
+ let title=[plat,tags[0],first].filter(Boolean).join(" — "); if(title.length>180) title=title.slice(0,177)+"…";
+ let dest=(tags.length&&tags.every(t=>t==="Accesos"||t==="Capacitación"))||(links.length&&text.replace(/https?:\/\/\S+/g,"").trim().length<60)?"Recursos":tags.includes("ATCL")?"Otro":(tags.length||sector!=="Sin clasificar")?"Procedimientos":"Por definir";
+ let t2=text;
+ const tel=/(?<!\d)(?:\+?54\s?)?(?:9\s?)?(?:11|[2-3]\d{2,3})[\s-]?\d{3,4}[\s-]?\d{4}(?!\d)/;
+ if(tel.test(t2)) notes.push("Tiene un número de teléfono: revisalo antes de integrarlo como procedimiento.");
+ if(sector==="Sin clasificar") notes.push("No se pudo detectar el sector: elegilo al revisar.");
+ if(!tags.length) notes.push("Sin tema claro: definí a dónde va.");
+ return {title,text:t2,source:(srcIn||"").trim()||("WhatsApp"+(author?" · "+author:"")+(date?" · "+date:"")),sector,tags,platform:plat,links,dest,status:"En revisión",notes};
+}
+const stepsFrom=t=>{
+ let L=String(t).split(/\n+/).map(x=>x.replace(/^\s*(?:[-*•]|\d{1,2}[.)])\s*/,"").trim()).filter(Boolean);
+ if(L.length<2){ L=String(t).split(/(?<=[.!?])\s+/).map(x=>x.trim()).filter(Boolean); }
+ return L.slice(0,15);
+};
+function inbToCase(x){
+ const safe=x.sector==="SAFE / Objetivos Móviles"; const st=stepsFrom(x.text);
+ return {id:"inb-"+x.id,sector:safe?"safe":"fijo",system:safe?"Plataforma SAFE":"Monitoreo 911",code:"",issue:x.title.replace(/^.*? — /,"").slice(0,120)||x.title,causes:"",question:"",action:st.map((t,i)=>(i+1)+") "+t).join(" "),video:"",manualPage:"",backup:"Novedad cargada desde la bandeja ("+x.source+"). Falta validación de supervisión.",confidence:"BORRADOR",commandHint:"",decision:""};
+}
+/* los procesos ya convertidos vuelven a existir al abrir la página */
+try{ const sv=JSON.parse(localStorage.getItem("vg_proto_v1")||"{}"); (sv.inbox||[]).forEach(x=>{ if(x.proc) X.cases.push(x.proc); }); }catch(e){}
+const IOPT=(a,sel)=>a.map(o=>`<option${o===sel?" selected":""}>${o}</option>`).join("");
+const DESTS=["Procedimientos","Respuestas","Recursos","Otro","Por definir"];
+st2.iq="";st2.ie="Todos";st2.is="Todos";st2.iv="planilla";st2.ide=null;st2.ied=null;
+const stClass=s=>({"Pendiente de clasificar":"warn","En revisión":"pri","Listo para integrar":"ok","Integrado":"ok","Archivado":""}[s]||"");
+V.inbox=(v,c)=>{
+ const s=c.S(), sup=c.st.role!=="op";
+ v.innerHTML=`<div class="step">${crumb("inbox")}<p class="q">Novedades y material pendiente</p>
+ <p class="sub">Pegá lo que manda Kike por WhatsApp. El sistema lo clasifica y lo deja en revisión; supervisión lo convierte en procedimiento.</p>
+ <form class="card form" data-vform="inbox"><h3>Pegar desde WhatsApp</h3>
+  ${field("Mensaje original",`<textarea id="inT" name="text" required rows="6" style="min-height:140px" placeholder="Pegá acá el mensaje completo"></textarea>`)}
+  ${field("Fuente / autor (opcional)",`<input id="inS" name="source" maxlength="120" placeholder="Si lo dejás vacío, se toma del mensaje">`)}
+  <p class="sub" id="inP" style="margin:0">Pegá un mensaje para ver cómo se va a clasificar.</p>
+  <div class="acts"><button class="btn ok" type="submit">Cargar automáticamente</button><button class="btn ghost" type="button" data-act="inclr">Limpiar</button></div></form>
+ <details class="card" style="margin-top:12px"><summary><b>Carga manual</b></summary><form class="form" data-vform="inman" style="margin-top:10px">
+  ${field("Título",`<input name="title" required maxlength="180">`)}${field("Contenido original",`<textarea name="text" required rows="5"></textarea>`)}
+  ${field("Enlace (opcional)",`<input name="url" type="url" maxlength="300">`)}${field("Fuente",`<input name="source" maxlength="120" placeholder="WhatsApp · Kike">`)}
+  ${field("Sector",`<select name="sector">${IOPT(ISEC)}</select>`)}${field("Destino",`<select name="dest">${IOPT(DESTS,"Por definir")}</select>`)}${field("Notas",`<textarea name="notes" rows="2"></textarea>`)}
+  <div class="acts"><button class="btn" type="submit">Guardar en revisión</button></div></form></details>
+ <section class="card" style="margin-top:14px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center"><h3 style="margin:0">Registro de novedades <span class="tag" id="inN"></span></h3>
+  <div class="acts" style="margin:0"><button class="btn sm ghost" data-act="inview" data-v="planilla">Vista planilla</button><button class="btn sm ghost" data-act="inview" data-v="resumen">Vista resumida</button><button class="btn sm ghost" data-act="inexp">Exportar CSV</button></div></div>
+  <div class="kpis" id="inK" style="margin:12px 0"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap"><input id="inQ" placeholder="Buscar en título, texto, fuente y notas" value="${c.esc(st2.iq)}" style="flex:1;min-width:200px;height:44px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--tx);padding:0 12px">
+   <select id="inE" aria-label="Filtrar por estado" style="height:44px"><option>Todos</option>${IOPT(IST,st2.ie)}</select>
+   <select id="inC" aria-label="Filtrar por sector" style="height:44px"><option>Todos</option>${IOPT(ISEC,st2.is)}</select></div>
+  <div id="inD"></div><div id="inL" style="margin-top:12px"></div></section></div>`;
+ const paint=()=>{
+  const A=arr(s,"inbox"), q=nz(st2.iq).split(/\s+/).filter(Boolean);
+  const L=A.filter(x=>(st2.ie==="Todos"||x.status===st2.ie)&&(st2.is==="Todos"||x.sector===st2.is)&&q.every(w=>nz([x.title,x.text,x.source,(x.notes||[]).join(" "),x.dest,(x.tags||[]).join(" ")].join(" ")).includes(w))).sort((a,b)=>b.at-a.at);
+  v.querySelector("#inN").textContent=L.length+" de "+A.length+" registros";
+  v.querySelector("#inK").innerHTML=IST.map(k=>`<button class="kpi" data-act="inflt" data-v="${k}" style="text-align:left;cursor:pointer;${st2.ie===k?"border-color:var(--pri)":""}"><b>${A.filter(x=>x.status===k).length}</b><span>${k}</span></button>`).join("");
+  const sel=A.find(x=>x.id===st2.ide), ed=A.find(x=>x.id===st2.ied);
+  let D="";
+  if(ed) D=`<form class="card form" data-vform="inedit" data-id="${ed.id}" style="margin-top:12px"><h3>Editar novedad</h3>${field("Título",`<input name="title" required maxlength="180" value="${c.esc(ed.title)}">`)}${field("Contenido",`<textarea name="text" required rows="6">${c.esc(ed.text)}</textarea>`)}
+   ${field("Fuente",`<input name="source" value="${c.esc(ed.source)}">`)}${field("Sector",`<select name="sector">${IOPT(ISEC,ed.sector)}</select>`)}${field("Destino",`<select name="dest">${IOPT(DESTS,ed.dest)}</select>`)}${field("Estado",`<select name="status">${IOPT(IST,ed.status)}</select>`)}${field("Notas de revisión (una por línea)",`<textarea name="notes" rows="3">${c.esc((ed.notes||[]).join("\n"))}</textarea>`)}
+   <div class="acts"><button class="btn ok" type="submit">Guardar</button><button class="btn ghost" type="button" data-act="inx">Cancelar</button></div></form>`;
+  else if(sel) D=`<article class="card" style="margin-top:12px"><h3>${c.esc(sel.title)}</h3><div class="meta"><span class="tag ${stClass(sel.status)}">${sel.status}</span><span>${c.esc(sel.sector)}</span><span>Destino: ${c.esc(sel.dest)}</span><span>${c.esc(sel.source)}</span><span>${when(sel.at)}</span></div>
+   <h4>Contenido original</h4><p style="white-space:pre-wrap">${c.esc(sel.text)}</p>
+   ${(sel.tags||[]).length?`<p><b>Temas:</b> ${sel.tags.map(t=>`<span class="tag">${c.esc(t)}</span>`).join(" ")}</p>`:""}
+   ${(sel.links||[]).length?`<p>${sel.links.map(u=>/^https?:/.test(u)?`<a href="${c.esc(u)}" target="_blank" rel="noopener">${c.esc(u)}</a>`:"").join("<br>")}</p>`:""}
+   ${(sel.notes||[]).length?`<h4>Notas de revisión</h4><ul>${sel.notes.map(n2=>`<li>${c.esc(n2)}</li>`).join("")}</ul>`:""}
+   <div class="acts">${sel.proc?`<button class="btn sm ok" data-act="open" data-id="${sel.proc.id}">Ver el procedimiento</button>`:sup?`<button class="btn sm ok" data-act="inproc" data-id="${sel.id}">Convertir en procedimiento</button>`:`<span class="sub">Supervisión la convierte en procedimiento.</span>`}
+    ${sup?`<button class="btn sm ghost" data-act="inedit" data-id="${sel.id}">Editar</button>`:""}${sup&&sel.status!=="Archivado"?`<button class="btn sm ghost" data-act="inarch" data-id="${sel.id}">Archivar</button>`:""}${sup?`<button class="link" data-act="indel" data-id="${sel.id}">Eliminar</button>`:""}<button class="btn sm ghost" data-act="inx">Cerrar</button></div></article>`;
+  v.querySelector("#inD").innerHTML=D;
+  v.querySelector("#inL").innerHTML=!L.length?`<div class="empty">${A.length?"Ningún registro coincide con el filtro.":"Todavía no hay novedades. Pegá el primer mensaje arriba."}</div>`
+   :st2.iv==="resumen"?`<div class="stack">${L.map(x=>`<article class="item"><h3>${c.esc(x.title)}</h3><div class="meta"><span class="tag ${stClass(x.status)}">${x.status}</span><span>${c.esc(x.sector)}</span><span>${c.esc(x.dest)}</span><span>${when(x.at)}</span></div><div class="acts"><button class="btn sm" data-act="inver" data-id="${x.id}">Ver ficha</button>${sup?`<button class="btn sm ghost" data-act="inedit" data-id="${x.id}">Editar</button>`:""}</div></article>`).join("")}</div>`
+   :`<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;font-size:15px"><thead><tr style="text-align:left">${["Título","Contenido","Sector","Estado / destino","Fuente","Notas","Fecha","Acción"].map(h=>`<th style="padding:8px;border-bottom:2px solid var(--line)">${h}</th>`).join("")}</tr></thead><tbody>${L.map(x=>`<tr style="vertical-align:top;border-bottom:1px solid var(--line)"><td style="padding:8px;min-width:200px"><b>${c.esc(x.title)}</b></td><td style="padding:8px;min-width:220px">${c.esc(x.text.slice(0,140))}${x.text.length>140?"…":""}</td><td style="padding:8px">${c.esc(x.sector)}</td><td style="padding:8px"><span class="tag ${stClass(x.status)}">${x.status}</span><br>${c.esc(x.dest)}</td><td style="padding:8px">${c.esc(x.source)}</td><td style="padding:8px">${(x.notes||[]).length}</td><td style="padding:8px;white-space:nowrap">${when(x.at)}</td><td style="padding:8px;white-space:nowrap"><button class="btn sm" data-act="inver" data-id="${x.id}">Ver ficha</button>${sup?` <button class="btn sm ghost" data-act="inedit" data-id="${x.id}">Editar</button>`:""}</td></tr>`).join("")}</tbody></table></div>`;
+ };
+ V._inpaint=paint; paint();
+ const T=v.querySelector("#inT"), S2=v.querySelector("#inS"), P=v.querySelector("#inP");
+ const prev=()=>{ if(!T.value.trim()){ P.textContent="Pegá un mensaje para ver cómo se va a clasificar."; return; } const r=inbClassify(T.value,S2.value); P.innerHTML=`<b>Se va a cargar como:</b> ${c.esc(r.title)}<br>Sector: ${c.esc(r.sector)} · Destino: ${c.esc(r.dest)} · Estado: En revisión${r.notes.length?"<br>⚠ "+r.notes.map(c.esc).join(" · "):""}`; };
+ T.addEventListener("input",prev); S2.addEventListener("input",prev);
+ v.querySelector("#inQ").addEventListener("input",e=>{ st2.iq=e.target.value; paint(); });
+ v.querySelector("#inE").addEventListener("change",e=>{ st2.ie=e.target.value; paint(); });
+ v.querySelector("#inC").addEventListener("change",e=>{ st2.is=e.target.value; paint(); });
+};
+
 /* ---------- acciones ---------- */
 V.act=(a,b,c)=>{
  const s=c.S(), id=b.dataset.id, find=k=>arr(s,k).find(x=>x.id===id);
  if(a!=="act"&&typeof V[a]==="function"&&a!=="submit"){ c.go(a); scrollTo({top:0}); return true; }
+ if(a==="inclr"){ c.go("inbox"); return true; }
+ if(a==="inview"){ st2.iv=b.dataset.v; V._inpaint(); return true; }
+ if(a==="inflt"){ st2.ie=st2.ie===b.dataset.v?"Todos":b.dataset.v; c.go("inbox"); return true; }
+ if(a==="inver"){ st2.ide=id; st2.ied=null; V._inpaint(); c.view.querySelector("#inD").scrollIntoView({behavior:"smooth",block:"center"}); return true; }
+ if(a==="inedit"){ st2.ied=id; st2.ide=null; V._inpaint(); c.view.querySelector("#inD").scrollIntoView({behavior:"smooth",block:"center"}); return true; }
+ if(a==="inx"){ st2.ide=st2.ied=null; V._inpaint(); return true; }
+ if(a==="inarch"){ const x=find("inbox"); if(x){ x.status="Archivado"; c.save(); V._inpaint(); } return true; }
+ if(a==="indel"){ const x=find("inbox"); if(x&&!x.proc&&confirm("¿Eliminar esta novedad?")){ s.inbox=arr(s,"inbox").filter(y=>y.id!==id); st2.ide=null; c.save(); V._inpaint(); } return true; }
+ if(a==="inproc"){ const x=find("inbox"); if(x&&!x.proc){ const k=inbToCase(x); x.proc=k; x.status="Integrado"; x.dest="Procedimientos"; obj(s,"val")[k.id]={st:"borrador",by:c.st.role,at:Date.now()}; c.save(); if(window.VIGILIA_ADDCASE) window.VIGILIA_ADDCASE(k); c.toast("Cargado como procedimiento nuevo, sin validar"); V._inpaint(); } return true; }
+ if(a==="inexp"){ const q=v2=>'"'+String(v2==null?"":v2).replace(/"/g,'""')+'"'; const rows=[["Título","Contenido","Sector","Estado","Destino","Fuente","Notas","Fecha"]].concat(arr(s,"inbox").map(x=>[x.title,x.text,x.sector,x.status,x.dest,x.source,(x.notes||[]).join(" | "),new Date(x.at).toISOString()])); const bl=new Blob(["\ufeff"+rows.map(r=>r.map(q).join(",")).join("\n")],{type:"text/csv"}); const u=URL.createObjectURL(bl), l=document.createElement("a"); l.href=u; l.download="novedades.csv"; l.click(); setTimeout(()=>URL.revokeObjectURL(u),2000); return true; }
  if(a==="vsend"){ obj(s,"val")[id]={st:"enviado",by:"op",at:Date.now()}; c.save(); c.toast("Enviado al supervisor para validar"); c.go(c.st.mode); return true; }
  if(a==="vok"){ obj(s,"val")[id]={st:"validado",by:c.st.role,at:Date.now()}; c.save(); c.toast("Validado"); c.go(c.st.mode); return true; }
  if(a==="vback"){ obj(s,"val")[id]={st:"borrador",by:c.st.role,at:Date.now()}; c.save(); c.go(c.st.mode); return true; }
@@ -255,6 +364,9 @@ V.act=(a,b,c)=>{
 };
 V.submit=(f,c,sub)=>{
  const d=new FormData(f,sub||undefined), s=c.S(), now=Date.now(), id="x"+now, k=f.dataset.vform, g=n=>String(d.get(n)||"").trim();
+ if(k==="inbox"){ const r=inbClassify(g("text"),g("source")); arr(s,"inbox").push(Object.assign({id:"n"+now},r,{at:now})); st2.ie="Todos";st2.is="Todos";st2.iq=""; st2.ide="n"+now; c.save(); c.toast("Cargado en revisión: "+r.sector); c.go("inbox"); return true; }
+ if(k==="inman"){ const r=inbClassify(g("text"),g("source")); const it=Object.assign({id:"n"+now},r,{title:g("title"),sector:g("sector"),dest:g("dest"),at:now}); const u=g("url"); if(u&&/^https?:\/\//.test(u)) it.links=[u]; const nt=g("notes"); if(nt) it.notes=nt.split(/\n+/).concat(it.notes); arr(s,"inbox").push(it); st2.ide="n"+now; c.save(); c.toast("Guardado en revisión"); c.go("inbox"); return true; }
+ if(k==="inedit"){ const x=arr(s,"inbox").find(y=>y.id===f.dataset.id); if(x){ x.title=g("title"); x.text=g("text"); x.source=g("source"); x.sector=g("sector"); x.dest=g("dest"); x.status=g("status"); x.notes=g("notes").split(/\n+/).map(t=>t.trim()).filter(Boolean); } st2.ied=null; st2.ide=f.dataset.id; c.save(); c.toast("Guardado"); c.go("inbox"); return true; }
  if(k==="valedit"){ const x=c.byId(f.dataset.id); if(!x) return false; const e={question:g("question"),steps:g("steps").split(/\n+/).map(t=>t.trim()).filter(Boolean),backup:g("backup")}; obj(s,"edits")[x.id]=e; applyEdit(x,e); obj(s,"val")[x.id]={st:"validado",by:c.st.role,at:now}; c.st.editing=null; c.save(); c.toast("Corregido y validado"); c.go("guide"); return true; }
  if(k==="resp") arr(s,"resp").push({id:"u"+now,title:g("title"),sector:g("sector"),channel:g("channel"),tags:"",text:g("text"),by:c.st.role==="op"?"operador":"supervisión"});
  else if(k==="learn") arr(s,"learn").push({id,q:g("q"),text:g("text"),sector:g("sector"),st:"Pendiente",at:now});

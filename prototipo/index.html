@@ -263,6 +263,7 @@ const IDX=CASES.map(c=>({
   c, issue:new Set(toks(c.issue)), code:new Set(toks(noRef(c.code))), sys:sysTokens(c.system),
   rest:new Set(toks([c.question,c.action,c.backup,c.causes,c.commandHint].join(" ")))
 }));
+window.VIGILIA_ADDCASE=c=>{ CASES.push(c); IDX.push({c, issue:new Set(toks(c.issue)), code:new Set(toks(noRef(c.code))), sys:sysTokens(c.system), rest:new Set(toks([c.question,c.action,c.backup,c.causes,c.commandHint].join(" ")))}); };
 function search(q){
   const qt=[...new Set(toks(q))]; if(!qt.length) return {list:[],sys:null};
   const sysHit=new Set(); qt.forEach(t=>CASES.forEach(c=>{ if(sysTokens(c.system).has(t) && t.length>2) sysHit.add(c.system); }));
