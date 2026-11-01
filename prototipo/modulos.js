@@ -190,10 +190,58 @@ V.acc=(v,c)=>{
  ${sup?`<form class="card form" data-vform="acc" style="margin-top:18px"><h3>Agregar acceso</h3>${field("Plataforma",`<input name="plat" required maxlength="60">`)}${field("Usuario",`<input name="user" required maxlength="60" autocomplete="off">`)}${field("Clave",`<input name="pass" type="password" required maxlength="80" autocomplete="new-password">`)}${field("Nota",`<input name="note" maxlength="120" placeholder="Para qué se usa">`)}<button class="btn" type="submit">Guardar</button></form>`:""}
  ${adm?`<section class="card"><h3>Registro de copias</h3>${arr(s,"accLog").slice(-10).reverse().map(l=>`<div class="brow" style="grid-template-columns:110px 1fr"><span>${when(l.at)}</span><span>${c.esc(l.who)} copió ${l.w==="pass"?"la clave":"el usuario"} de ${c.esc(l.plat)}</span></div>`).join("")||`<div class="empty">Sin copias todavía.</div>`}</section>`:""}</div>`; };
 
+/* ---------- validación de procedimientos ---------- */
+const obj=(s,k)=>s[k]||(s[k]={});
+const base=c=>(c.kind==="diag"||c.confidence==="ALTA"||c.confidence==="OPERATIVO")?"validado":"borrador";
+const vstate=(c,s)=>((s.val||{})[c.id]||{}).st||base(c);
+const who=r=>r==="adm"?"Administración":"Supervisión";
+function applyEdit(c,e){ c.question=e.question; c.action=e.steps.map((t,i)=>(i+1)+") "+t).join(" "); c.backup=e.backup; }
+V.init=(c)=>{ const E=c.S().edits||{}; Object.keys(E).forEach(id=>{ const x=c.byId(id); if(x) applyEdit(x,E[id]); }); };
+V.guideBlock=(x,c)=>{
+ const s=c.S(), st=vstate(x,s), rec=(s.val||{})[x.id]||{}, sup=c.st.role!=="op", ed=c.st.editing===x.id;
+ const stepsOf=t=>String(t||"").split(/\s*(?=\b\d{1,2}\)\s)/).map(y=>y.replace(/^\d{1,2}\)\s*/,"").trim()).filter(Boolean);
+ const btn=(a,l,cls)=>`<button class="btn sm ${cls||"ghost"}" data-act="${a}" data-id="${x.id}">${l}</button>`;
+ let bar,acts="";
+ if(st==="validado"){
+  bar=`<div class="okbar"><b>Validado.</b> ${rec.at?`Lo validó ${who(rec.by)} el ${c.fmt(rec.at)}. `:"Viene de una fuente oficial (manual o norma). "}Es el procedimiento para todos los operadores.</div>`;
+  if(sup) acts=btn("vedit","Corregir")+btn("vback","Volver a revisión");
+ }else if(st==="enviado"){
+  bar=`<div class="warnbar"><b>Enviado a validar.</b> ${rec.at?`Lo envió ${rec.by==="op"?"un operador":who(rec.by)} el ${c.fmt(rec.at)}. `:""}Mientras tanto se puede usar, pero falta que supervisión lo confirme.</div>`;
+  if(sup) acts=btn("vok","Validar","ok")+btn("vedit","Corregir y validar");
+ }else{
+  bar=`<div class="warnbar"><b>Sin validar.</b> Se puede usar como procedimiento, pero falta que supervisión lo valide.</div>`;
+  acts=sup?btn("vok","Validar","ok")+btn("vedit","Corregir y validar"):btn("vsend","Enviar al supervisor para validar","ok");
+ }
+ const form=ed?`<form class="card form" data-vform="valedit" data-id="${x.id}" style="margin-top:12px"><h3>Corregir y validar</h3>
+  ${field("Pregunta al cliente (opcional)",`<input name="question" maxlength="200" value="${c.esc(x.question||"")}">`)}
+  ${field("Pasos (uno por línea)",`<textarea name="steps" required rows="8" style="min-height:160px">${c.esc(stepsOf(x.action).join("\n"))}</textarea>`)}
+  ${field("Respaldo y contexto",`<textarea name="backup" rows="3">${c.esc(x.backup||"")}</textarea>`)}
+  <div class="acts"><button class="btn ok" type="submit">Guardar y validar</button><button class="btn ghost" type="button" data-act="vcancel">Cancelar</button></div></form>`:"";
+ return `<div style="margin-top:14px">${bar}${acts&&!ed?`<div class="acts" style="margin-top:10px">${acts}</div>`:""}${form}</div>`;
+};
+const SL=[["borrador","Sin validar","warn"],["enviado","Enviados por operadores","pri"],["validado","Validados","ok"]];
+V.valid=(v,c)=>{
+ const s=c.S();
+ if(c.st.role==="op"){ v.innerHTML=`<div class="step"><div class="empty">Esta pantalla es de supervisión.</div></div>`; return; }
+ const f=st2.vsec||"Todos", list=c.CASES.filter(x=>f==="Todos"||(f==="SAFE"?x.sector==="safe":x.sector!=="safe"));
+ const by={borrador:[],enviado:[],validado:[]}; list.forEach(x=>by[vstate(x,s)].push(x));
+ Object.values(by).forEach(a=>a.sort((p,q)=>(p.sector==="safe"?0:1)-(q.sector==="safe"?0:1)||p.system.localeCompare(q.system)||p.issue.localeCompare(q.issue)));
+ const secs=["Todos","SAFE","Objetivo Fijo 911"];
+ v.innerHTML=`<div class="step"><div class="crumbs"><button data-act="home">Inicio</button><span>›</span><span class="cur">Validación de procedimientos</span></div>
+ <p class="q">Validación de procedimientos</p><p class="sub">Un procedimiento validado es el oficial para todos. Abrilo, leelo, corregilo si hace falta y validalo. Si un operador lo envía, aparece en la columna del medio.</p>
+ <div class="chips" style="margin-bottom:14px">${secs.map(x=>`<button class="chip" data-act="vsec" data-v="${x}" style="${f===x?"border-color:var(--pri)":""}">${x}</button>`).join("")}</div>
+ <div class="cols">${SL.map(([k,l,t])=>`<section class="col"><h3>${l} (${by[k].length})</h3><div style="display:grid;gap:8px;max-height:70vh;overflow:auto">${by[k].map(x=>`<article class="kc"><b>${c.esc(x.issue)}</b><p>${c.esc(x.system)} · ${x.sector==="safe"?"SAFE":"911"}</p><div class="acts"><button class="btn ghost sm" data-act="open" data-id="${x.id}">Abrir</button>${k!=="validado"?`<button class="btn ok sm" data-act="vok" data-id="${x.id}">Validar</button>`:`<button class="link" data-act="vback" data-id="${x.id}">Volver a revisión</button>`}</div></article>`).join("")||`<div class="empty">Nada por acá.</div>`}</div></section>`).join("")}</div></div>`; };
+
 /* ---------- acciones ---------- */
 V.act=(a,b,c)=>{
  const s=c.S(), id=b.dataset.id, find=k=>arr(s,k).find(x=>x.id===id);
  if(a!=="act"&&typeof V[a]==="function"&&a!=="submit"){ c.go(a); scrollTo({top:0}); return true; }
+ if(a==="vsend"){ obj(s,"val")[id]={st:"enviado",by:"op",at:Date.now()}; c.save(); c.toast("Enviado al supervisor para validar"); c.go(c.st.mode); return true; }
+ if(a==="vok"){ obj(s,"val")[id]={st:"validado",by:c.st.role,at:Date.now()}; c.save(); c.toast("Validado"); c.go(c.st.mode); return true; }
+ if(a==="vback"){ obj(s,"val")[id]={st:"borrador",by:c.st.role,at:Date.now()}; c.save(); c.go(c.st.mode); return true; }
+ if(a==="vedit"){ c.st.editing=id; c.go("guide"); return true; }
+ if(a==="vcancel"){ c.st.editing=null; c.go("guide"); return true; }
+ if(a==="vsec"){ st2.vsec=b.dataset.v; V.valid(c.view,c); return true; }
  if(a==="acopy"){ const x=find("acc"); if(x){ c.copy(x[b.dataset.w]).then(()=>{ arr(s,"accLog").push({who:c.st.role==="adm"?"Administrador":c.st.role==="sup"?"Supervisor":"Operador",plat:x.plat,w:b.dataset.w,at:Date.now()}); c.save(); c.toast(b.dataset.w==="pass"?"Clave copiada":"Usuario copiado"); }); } return true; }
  if(a==="adel"){ s.acc=arr(s,"acc").filter(x=>x.id!==id); c.save(); V.acc(c.view,c); return true; }
  if(a==="rsec"){ st2.rs=b.dataset.v; V.resp(c.view,c); return true; }
@@ -207,6 +255,7 @@ V.act=(a,b,c)=>{
 };
 V.submit=(f,c,sub)=>{
  const d=new FormData(f,sub||undefined), s=c.S(), now=Date.now(), id="x"+now, k=f.dataset.vform, g=n=>String(d.get(n)||"").trim();
+ if(k==="valedit"){ const x=c.byId(f.dataset.id); if(!x) return false; const e={question:g("question"),steps:g("steps").split(/\n+/).map(t=>t.trim()).filter(Boolean),backup:g("backup")}; obj(s,"edits")[x.id]=e; applyEdit(x,e); obj(s,"val")[x.id]={st:"validado",by:c.st.role,at:now}; c.st.editing=null; c.save(); c.toast("Corregido y validado"); c.go("guide"); return true; }
  if(k==="resp") arr(s,"resp").push({id:"u"+now,title:g("title"),sector:g("sector"),channel:g("channel"),tags:"",text:g("text"),by:c.st.role==="op"?"operador":"supervisión"});
  else if(k==="learn") arr(s,"learn").push({id,q:g("q"),text:g("text"),sector:g("sector"),st:"Pendiente",at:now});
  else if(k==="lans"){ const x=arr(s,"learn").find(y=>y.id===f.dataset.id); if(x){ x.ans=g("ans"); x.st=d.get("to")||"Respondido"; } }

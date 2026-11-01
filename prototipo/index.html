@@ -125,6 +125,7 @@ kbd{display:inline-block;min-width:2em;padding:2px 10px 0;margin:0 2px;text-alig
 .after{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .vid{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center}
 .vid .play{width:72px;height:54px;border-radius:12px;background:var(--bg);border:1px dashed var(--line);display:grid;place-items:center;color:var(--mu)}
+.okbar{background:color-mix(in srgb,var(--ok) 10%,var(--card));border:1px solid var(--ok);border-radius:12px;padding:12px 16px;margin-top:14px}
 .warnbar{background:color-mix(in srgb,var(--bad) 12%,var(--card));border:1px solid var(--bad);border-radius:12px;padding:12px 16px;margin-top:14px}
 .src{display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--mu);font-size:15px}
 details summary{cursor:pointer;color:var(--mu);font-size:16px}
@@ -164,6 +165,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
   <button class="tool" id="bAvisos" data-act="home" title="Ir al inicio">Inicio</button>
   <button class="tool" data-act="mas">Más</button>
   <button class="tool" id="bGestion" data-act="manage" hidden>Gestión</button>
+  <button class="tool" id="bValid" data-act="valid" hidden>Validación</button>
   <span class="seg" style="margin:0" role="group" aria-label="Rol de la demo">
     <button data-role="op" aria-pressed="true">Operador</button>
     <button data-role="sup" aria-pressed="false">Supervisor</button>
@@ -295,7 +297,7 @@ function unreadAvisos(){ const s=S(); return activeAvisos().filter(a=>!s.read[a.
 function updateChrome(){
   const u=unreadAvisos().length;
   $("#bAvisos").innerHTML="Inicio"+(u?`<span class="badge" title="Avisos sin leer">${u}</span>`:"");
-  $("#bGestion").hidden=st.role==="op";
+  $("#bGestion").hidden=st.role==="op"; $("#bValid").hidden=st.role==="op";
   document.querySelectorAll("[data-role]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.role===st.role));
   document.querySelectorAll("[data-sector]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.sector===st.sector));
 }
@@ -382,7 +384,7 @@ function renderGuide(){
   view.innerHTML=`<div class="step">${crumbs()}
    <div class="gh"><h2>${esc(c.issue)}</h2><span class="tag ${tone(c.decision)}">${esc(c.decision)}</span></div>
    <div class="src"><span>${esc(c.system)}</span>${c.manualPage&&c.manualPage!=="-"?`<span>· ${/^[\d]/.test(c.manualPage)?"Manual oficial p. ":""}${esc(c.manualPage)}</span>`:""}<span>· Confianza ${esc(c.confidence.toLowerCase())}</span>${manualLink(c)}</div>
-   ${verified?"":`<div class="warnbar"><b>Sin confirmar.</b> Validá con supervisión antes de indicar estos pasos al cliente.</div>`}
+   ${VX.guideBlock?VX.guideBlock(c,ctx()):""}
    ${links.map(l=>`<article class="note" style="margin-top:14px"><h3>${esc(l.title)} ${l.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${esc(l.body)}</p><div class="meta"><span>${esc(l.source)} · ${fmt(l.date)}</span></div></article>`).join("")}
    ${c.question?`<section class="card"><h3>Preguntale al cliente</h3><p class="say" style="margin:0">${esc(c.question)}</p></section>`:""}
    ${cmd&&/\[[^\]]{1,6}\]/.test(cmd)?`<section class="card"><h3>Secuencia en el teclado</h3><div class="cmd">${rich(cmd)}</div></section>`:""}
@@ -501,6 +503,7 @@ function show(){
 }
 function go(mode){ st.mode=mode; show(); }
 const ctx=()=>({S,save,esc,go,toast,copy,st,view,CASES,byId,fmt,norm,log});
+if(VX.init) VX.init(ctx());
 function ask(q){
   st.q=q.trim(); qEl.value=st.q; if(!st.q){ go("home"); return; }
   log("buscar",st.q);
@@ -540,7 +543,7 @@ function copy(t){
 
 /* ---------- eventos ---------- */
 document.addEventListener("click",e=>{
-  const rb=e.target.closest("[data-role]"); if(rb){ st.role=rb.dataset.role; if(st.role==="op"&&st.mode==="manage") st.mode="home"; show(); return; }
+  const rb=e.target.closest("[data-role]"); if(rb){ st.role=rb.dataset.role; if(st.role==="op"&&(st.mode==="manage"||st.mode==="valid")) st.mode="home"; show(); return; }
   const sb=e.target.closest("[data-sector]"); if(sb){ st.sector=sb.dataset.sector; st.sectorLocked=true; if(st.q) ask(st.q); else show(); return; }
   const b=e.target.closest("[data-act]"); if(!b) return;
   const a=b.dataset.act, id=b.dataset.id, s=S();
