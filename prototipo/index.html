@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Manual Antimonos · Vigilia Seguridad</title>
+<title>Soporte Operativo Interno · Vigilia Seguridad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Atkinson+Hyperlegible+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -160,8 +160,9 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="brand">Manual Antimonos <small>Vigilia Seguridad · Central de Monitoreo</small></div>
+  <div class="brand">Central de Monitoreo <small>Soporte Operativo Interno de Vigilia Seguridad</small></div>
   <button class="tool" id="bAvisos" data-act="home" title="Ir al inicio">Inicio</button>
+  <button class="tool" data-act="mas">Más</button>
   <button class="tool" id="bGestion" data-act="manage" hidden>Gestión</button>
   <span class="seg" style="margin:0" role="group" aria-label="Rol de la demo">
     <button data-role="op" aria-pressed="true">Operador</button>
@@ -187,13 +188,14 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
     <ul class="sug" id="sug" aria-live="polite"></ul>
   </section>
   <div id="view"></div>
-  <footer>Prototipo. Las guías salen de “Manual Antimonos+Soluciones.xlsm”. Los avisos y novedades marcados “Ejemplo” son de muestra.</footer>
+  <footer>Prototipo. Las guías salen de “Manual Antimonos+Soluciones.xlsm” y de los procedimientos MON-01. Los avisos y novedades marcados “Ejemplo” son de muestra.</footer>
 </main>
 <div id="toast" role="status"></div>
 
 <script src="../data.js"></script>
 <script src="fallas.js"></script>
 <script src="guias-borrador.js"></script>
+<script src="modulos.js"></script>
 <script>
 (function(){
 "use strict";
@@ -204,7 +206,8 @@ const DIAG = FALLAS.map(f=>({id:"diag-"+f.id,kind:"diag",f,system:f.system,issue
   commandHint:"teclado hace ruido pitido suena luz de servicio problema falla avería led aviso"}));
 const EXTRA = (window.VIGILIA_EXTRA||{}).cases||[];
 const CASES = DATA.cases.concat(EXTRA, DIAG);
-const NONPANEL = new Set(["Protocolos de señal","Monitoreo 911","Plataforma SAFE","Equipos GPS"]);
+const NONPANEL = new Set(["Protocolos de señal","Monitoreo 911","Plataforma SAFE","Equipos GPS"].concat(window.VIGILIA_NONPANEL||[]));
+const VX = window.VIGILIA_VISTAS||{};
 const sectorOf = c => c.sector||"fijo";
 
 /* ---------- almacenamiento (en producción: Firestore) ---------- */
@@ -477,10 +480,12 @@ function renderManage(){
 /* ---------- navegación ---------- */
 function show(){
   updateChrome();
-  ({home:renderHome,manage:renderManage,safe:renderSafe,empty:renderEmpty,panel:renderPanel,variants:renderVariants,guide:renderGuide})[st.mode]();
+  if(typeof VX[st.mode]==="function") VX[st.mode](view,ctx());
+  else ({home:renderHome,manage:renderManage,safe:renderSafe,empty:renderEmpty,panel:renderPanel,variants:renderVariants,guide:renderGuide})[st.mode]();
   sugEl.innerHTML="";
 }
 function go(mode){ st.mode=mode; show(); }
+const ctx=()=>({S,save,esc,go,toast,copy,st,view,CASES,byId,fmt,norm,log});
 function ask(q){
   st.q=q.trim(); qEl.value=st.q; if(!st.q){ go("home"); return; }
   log("buscar",st.q);
@@ -539,13 +544,14 @@ document.addEventListener("click",e=>{
   else if(a==="escalate"){
     const c=byId(st.caseId), n=[...st.done].sort((x,y)=>x-y).map(i=>i+1);
     const t=`CONSULTA A SUPERVISIÓN\nConsulta del cliente: “${st.q}”\nPanel: ${c.system}\nGuía: ${c.issue}${c.manualPage&&c.manualPage!=="-"?` (${c.kind==="diag"?"":"Manual "}${/^\d/.test(c.manualPage)?"p. ":""}${c.manualPage})`:""}\n${c.kind==="diag"?"Indicación del teclado: "+(diagPath(c.f).filter(p=>p.opt).map(p=>(p.opt.k?p.opt.k+" ":"")+p.opt.label).join(" > ")||"sin determinar")+"\n":"Pasos realizados: "+(n.length?n.join(", "):"ninguno")+"\n"}Resultado: no se resolvió\nFecha y hora: ${new Date().toLocaleString("es-AR")}`;
-    copy(t).then(()=>{ log("escalado",c.issue); toast("Nota copiada. Pegala en el chat o en Bykom."); });
+    copy(t).then(()=>{ log("escalado",c.issue); (s.learn=s.learn||[]).push({id:"e"+Date.now(),q:st.q||c.issue,text:t,sector:st.sector==="safe"?"Objetivos Móviles SAFE":"Objetivo Fijo 911",st:"Pendiente",at:Date.now()}); save(); toast("Nota copiada. Pegala en el chat o en Bykom."); });
   }
   else if(a==="fb"){ const t=prompt("¿Qué está mal o qué falta en esta guía?"); if(t&&t.trim()){ s.fb.push({id:st.caseId,text:t.trim(),at:Date.now()}); save(); toast("Gracias. Le llega a supervisión."); } }
   else if(a==="miss"){ const k=norm(st.q)||"(sin texto)"; const m=s.miss[k]||(s.miss[k]={n:1}); m.sent=true; save(); toast("Supervisor avisado"); }
   else if(a==="sector-fijo"){ st.sector="fijo"; st.sectorLocked=true; ask(st.q); }
   else if(a==="archive"){ const x=s.avisos.find(v=>v.id===id); if(x) x.archived=true; save(); show(); }
   else if(a==="unlink"){ s.links=s.links.filter(v=>v.id!==id); save(); show(); }
+  else if(VX.act) VX.act(a,b,ctx());
 });
 document.addEventListener("keydown",e=>{
   const li=e.target.closest&&e.target.closest("[data-act=step]");
@@ -558,6 +564,7 @@ $("#form").addEventListener("submit",e=>{ e.preventDefault(); st.sectorLocked=fa
 qEl.addEventListener("input",suggest);
 view.addEventListener("change",e=>{ if(e.target.name==="kind"){ const g=e.target.value==="guide"; $("#gl").hidden=!g; $("#dl").hidden=g; } });
 view.addEventListener("submit",e=>{
+  if(e.target.dataset.vform&&VX.submit){ e.preventDefault(); VX.submit(e.target,ctx(),e.submitter); return; }
   if(e.target.id!=="pub") return; e.preventDefault();
   const f=new FormData(e.target), s=S(), now=Date.now();
   if(f.get("kind")==="aviso"){
