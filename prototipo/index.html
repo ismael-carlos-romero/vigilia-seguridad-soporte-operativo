@@ -193,6 +193,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 
 <script src="../data.js"></script>
 <script src="fallas.js"></script>
+<script src="guias-borrador.js"></script>
 <script>
 (function(){
 "use strict";
@@ -201,7 +202,10 @@ const DATA = window.VIGILIA_DATA, FALLAS = window.VIGILIA_FALLAS||[], PROCS = wi
 const DIAG = FALLAS.map(f=>({id:"diag-"+f.id,kind:"diag",f,system:f.system,issue:"Ver qué falla indica el "+f.keypad,code:"",causes:"",question:"",action:"",video:"",
   manualPage:f.manual.label,backup:"",confidence:"ALTA",decision:"Resolver desde estación",
   commandHint:"teclado hace ruido pitido suena luz de servicio problema falla avería led aviso"}));
-const CASES = DATA.cases.concat(DIAG);
+const EXTRA = (window.VIGILIA_EXTRA||{}).cases||[];
+const CASES = DATA.cases.concat(EXTRA, DIAG);
+const NONPANEL = new Set(["Protocolos de señal","Monitoreo 911","Plataforma SAFE","Equipos GPS"]);
+const sectorOf = c => c.sector||"fijo";
 
 /* ---------- almacenamiento (en producción: Firestore) ---------- */
 const KEY="vg_proto_v1";
@@ -271,7 +275,7 @@ function search(q){
   out.sort((a,b)=>b.score-a.score);
   return {list:out,sys:sysHit.size?sysHit:null};
 }
-const SAFE_RX=/\b(safe|movil|moviles|chofer|conductor|unidad|vehiculo|viaje|gps|patente|camion|remis|flota)\b/;
+const SAFE_RX=/\b(safe|movil|moviles|chofer|conductor|unidad|vehiculo|viaje|gps|patente|camion|remis|flota|temperatur\w*|roaming|gv310)\b/;
 
 /* ---------- estado de pantalla ---------- */
 const st={dp:[],role:"op",sector:"fijo",q:"",mode:"home",cluster:[],sys:null,caseId:null,done:new Set(),help:false,res:null};
@@ -300,6 +304,7 @@ function crumbs(){
   else{
     const multi=new Set(st.cluster.map(r=>r.c.system)).size>1;
     if(multi) p.push(`<button data-act="panel">Panel</button>`);
+    if(!sys&&st.mode==="variants") p.push(`<span class="cur">Resultados</span>`);
     if(sys) p.push(st.mode==="guide"&&byCluster(sys).length>1?`<button data-act="variants">${esc(sys)}</button>`:`<span class="cur">${esc(sys)}</span>`);
     if(st.mode==="guide") p.push(`<span class="cur">Guía</span>`);
   }
@@ -324,7 +329,7 @@ function renderHome(){
 
 function renderSafe(){
   view.innerHTML=`<div class="step"><section class="sec"><p class="q">Objetivos Móviles SAFE</p>
-   <p class="sub">Todavía no hay guías cargadas para este sector. Cuando existan, esta pantalla va a guiar igual que en Objetivo Fijo.</p>
+   <p class="sub">${st.q?"No hay todavía una guía de SAFE para “"+esc(st.q)+"”.":"Escribí la consulta para buscar."} Supervisión puede cargarla desde Gestión.</p>
    <div class="row"><button class="btn" data-act="miss" >Avisar al supervisor</button><button class="btn ghost" data-act="sector-fijo">Buscar en Objetivo Fijo 911</button></div></section></div>`;
 }
 
@@ -341,6 +346,7 @@ function renderPanel(){
    <p class="q">¿Qué panel tiene el cliente?</p><p class="sub">Lo ves en Bykom, o te lo dice el cliente.</p>
    <div class="grid">
     ${list.map(([s,e])=>`<button class="pick" data-act="sys" data-sys="${esc(s)}"><b>${esc(s)}</b><span>${e.n} ${e.n>1?"guías":"guía"}</span></button>`).join("")}
+    ${(st.proto||[]).map(r=>`<button class="pick dash" data-act="open" data-id="${r.c.id}"><b>${esc(r.c.issue)}</b><span>Protocolo de la central</span></button>`).join("")}
     <button class="pick dash" data-act="helpToggle" aria-expanded="${st.help}"><b>No sé / no figura</b><span>Cómo identificarlo</span></button>
    </div>
    ${st.help?`<div class="help"><b>Para identificar el panel</b><ol>
@@ -352,9 +358,9 @@ function renderPanel(){
 }
 
 function renderVariants(){
-  const rs=byCluster(st.sys);
-  view.innerHTML=`<div class="step">${crumbs()}<p class="q">¿Qué necesita hacer?</p><p class="sub">${esc(st.sys)}</p>
-   <div class="grid">${rs.map(r=>`<button class="pick" data-act="open" data-id="${r.c.id}"><b>${esc(r.c.issue)}</b><span>${esc(r.c.decision)}</span></button>`).join("")}</div></div>`;
+  const rs=st.sys?byCluster(st.sys):st.cluster;
+  view.innerHTML=`<div class="step">${crumbs()}<p class="q">${st.sys?"¿Qué necesita hacer?":"¿Cuál es?"}</p><p class="sub">${st.sys?esc(st.sys):"Elegí la guía que corresponde."}</p>
+   <div class="grid">${rs.map(r=>`<button class="pick" data-act="open" data-id="${r.c.id}"><b>${esc(r.c.issue)}</b><span>${st.sys?esc(r.c.decision):esc(r.c.system)}</span></button>`).join("")}</div></div>`;
 }
 
 function renderGuide(){
@@ -389,7 +395,7 @@ function renderGuide(){
 }
 
 /* página del PDF = página citada + desfase (el manual Paradox cita la página impresa, 2 menos que el PDF) */
-const PDFMAP={"A2k4-A2k8":["alonso-a2k4-a2k8.pdf",0],"Garnet":["garnet-pc732.pdf",0],"NetworX":["networx-nx4.pdf",0],"Paradox":["paradox-sp4000.pdf",2]};
+const PDFMAP={"A2k4-A2k8":["alonso-a2k4-a2k8.pdf",0],"Garnet":["garnet-pc732.pdf",0],"NetworX":["networx-nx4.pdf",0],"Paradox":["paradox-sp4000.pdf",2],"Matrix 6":["matrix-6.pdf",2]};
 function manualLink(c){
   const m=PDFMAP[c.system], n=parseInt(c.manualPage);
   if(!m||!n) return "";
@@ -479,15 +485,21 @@ function ask(q){
   st.q=q.trim(); qEl.value=st.q; if(!st.q){ go("home"); return; }
   log("buscar",st.q);
   if(SAFE_RX.test(norm(st.q))&&!st.sectorLocked) st.sector="safe";
-  if(st.sector==="safe"){ go("safe"); return; }
   const r=search(st.q);
-  let list=r.list; if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  let list=r.list.filter(x=>sectorOf(x.c)===st.sector); if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  if(list.length){
+    const near=list.filter(x=>x.score>=list[0].score*.9);
+    st.proto=list.filter(x=>NONPANEL.has(x.c.system)&&x.score>=list[0].score*.6).slice(0,2);
+    const nsys=new Set(near.filter(x=>!NONPANEL.has(x.c.system)).map(x=>x.c.system)).size;
+    if(near.some(x=>NONPANEL.has(x.c.system))&&nsys&&nsys<=2){ st.cluster=near.slice(0,12); st.sys=null; go("variants"); return; }
+    const np=NONPANEL.has(list[0].c.system); list=list.filter(x=>NONPANEL.has(x.c.system)===np); }
+  if(!list.length&&st.sector==="safe"){ go("safe"); return; }
   if(!list.length){ const m=S().miss[norm(st.q)]||(S().miss[norm(st.q)]={n:0}); m.n++; save(); go("empty"); return; }
   const best=list[0].score; st.cluster=list.filter(x=>x.score>=best*.75).slice(0,40);
   const syss=[...new Set(st.cluster.map(x=>x.c.system))];
   if(st.cluster.length===1){ openCase(st.cluster[0].c.id); return; }
   if(syss.length===1){ st.sys=syss[0]; go("variants"); return; }
-  st.sys=null; go("panel");
+  st.sys=null; go(NONPANEL.has(st.cluster[0].c.system)?"variants":"panel");
 }
 function openCase(id){ const c=byId(id); st.caseId=id; st.sys=c.system; st.done=new Set(); st.dp=[];
   if(!st.cluster.some(r=>r.c.id===id)) st.cluster=[{c,score:1}]; log("guia",c.system+" · "+c.issue); go("guide"); scrollTo({top:0}); }
@@ -495,8 +507,7 @@ function log(t,x){ const s=S(); s.log.push({t,x,at:Date.now()}); if(s.log.length
 
 function suggest(){
   const q=qEl.value.trim(); if(q.length<2){ sugEl.innerHTML=""; return; }
-  if(SAFE_RX.test(norm(q))){ sugEl.innerHTML=""; return; }
-  const r=search(q); let list=r.list; if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  const r=search(q); let list=r.list.filter(x=>sectorOf(x.c)===st.sector); if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
   sugEl.innerHTML=list.slice(0,4).map(x=>`<li><button type="button" data-act="open" data-id="${x.c.id}"><span><b>${esc(x.c.issue)}</b></span><span class="tag">${esc(x.c.system)}</span></button></li>`).join("");
 }
 
