@@ -133,6 +133,14 @@ details p{margin:8px 0 0}
 .foot .grow{flex:1}
 .link{background:none;border:0;color:var(--mu);text-decoration:underline;text-underline-offset:3px;font-size:15px}
 
+/* diagnóstico de fallas */
+.opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.opt{display:flex;align-items:center;gap:12px;text-align:left;background:var(--card2);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:56px;font-size:18px}
+.opt:hover,.opt:focus-visible{border-color:var(--pri)}
+.opt.sel{border-color:var(--pri);background:color-mix(in srgb,var(--pri) 14%,var(--card2))}
+.led{min-width:2.6em;text-align:center;font:700 15px/1.7 var(--mono);background:var(--key);border:1px solid var(--key-edge);border-bottom-width:3px;border-radius:7px;padding:0 6px}
+.res{border-color:var(--pri)}
+.resl{margin:0;font-size:clamp(22px,3.4vw,28px);font-weight:700;line-height:1.2}
 /* gestión */
 .two{display:grid;gap:14px;grid-template-columns:1fr}
 @media(min-width:760px){.two{grid-template-columns:1fr 1fr}}
@@ -184,10 +192,16 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 <div id="toast" role="status"></div>
 
 <script src="../data.js"></script>
+<script src="fallas.js"></script>
 <script>
 (function(){
 "use strict";
-const DATA = window.VIGILIA_DATA, CASES = DATA.cases;
+const DATA = window.VIGILIA_DATA, FALLAS = window.VIGILIA_FALLAS||[], PROCS = window.VIGILIA_PROCS||{};
+/* Guías de diagnóstico: "qué falla indica el teclado", con tabla del manual */
+const DIAG = FALLAS.map(f=>({id:"diag-"+f.id,kind:"diag",f,system:f.system,issue:"Ver qué falla indica el "+f.keypad,code:"",causes:"",question:"",action:"",video:"",
+  manualPage:f.manual.label,backup:"",confidence:"ALTA",decision:"Resolver desde estación",
+  commandHint:"teclado hace ruido pitido suena luz de servicio problema falla avería led aviso"}));
+const CASES = DATA.cases.concat(DIAG);
 
 /* ---------- almacenamiento (en producción: Firestore) ---------- */
 const KEY="vg_proto_v1";
@@ -219,14 +233,14 @@ const STOP=new Set("el la los las de del al en y a un una unos unas que como par
 const GENERIC=new Set(["cambiar","ver","problema","falla","usuario"]);
 const GROUPS=[
  ["clave","codigo","contrasena","password","pin"],
- ["cambiar","modificar","agregar","crear","fijar","actualizar"],
+ ["cambiar","modificar","agregar","crear","fijar","actualizar","programar","ajustar"],
  ["borrar","eliminar","quitar"],
  ["anular","inhibir","excluir","omitir","puentear","bypass","exclusion","omision"],
  ["bateria","pila"],["hora","fecha","reloj","calendario"],["memoria","historial","registro"],
  ["falla","fallo","averia","problema","error","desperfecto"],["comunicacion","comunicador"],
  ["sabotaje","tamper","antiviolacion"],["armar","armado","activar","conectar"],["desarmar","desarmado","desactivar","desconectar"],
  ["chime","chivato","avisador","anunciador","timbre"],["camara","video","grabacion","dvr"],
- ["app","aplicacion","celular"],["energia","alimentacion","luz","corriente","220v"],["zona","sensor"],["teclado","keypad"]
+ ["ruido","pitido","beep","bip","sonido","suena","pita","zumbido"],["app","aplicacion","celular"],["energia","alimentacion","luz","corriente","220v"],["zona","sensor"],["teclado","keypad"]
 ];
 const GM={}; GROUPS.forEach(g=>g.forEach(w=>GM[w]=g[0]));
 const stem=w=>{ w=norm(w).replace(/[^a-z0-9]/g,""); if(w.length>4) w=w.replace(/(es|s)$/,""); return GM[w]||w; };
@@ -260,7 +274,7 @@ function search(q){
 const SAFE_RX=/\b(safe|movil|moviles|chofer|conductor|unidad|vehiculo|viaje|gps|patente|camion|remis|flota)\b/;
 
 /* ---------- estado de pantalla ---------- */
-const st={role:"op",sector:"fijo",q:"",mode:"home",cluster:[],sys:null,caseId:null,done:new Set(),help:false,res:null};
+const st={dp:[],role:"op",sector:"fijo",q:"",mode:"home",cluster:[],sys:null,caseId:null,done:new Set(),help:false,res:null};
 const view=$("#view"), sugEl=$("#sug"), qEl=$("#q");
 const byId=id=>CASES.find(c=>c.id===id);
 const tone=d=>({"Resolver desde estación":"ok","Técnico prioritario":"bad","Consulta a supervisor":"pri"}[d]||"warn");
@@ -345,6 +359,7 @@ function renderVariants(){
 
 function renderGuide(){
   const c=byId(st.caseId); if(!c){ renderHome(); return; }
+  if(c.kind==="diag"){ renderDiag(c); return; }
   const s=S();
   const steps=noRef(c.action).split(/\s*(?=\b\d{1,2}\)\s)/).map(x=>x.replace(/^\d{1,2}\)\s*/,"").trim()).filter(Boolean);
   const nextI=steps.findIndex((_,i)=>!st.done.has(i));
@@ -353,7 +368,7 @@ function renderGuide(){
   const cmd=noRef(c.code);
   view.innerHTML=`<div class="step">${crumbs()}
    <div class="gh"><h2>${esc(c.issue)}</h2><span class="tag ${tone(c.decision)}">${esc(c.decision)}</span></div>
-   <div class="src"><span>${esc(c.system)}</span>${c.manualPage&&c.manualPage!=="-"?`<span>· ${/^[\d]/.test(c.manualPage)?"Manual oficial p. ":""}${esc(c.manualPage)}</span>`:""}<span>· Confianza ${esc(c.confidence.toLowerCase())}</span></div>
+   <div class="src"><span>${esc(c.system)}</span>${c.manualPage&&c.manualPage!=="-"?`<span>· ${/^[\d]/.test(c.manualPage)?"Manual oficial p. ":""}${esc(c.manualPage)}</span>`:""}<span>· Confianza ${esc(c.confidence.toLowerCase())}</span>${manualLink(c)}</div>
    ${verified?"":`<div class="warnbar"><b>Sin confirmar.</b> Validá con supervisión antes de indicar estos pasos al cliente.</div>`}
    ${links.map(l=>`<article class="note" style="margin-top:14px"><h3>${esc(l.title)} ${l.demo?'<span class="demo">Ejemplo</span>':""}</h3><p>${esc(l.body)}</p><div class="meta"><span>${esc(l.source)} · ${fmt(l.date)}</span></div></article>`).join("")}
    ${c.question?`<section class="card"><h3>Preguntale al cliente</h3><p class="say" style="margin:0">${esc(c.question)}</p></section>`:""}
@@ -371,6 +386,55 @@ function renderGuide(){
      <span class="grow"></span>
      <button class="link" data-act="fb">Esta guía tiene un error o le falta algo</button>
    </div></div>`;
+}
+
+/* página del PDF = página citada + desfase (el manual Paradox cita la página impresa, 2 menos que el PDF) */
+const PDFMAP={"A2k4-A2k8":["alonso-a2k4-a2k8.pdf",0],"Garnet":["garnet-pc732.pdf",0],"NetworX":["networx-nx4.pdf",0],"Paradox":["paradox-sp4000.pdf",2]};
+function manualLink(c){
+  const m=PDFMAP[c.system], n=parseInt(c.manualPage);
+  if(!m||!n) return "";
+  return `<a class="btn ghost sm" style="display:inline-flex;align-items:center;text-decoration:none" href="manuales/${m[0]}#page=${n+m[1]}" target="_blank" rel="noopener">Ver en el manual</a>`;
+}
+const pdfUrl=(m)=>`manuales/${m.file}#page=${m.page}`;
+function diagPath(f){ /* recorre el árbol según lo elegido */
+  const out=[]; let node=f.tree;
+  for(let l=0;node;l++){ const i=st.dp[l]; out.push({node,i,opt:i==null?null:node.options[i]}); node=i==null?null:node.options[i].sub; }
+  return out;
+}
+function renderDiag(c){
+  const f=c.f, s=S(), links=s.links.filter(l=>l.caseId===c.id), path=diagPath(f);
+  const last=path[path.length-1], final=last.opt&&!last.opt.sub?last.opt:null;
+  const levels=path.map((p,l)=>{
+    const prev=l?path[l-1].opt:null;
+    return `<section class="card"><h3>${l?"Segundo paso":"Primer paso"}</h3>
+      ${prev&&prev.press?`<p style="margin:0 0 6px">Que presione ${rich("["+prev.press+"]")}.</p>`:""}
+      <p class="say" style="font-size:20px;margin:0 0 12px;font-style:normal"><b style="font-weight:700">${esc(p.node.prompt)}</b></p>
+      <div class="opts">${p.node.options.map((x,i)=>`<button class="opt${p.i===i?" sel":""}" data-act="dpick" data-l="${l}" data-i="${i}" aria-pressed="${p.i===i}">${x.k!==""?`<span class="led">${esc(x.k)}</span>`:""}<span>${esc(x.label)}</span></button>`).join("")}</div></section>`;
+  }).join("");
+  let res="";
+  if(final){
+    const pr=final.proc&&PROCS[final.proc];
+    res=`<section class="card res"><h3>Qué significa</h3>
+      <p class="resl">${esc(final.label)}</p>
+      ${final.meaning?`<p style="margin:6px 0 0">${esc(final.meaning)}</p>`:""}
+      ${final.note?`<p style="margin:6px 0 0">${esc(final.note)}</p>`:""}
+      ${final.action?`<p class="after" style="margin-top:12px"><span class="tag warn">Según el manual</span><span>${esc(final.action)}</span></p>`:""}
+      <p class="src" style="margin:12px 0 0">${esc(f.manual.name)} · ${esc(f.manual.label)}</p></section>
+      ${pr?`<article class="note" style="margin-top:14px"><h3>Qué hacer en la central <span class="demo">Borrador</span></h3><p><b>${esc(final.proc)} · ${esc(pr.t)}.</b> ${esc(pr.s)}</p><div class="meta"><span>Hoja Manual_Operativo · falta validación de supervisión</span></div></article>`:""}`;
+  }
+  view.innerHTML=`<div class="step">${crumbs()}
+   <div class="gh"><h2>${esc(c.issue)}</h2></div>
+   <div class="src"><span>${esc(f.system)}</span><span>· ${esc(f.manual.name)}, ${esc(f.manual.label)}</span>
+     <a class="btn ghost sm" style="display:inline-flex;align-items:center;text-decoration:none" href="${esc(pdfUrl(f.manual))}" target="_blank" rel="noopener">Ver en el manual</a>
+     ${f.manual.extra?`<a class="link" href="${esc(pdfUrl(f.manual.extra))}" target="_blank" rel="noopener">${esc(f.manual.extra.name)}, ${esc(f.manual.extra.label)}</a>`:""}</div>
+   ${links.map(l=>`<article class="note" style="margin-top:14px"><h3>${esc(l.title)}</h3><p>${esc(l.body)}</p><div class="meta"><span>${esc(l.source)} · ${fmt(l.date)}</span></div></article>`).join("")}
+   <section class="card"><h3>Cómo ver las fallas en el teclado</h3><p style="margin:0;font-size:20px;line-height:1.6">${rich(f.how)}</p>
+     ${f.lcd?`<p style="margin:10px 0 0;color:var(--mu)">${esc(f.lcd)}</p>`:""}</section>
+   <section class="card"><h3>Preguntale al cliente</h3><p style="margin:0;font-size:20px;line-height:1.6">${rich(f.ask)}</p></section>
+   ${levels}${res}
+   <div class="foot"><button class="btn ok" data-act="resolved">Resuelto</button>
+     <button class="btn bad" data-act="escalate">No se resolvió: copiar nota para supervisión</button><span class="grow"></span>
+     <button class="link" data-act="fb">Esta guía tiene un error o le falta algo</button></div></div>`;
 }
 
 function renderManage(){
@@ -419,13 +483,13 @@ function ask(q){
   const r=search(st.q);
   let list=r.list; if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
   if(!list.length){ const m=S().miss[norm(st.q)]||(S().miss[norm(st.q)]={n:0}); m.n++; save(); go("empty"); return; }
-  const best=list[0].score; st.cluster=list.filter(x=>x.score>=best*.65).slice(0,40);
+  const best=list[0].score; st.cluster=list.filter(x=>x.score>=best*.75).slice(0,40);
   const syss=[...new Set(st.cluster.map(x=>x.c.system))];
   if(st.cluster.length===1){ openCase(st.cluster[0].c.id); return; }
   if(syss.length===1){ st.sys=syss[0]; go("variants"); return; }
   st.sys=null; go("panel");
 }
-function openCase(id){ const c=byId(id); st.caseId=id; st.sys=c.system; st.done=new Set();
+function openCase(id){ const c=byId(id); st.caseId=id; st.sys=c.system; st.done=new Set(); st.dp=[];
   if(!st.cluster.some(r=>r.c.id===id)) st.cluster=[{c,score:1}]; log("guia",c.system+" · "+c.issue); go("guide"); scrollTo({top:0}); }
 function log(t,x){ const s=S(); s.log.push({t,x,at:Date.now()}); if(s.log.length>200) s.log.shift(); save(); }
 
@@ -459,10 +523,11 @@ document.addEventListener("click",e=>{
   else if(a==="open") openCase(id);
   else if(a==="read"){ s.read[id]=true; save(); toast("Aviso confirmado"); show(); }
   else if(a==="step"){ const i=+b.dataset.i; st.done.has(i)?st.done.delete(i):st.done.add(i); renderGuide(); const li=document.querySelector(`[data-i="${i}"]`); if(li) li.focus({preventScroll:true}); }
+  else if(a==="dpick"){ st.dp=st.dp.slice(0,+b.dataset.l); st.dp.push(+b.dataset.i); renderGuide(); }
   else if(a==="resolved"){ log("resuelto",byId(st.caseId).issue); toast("Registrado como resuelto"); st.q=""; qEl.value=""; go("home"); scrollTo({top:0}); }
   else if(a==="escalate"){
     const c=byId(st.caseId), n=[...st.done].sort((x,y)=>x-y).map(i=>i+1);
-    const t=`CONSULTA A SUPERVISIÓN\nConsulta del cliente: “${st.q}”\nPanel: ${c.system}\nGuía: ${c.issue}${c.manualPage&&c.manualPage!=="-"?` (Manual p. ${c.manualPage})`:""}\nPasos realizados: ${n.length?n.join(", "):"ninguno"}\nResultado: no se resolvió\nFecha y hora: ${new Date().toLocaleString("es-AR")}`;
+    const t=`CONSULTA A SUPERVISIÓN\nConsulta del cliente: “${st.q}”\nPanel: ${c.system}\nGuía: ${c.issue}${c.manualPage&&c.manualPage!=="-"?` (${c.kind==="diag"?"":"Manual "}${/^\d/.test(c.manualPage)?"p. ":""}${c.manualPage})`:""}\n${c.kind==="diag"?"Indicación del teclado: "+(diagPath(c.f).filter(p=>p.opt).map(p=>(p.opt.k?p.opt.k+" ":"")+p.opt.label).join(" > ")||"sin determinar")+"\n":"Pasos realizados: "+(n.length?n.join(", "):"ninguno")+"\n"}Resultado: no se resolvió\nFecha y hora: ${new Date().toLocaleString("es-AR")}`;
     copy(t).then(()=>{ log("escalado",c.issue); toast("Nota copiada. Pegala en el chat o en Bykom."); });
   }
   else if(a==="fb"){ const t=prompt("¿Qué está mal o qué falta en esta guía?"); if(t&&t.trim()){ s.fb.push({id:st.caseId,text:t.trim(),at:Date.now()}); save(); toast("Gracias. Le llega a supervisión."); } }
