@@ -1,0 +1,57 @@
+/* Guías de Objetivos Móviles SAFE en BORRADOR (a validar por supervisión).
+   Fuentes: portal anterior (sección SAFE), archivo "CAPACITACION SOFTGUARD - CYBERMAPA - APP" y bitácora de Matías.
+   No incluye contraseñas, claves de comandos de los equipos, patentes ni datos de choferes. */
+(function(){
+const g=(id,system,issue,hint,question,steps,backup,decision)=>({id:"safe-"+id,sector:"safe",system,code:"",issue,causes:"",question,
+  action:steps.map((s,i)=>(i+1)+") "+s).join(" "),video:"",manualPage:"-",backup:backup||"",confidence:"BORRADOR",commandHint:hint||"",decision:decision||"Validar antes de operar"});
+const E="Eventos SAFE", P="Plataforma SAFE", G="Equipos GPS";
+const X=window.VIGILIA_EXTRA=window.VIGILIA_EXTRA||{cases:[]};
+window.VIGILIA_NONPANEL=(window.VIGILIA_NONPANEL||[]).concat([E]);
+X.cases=X.cases.concat([
+ g("panico-chofer",E,"Botón de pánico del chofer","pánico panico asalto emergencia chofer botón vehicular alerta","¿La unidad está en movimiento o detenida? ¿Hay contacto con el chofer?",
+  ["Mirar en la plataforma la ubicación de la unidad y si está en movimiento o detenida.","Revisar el historial por si es una prueba o una falla del botón.","Contactar al chofer o al responsable del cliente.","Aplicar el protocolo de emergencia específico del cliente, si lo tiene.","Si no hay contacto o hay riesgo: avisar al responsable del cliente, mandarle la ubicación por WhatsApp e informar a la policía de la zona.","Registrar hora, ubicación, respuesta y a quién se escaló.","Para avisar al cliente, usar el mensaje modelo “Te confirmo señales de pánico…” de Respuestas."],
+  "Prioridad alta. Fuentes: portal anterior (Pánico vehicular) y archivo de capacitación (Botón de Pánico, “pruebas”). Los protocolos de contención de la norma MON-01 están en Procedimientos.","Consulta a supervisor"),
+ g("desenganche","Eventos SAFE","Desenganche de unidad (tráiler)","desenganche desenganchado trailer semi acoplado señal","¿Hay una nota del cliente que indique excepciones (lugares donde no se verifica)?",
+  ["Ver en la plataforma dónde está la unidad y si estaba detenida.","Revisar las notas del cliente: algunos piden no verificar desenganches en ciertos lugares.","Si no hay excepción, contactar al chofer.","Si no responde, avisar al responsable del cliente con el mensaje: “informamos señal de desenganche de [patente] en [dirección]”.","Registrar la novedad."],
+  "Pasos armados con la capacitación (evento de Monitoreo) y las notas de Matías. Falta que supervisión confirme el detalle."),
+ g("robo-unidad",E,"Robo o siniestro de una unidad","robo robaron siniestro asalto camión secuestro corte combustible denuncia 911","¿Quién avisó (cliente, chofer, policía) y qué señales llegaron?",
+  ["Ver la posición actual de la unidad y las últimas señales (corte de corriente, pánico, aperturas).","Mandar los comandos de corte y de actualización de posición. Si la línea es extranjera y no está en el listado M2M, avisar a supervisión para que gestione el envío.","Pasar al cliente la ubicación exacta por WhatsApp (mapa) y las novedades.","Llamar a la comisaría de la zona y preguntar por el estado del chofer. Para la denuncia usar la plataforma E-911.","Si el cliente no responde, pasarle las novedades por WhatsApp con el teléfono de la comisaría.","Anotar la hora de cada paso (aviso, comandos, confirmación del corte, llamados)."],
+  "Armado con dos casos reales de la bitácora de Matías y con el archivo de capacitación (E-911 se usa para denuncias por robo en fijas y móviles). No indica el orden exacto: validar con supervisión.","Consulta a supervisor"),
+ g("bateria-desconectada",E,"Desconexión de batería de la unidad","desconexión batería desconectada bateria corte alimentación","¿La unidad sigue reportando?",
+  ["Ver en la plataforma el último reporte y la ubicación.","Intentar contactar al chofer o al cliente.","Si no responde, mandar el mensaje: “…una DESCONEXIÓN DE BATERÍA de la unidad [patente]. Mensaje a modo informativo.”","Si persiste, generar orden de service."],
+  "En camiones Volvo la desconexión puede aparecer pasadas un par de horas (nota de Matías: activar siempre los 2 eventos de puertas).","Técnico si persiste"),
+ g("sin-reporte",E,"Unidad que no reporta (sin señal GPRS o sin comunicación)","sin reporte no reporta sin señal gprs comunicación reset equipo","¿Desde cuándo no reporta? ¿Es una sola unidad o varias?",
+  ["Ver el último reporte y si hay más unidades afectadas.","Preguntar si la unidad está de viaje, detenida o fuera de servicio, y si el cliente tiene un protocolo para esto.","Mandar el reinicio por comandos: COMANDOS > AMBOS RESET. Si no está disponible, COMANDOS > RESET (por GPRS y por SMS).","Contactar al cliente con el mensaje “no estamos recibiendo reporte del dominio [patente]; confirmar si está trabajando o guardado”.","Si persiste, dejar seguimiento y generar orden de service."],
+  "Fuentes: portal anterior (Unidad o camión no reporta) y archivo de capacitación (Comandos remotos).","Técnico si persiste"),
+ g("camion-detenido",E,"Camión detenido o parada no autorizada","detenido parada detención quieto sin movimiento 15 minutos","¿Cuánto tiempo lleva detenido y es una parada habitual?",
+  ["Revisar el histórico de posición.","Si no registró movimiento en los últimos 15 minutos, contactar al cliente.","Ver si es una parada habitual o está fuera de zona y si hay contacto con el chofer.","Contactar o derivar según la gravedad y dejar registro."],
+  "Regla de los 15 minutos del archivo de capacitación (TrackGuard > Reportes)."),
+ g("desvio-ruta",E,"Desvío de ruta","desvío desvio ruta recorrido zona fuera","¿El desvío está autorizado por el cliente?",
+  ["Ver si el desvío está autorizado por el cliente o la base.","Comprobar que la unidad mantiene el reporte normal.","Si no está autorizado, avisar al responsable según el protocolo del cliente.","Dejar registro de la novedad."],
+  "Fuente: portal anterior (Desvío de ruta)."),
+ g("descarga-combustible",E,"Descarga de combustible","descarga combustible nafta gasoil tanque sensor","¿La unidad está en movimiento?",
+  ["Ver si el camión está en movimiento.","Si está en movimiento, es automáticamente una falsa alarma: el movimiento genera lecturas erróneas en el sensor. Registrarla así.","Si está detenido, contactar al chofer o al cliente antes de cerrarla."],
+  "La primera regla es del archivo de capacitación. El caso detenido no figura ahí: validar con supervisión.","Resolver desde estación"),
+ g("apertura-puertas",E,"Apertura de puertas (APV)","apertura puertas puerta carga apv acv abrió","¿Dónde está la unidad y estaba prevista una parada?",
+  ["Ver dónde está la unidad y si estaba detenida en una parada prevista.","Si no era una parada prevista, contactar al chofer.","Si no responde, avisar al responsable del cliente.","Registrar la novedad."],
+  "APV es “Apertura de Puerta Verificable”: evento de apertura de la puerta de carga. En las notas de Matías: OPD = APV y OPC = ACV (apertura de carga verificable). En camiones Volvo conviene activar siempre los 2 eventos de puertas."),
+ g("comandos-reset",G,"Reiniciar un equipo GPS con comandos","comandos reset reiniciar equipo gps gprs sms","¿El equipo responde por GPRS y por SMS?",
+  ["Entrar a COMANDOS en la plataforma.","Elegir AMBOS RESET. Si no están disponibles ambos, elegir RESET: se manda tanto por GPRS como por SMS.","Si el equipo no responde por GPRS y no tiene cargado el chip para SMS, avisar a supervisión."],
+  "Los comandos propios de cada modelo de equipo llevan clave y no se cargan acá: pedirlos a supervisión.","Técnico si persiste"),
+ g("restriccion-movimiento",P,"Restringir el movimiento de una unidad","restricción restriccion movimiento velocidad zona corte combustible detenido","¿Qué restricción pidió el cliente?",
+  ["Activar la velocidad en restricción.","Crear la zona.","Activar las aperturas.","Enviar el corte de combustible.","Crear el evento de vehículo detenido."],
+  "Plataforma TrackGuard, según el archivo de capacitación."),
+ g("evento-diferido",P,"Programar un evento con horario diferido","agenda programar evento horario diferido aviso recordatorio","¿Qué hay que hacer y a qué hora?",
+  ["Ir al apartado de Agenda.","Generar el evento indicando el tipo de evento.","Escribir en la leyenda la acción a realizar y el horario."],
+  "Se hace desde Monitoreo, según el archivo de capacitación."),
+ g("reenvio-datos",P,"Reenvío de datos a dadores de carga","reenvío reenvio datos dador carga plataforma cliente re-envío","¿El cliente ya tiene la plataforma configurada?",
+  ["Entrar al campo Re-envío.","Verificar si la plataforma del dador de carga ya está configurada.","Si no está, asignarla; si está mal, reconfigurarla."],
+  "Archivo de capacitación."),
+ g("certificado-asignacion",P,"Emitir el certificado de una unidad asignada","certificado asignación asignar unidad certificados pdf","¿Ya está asignada la unidad en la plataforma del cliente?",
+  ["Editar el documento en la carpeta CERTIFICADOS de la oficina.","Imprimirlo en formato PDF.","Adjuntarlo por mail o WhatsApp con el mensaje “Se confirma asignación y se adjunta el certificado correspondiente”."],
+  "Esto no se hace desde la plataforma. El mensaje está en Respuestas."),
+ g("control-temperatura-trackguard",P,"Cargar el control de temperatura de una unidad (TrackGuard)","control temperatura frío cadena de frío cdr trackguard la anónima","¿Ya reporta correctamente la patente?",
+  ["Buscar la patente y verificar que reporte correctamente.","Entrar a Modificar.","Ir a AVL > Logística.","Habilitar Rutas; debajo de “No verificar zonas”, tildarlo, hacer clic y Editar.","Cargar los CDR en esa misma pantalla; si no figuran, crearlos y agregarlos.","Ir a Cuentas > Mediciones (solapa derecha).","Revisar que los activos estén tildados.","Revisar que Encendido (EGF) y Apagado (AGF) no estén en TST.","En Mediciones, revisar que la temperatura esté entre 5 y 7.","Ir a Otros > Testeo."],
+  "Procedimiento de La Anónima del archivo de capacitación (la numeración original está desordenada). Otra versión, de la bitácora de Matías, está en “Configurar el control de temperatura”.")
+]);
+})();

@@ -196,6 +196,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 <script src="../data.js"></script>
 <script src="fallas.js"></script>
 <script src="guias-borrador.js"></script>
+<script src="guias-safe.js"></script>
 <script src="soluciones.js"></script>
 <script src="modulos.js"></script>
 <script>
@@ -313,13 +314,14 @@ function crumbs(){
     if(sys) p.push(st.mode==="guide"&&byCluster(sys).length>1?`<button data-act="variants">${esc(sys)}</button>`:`<span class="cur">${esc(sys)}</span>`);
     if(st.mode==="guide") p.push(`<span class="cur">Guía</span>`);
   }
-  return `<nav class="crumbs" aria-label="Recorrido">${p.join('<span aria-hidden="true">›</span>')}</nav>`;
+  const oth=st.other?`<p class="hint" style="margin:0 0 14px">También hay ${st.other} en ${st.sector==="safe"?"Objetivo Fijo 911":"Objetivos Móviles SAFE"}. <button class="link" data-act="sector-other">Verlas</button></p>`:"";
+  return `<nav class="crumbs" aria-label="Recorrido">${p.join('<span aria-hidden="true">›</span>')}</nav>${oth}`;
 }
 const byCluster=sys=>st.cluster.filter(r=>r.c.system===sys);
 
 function renderHome(){
   const unread=unreadAvisos().slice(0,3);
-  const freq=["cambiar clave","anular zona","falla de comunicación","batería baja","ver memoria de alarmas","cambiar hora y fecha"];
+  const freq=st.sector==="safe"?["botón de pánico","desenganche","unidad no reporta","robo de unidad","temperatura","batería desconectada","apertura de puertas","camión detenido"]:["cambiar clave","anular zona","falla de comunicación","batería baja","ver memoria de alarmas","cambiar hora y fecha"];
   view.innerHTML=`<div class="step">
    <section class="sec" aria-label="Avisos vigentes"><h2>Avisos vigentes</h2>
     ${unread.length?`<div class="notes">${unread.map(a=>`<article class="note">
@@ -504,7 +506,8 @@ function ask(q){
   log("buscar",st.q);
   if(SAFE_RX.test(norm(st.q))&&!st.sectorLocked) st.sector="safe";
   const r=search(st.q);
-  let list=r.list.filter(x=>sectorOf(x.c)===st.sector); if(r.sys) list=list.filter(x=>r.sys.has(x.c.system));
+  let list=r.list.filter(x=>sectorOf(x.c)===st.sector); if(r.sys){ const f=list.filter(x=>r.sys.has(x.c.system)); if(f.length) list=f; }
+  const oth=r.list.filter(x=>sectorOf(x.c)!==st.sector&&(!r.sys||r.sys.has(x.c.system))&&x.score>=(r.list[0]?r.list[0].score:0)*.6); st.other=oth.length?(oth.length===1?"1 guía":oth.length+" guías"):null;
   if(list.length){
     const near=list.filter(x=>x.score>=list[0].score*.9);
     st.proto=list.filter(x=>NONPANEL.has(x.c.system)&&x.score>=list[0].score*.6).slice(0,2);
@@ -561,6 +564,7 @@ document.addEventListener("click",e=>{
   }
   else if(a==="fb"){ const t=prompt("¿Qué está mal o qué falta en esta guía?"); if(t&&t.trim()){ s.fb.push({id:st.caseId,text:t.trim(),at:Date.now()}); save(); toast("Gracias. Le llega a supervisión."); } }
   else if(a==="miss"){ const k=norm(st.q)||"(sin texto)"; const m=s.miss[k]||(s.miss[k]={n:1}); m.sent=true; save(); toast("Supervisor avisado"); }
+  else if(a==="sector-other"){ st.sector=st.sector==="safe"?"fijo":"safe"; st.sectorLocked=true; ask(st.q); }
   else if(a==="sector-fijo"){ st.sector="fijo"; st.sectorLocked=true; ask(st.q); }
   else if(a==="archive"){ const x=s.avisos.find(v=>v.id===id); if(x) x.archived=true; save(); show(); }
   else if(a==="unlink"){ s.links=s.links.filter(v=>v.id!==id); save(); show(); }

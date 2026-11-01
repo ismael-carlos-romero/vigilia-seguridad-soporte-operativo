@@ -32,7 +32,7 @@ X.cases=X.cases.filter(c=>!DUP.has(c.id)).concat(PROCS.map(p=>({
   backup:"Cuándo aplica: "+p.trigger+" "+p.action+(p.note?" Nota modelo para el sistema: "+p.note:""),
   confidence:"ALTA",decision:p.priority==="Crítica"?"Técnico prioritario":"Resolver desde estación",
   commandHint:(p.category+" "+p.event).toLowerCase()+" procedimiento norma iso"})));
-window.VIGILIA_NONPANEL=["Procedimientos MON-01"];
+window.VIGILIA_NONPANEL=(window.VIGILIA_NONPANEL||[]).concat(["Procedimientos MON-01"]);
 window.VIGILIA_MODULOS={procs:PROCS,respuestas:RESP,directivas:DIRS};
 
 /* ---------- vistas ---------- */
