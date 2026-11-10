@@ -63,21 +63,37 @@ function buscarFichas(c,q){
   const qt=[...new Set(toks(q))]; if(!qt.length) return [];
   return window.SG_FICHAS.map(f=>({f,s:scoreFicha(c,f,qt)})).filter(x=>x.s>=1.2).sort((a,b)=>b.s-a.s).map(x=>x.f);
 }
-function buscarPaginas(q){
-  const qt=[...new Set(toks(q))]; if(!qt.length) return [];
-  const w=qt.reduce((a,t)=>a+wt(t),0), out=[];
-  Object.values(base()).forEach(m=>{
-    const sets=m.paginas.map(p=>p.set||(p.set=new Set(toks(p[1])))), N=sets.length;
-    const idf=t=>Math.log(1+N/(1+sets.filter(s=>s.has(t)).length));
-    m.paginas.forEach((p,i)=>{
-      const hit=qt.filter(t=>sets[i].has(t)); if(!hit.some(t=>!GEN.has(t))||hit.reduce((a,t)=>a+wt(t),0)/w<.6) return;
-      const raw=p[1], low=raw.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
-      const pos=Math.min(...hit.map(t=>{ const k=low.indexOf(t.slice(0,Math.max(4,t.length-1))); return k<0?1e9:k; }));
-      const a=Math.max(0,(pos>1e8?0:pos)-100);
-      out.push({id:m.meta.id,p:p[0],s:hit.reduce((x,t)=>x+idf(t)*wt(t),0),snip:raw.slice(a,a+280).replace(/\s+/g," ").trim()});
-    });
+/* Vocabulario del operador -> palabra del manual. Solo apunta a términos que el manual usa. */
+const ALIAS=[
+ {si:[["anular","zona"],["anulacion","zona"],["silenciar","zona"],["suspender","zona"],["bypass"],["puentear"],["falso","disparo"],["falso","evento"],["falsa","alarma"],["zona","dispara"],["zona","falla"],["zona","rebota"],["zona","molesta"],["mantenimiento"],["cuenta","prueba"]],
+  usa:["poner en prueba","prueba por zonas"],nota:"En SoftGuard lo que en otros sistemas se llama anular o suspender una zona se llama «Poner en prueba» (cuenta en Prueba o en Prueba por Zonas)."}];
+const ssi=(qt,pat)=>pat.every(w=>{ w=cut(w); return qt.includes(GM[w]||w); });
+function chunks(m){
+  if(m.chunks) return m.chunks;
+  const RX=/^(\d{1,2}(?:\.\d{1,2}){0,3})\.?\s+([A-ZÁÉÍÓÚÑ¿][^\n]{2,70})$/gm, out=[]; let cur={num:"",title:"Introducción"};
+  m.paginas.forEach(([n,t])=>{
+    const hs=[...t.matchAll(RX)]; if(n<=3||!hs.length){ out.push({id:m.meta.id,p:n,...cur,text:t}); return; }
+    const first=hs[0].index; if(t.slice(0,first).trim()) out.push({id:m.meta.id,p:n,...cur,text:t.slice(0,first)});
+    hs.forEach((h,i)=>{ cur={num:h[1],title:h[2].trim()}; out.push({id:m.meta.id,p:n,...cur,text:t.slice(h.index,i+1<hs.length?hs[i+1].index:t.length)}); });
   });
-  return out.sort((a,b)=>b.s-a.s).slice(0,4);
+  out.forEach(x=>{ x.tt=new Set(toks(x.title)); x.tx=new Set(toks(x.text)); }); return m.chunks=out;
+}
+function buscarManual(q){
+  const qt=[...new Set(toks(q))]; if(!qt.length) return {items:[],notas:[]};
+  const al=ALIAS.filter(a=>a.si.some(pt=>ssi(qt,pt))), ext=al.flatMap(a=>a.usa.flatMap(u=>toks(u)));
+  const w=qt.reduce((x,t)=>x+wt(t),0), all=[];
+  Object.values(base()).forEach(m=>{ const cs=chunks(m), N=cs.length;
+    const idf=t=>Math.log(1+N/(1+cs.filter(x=>x.tx.has(t)).length));
+    cs.forEach(x=>{
+      const hit=qt.filter(t=>x.tt.has(t)||x.tx.has(t)); let sc=0;
+      const cov=hit.reduce((a,t)=>a+wt(t),0)/w;
+      if(!(hit.some(t=>!GEN.has(t))&&cov>=.6)&&!ext.length) return;
+      qt.forEach(t=>{ if(x.tt.has(t)) sc+=6*wt(t); else if(x.tx.has(t)) sc+=idf(t)*wt(t); });
+      if(ext.length){ const e=ext.filter(t=>x.tt.has(t)).length; if(e) sc+=8*e/ext.length; if(!sc||(!e&&cov<.6)) return; }
+      if(sc>0) all.push({...x,s:sc,meta:m.meta});
+    }); });
+  all.sort((a,b)=>b.s-a.s);
+  return {items:all.slice(0,5),notas:al.map(a=>a.nota)};
 }
 
 /* ---------- piezas de pantalla ---------- */
@@ -91,7 +107,7 @@ const fichaItem=(c,f)=>{ const n=[catTxt(f)]; if(f.insuficiente) n.push("sin cob
   return `<button class="pick" data-act="sgficha" data-id="${f.id}"><b>${c.esc(f.titulo)}</b><span>${c.esc(n.join(" · "))}</span></button>`; };
 function renderSug(){ const v=window.__vg; if(!v||v.st.mode!=="sg") return; const q=document.getElementById("q").value.trim(), el=document.getElementById("sug"), c=v.ctx();
   if(q.length<2){ el.innerHTML=""; return; }
-  el.innerHTML=buscarFichas(c,q).slice(0,4).map(f=>`<li><button type="button" data-act="sgficha" data-id="${f.id}"><span><b>${c.esc(f.titulo)}</b></span><span class="tag">SoftGuard</span></button></li>`).join(""); }
+  el.innerHTML=buscarManual(q).items.slice(0,4).map(x=>`<li><button type="button" data-act="sgq" data-q="${c.esc(q)}"><span><b>${c.esc((x.num?x.num+" ":"")+x.title)}</b></span><span class="tag">p. ${x.p}</span></button></li>`).join(""); }
 
 /* ---------- vista principal ---------- */
 V.sg=(v,c)=>{
@@ -121,14 +137,18 @@ function categoria(v,c){
 }
 
 function resultados(v,c){
-  const rol=c.st.role, fs=buscarFichas(c,g.q), ps=buscarPaginas(g.q);
+  const fs=buscarFichas(c,g.q), {items,notas}=buscarManual(g.q);
+  const item=x=>{ const m=x.meta, txt=x.text.replace(/[ \t]+/g," ").replace(/\n{2,}/g,"\n").trim(), corto=txt.length>650;
+    return `<article class="item"><div class="src"><span class="tag ok">Manual oficial</span><span>${c.esc(m.codigo)} ${c.esc(m.version)} · <b>${c.esc((x.num?x.num+" ":"")+x.title)}</b> · p. ${x.p}</span>${pdfOk[x.id]?`<a class="btn ghost sm" style="display:inline-flex;align-items:center;text-decoration:none" href="${pdfHref(x.id,x.p)}" target="_blank" rel="noopener">Abrir PDF en p. ${x.p}</a>`:""}</div>
+     <p class="sgq" style="white-space:pre-line">${c.esc(corto?txt.slice(0,650)+"…":txt)}</p>${corto?`<details><summary>Ver el texto completo de la sección</summary><p class="sgq" style="white-space:pre-line">${c.esc(txt)}</p></details>`:""}</article>`; };
   v.innerHTML=`<div class="step">${crumbs(c,"“"+g.q+"”")}
-   ${fs.length?`<p class="q">Guías para “${c.esc(g.q)}”</p><div class="grid" style="margin-top:14px">${fs.slice(0,6).map(f=>fichaItem(c,f)).join("")}</div>`
-   :`<p class="q">No hay una guía preparada para “${c.esc(g.q)}”</p>`}
-   ${ps.length?`<section class="sec"><h2>${fs.length?"Otros pasajes del manual que lo mencionan":"Pasajes del manual que lo mencionan"}</h2>
-    <p class="hint" style="margin:0 0 10px">Texto literal del manual, sin interpretar. No es un procedimiento: confirmá con la guía o con supervisión.</p>
-    <div class="stack" style="display:grid;gap:10px">${ps.map(p=>{ const m=meta(p.id); return `<article class="item"><div class="src"><span class="tag ok">Manual oficial</span><span>${c.esc(m.codigo)} ${c.esc(m.version)} · ${c.esc(secLabel(p.id,p.p))} · p. ${p.p}</span>${pdfOk[p.id]?`<a class="btn ghost sm" style="display:inline-flex;align-items:center;text-decoration:none" href="${pdfHref(p.id,p.p)}" target="_blank" rel="noopener">Abrir PDF en p. ${p.p}</a>`:""}</div><p class="sgq">“${c.esc(p.snip)}…”</p></article>`; }).join("")}</div></section>`:""}
-   ${!fs.length&&!ps.length?`<div class="card"><p style="margin:0">La documentación cargada no cubre esta consulta. No se muestra ninguna respuesta para no inventar un procedimiento.</p>
+   ${items.length?`<p class="q">Lo que dice el manual sobre “${c.esc(g.q)}”</p>
+    ${notas.map(n=>`<div class="okbar" style="margin-top:10px">${c.esc(n)}</div>`).join("")}
+    <p class="hint" style="margin:10px 0">Texto literal del manual, con su sección y página.</p>
+    <div style="display:grid;gap:10px">${items.map(item).join("")}</div>`
+   :`<p class="q">No encontré “${c.esc(g.q)}” en el manual cargado</p>`}
+   ${fs.length?`<section class="sec"><h2>Guías paso a paso relacionadas</h2><div class="grid" style="margin-top:10px">${fs.slice(0,4).map(f=>fichaItem(c,f)).join("")}</div></section>`:""}
+   ${!fs.length&&!items.length?`<div class="card"><p style="margin:0">La documentación cargada no cubre esta consulta. No se muestra ninguna respuesta para no inventar un procedimiento.</p>
     <div class="foot"><button class="btn" data-act="sgmiss">Avisar a supervisión</button></div></div>`:""}
   </div>`;
 }
@@ -210,6 +230,7 @@ V.act=(a,b,c)=>{
   if(!/^sg/.test(a)) return prevAct?prevAct(a,b,c):false;
   const id=b.dataset.id, o=SG(c);
   if(a==="sgtop"){ g.id=null; g.cat=null; g.q=""; g.admin=false; document.getElementById("q").value=""; c.go("sg"); }
+  else if(a==="sgq"){ g.id=null; g.cat=null; g.admin=false; g.q=b.dataset.q; c.go("sg"); scrollTo({top:0}); }
   else if(a==="sgcat"){ g.cat=id; g.id=null; g.q=""; c.go("sg"); scrollTo({top:0}); }
   else if(a==="sgficha"){ abrir(id); c.log("guia","[SoftGuard] "+(window.SG_FICHAS.find(f=>f.id===id)||{}).titulo); c.go("sg"); scrollTo({top:0}); }
   else if(a==="sgstep"){ const i=+b.dataset.i; g.done.has(i)?g.done.delete(i):g.done.add(i); c.go("sg"); const li=document.querySelector(`[data-act=sgstep][data-i="${i}"]`); if(li) li.focus({preventScroll:true}); }
