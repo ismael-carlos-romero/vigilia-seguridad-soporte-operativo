@@ -185,6 +185,7 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
       <div class="seg" role="group" aria-label="Sector">
         <button data-sector="fijo" aria-pressed="true">Objetivo Fijo 911</button>
         <button data-sector="safe" aria-pressed="false">Objetivos Móviles SAFE</button>
+        <button data-sector="sg" aria-pressed="false">Manual SoftGuard</button>
       </div>
       <p class="hint" style="margin:12px 0 0">Tecla <kbd>/</kbd> para escribir · <kbd>Esc</kbd> para empezar de nuevo</p>
     </div>
@@ -201,6 +202,9 @@ footer{color:var(--mu);font-size:14px;padding:40px 0 60px}
 <script src="guias-safe.js"></script>
 <script src="soluciones.js"></script>
 <script src="modulos.js"></script>
+<script src="datos/softguard/indice.js"></script>
+<script src="softguard-fichas.js"></script>
+<script src="softguard.js"></script>
 <script>
 (function(){
 "use strict";
@@ -600,7 +604,7 @@ function theme(t){ document.documentElement.dataset.theme=t; S().theme=t; save()
 $("#bTheme").addEventListener("click",()=>theme(S().theme==="dark"?"light":"dark"));
 
 seed(); theme(S().theme); show();
-window.__vg={ask,search,st};
+window.__vg={ask,search,st,go,ctx};
 })();
 </script>
 </body>
